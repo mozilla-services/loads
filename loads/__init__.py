@@ -8,9 +8,12 @@ from loads.util import (DEFAULT_BACKEND, DEFAULT_HEARTBEAT,  # NOQA
                             DEFAULT_REG)
 from loads.client import DEFAULT_TIMEOUT_MOVF
 from loads.worker import DEFAULT_MAX_AGE, DEFAULT_MAX_AGE_DELTA
+from loads.measure import Session
 
 
 __all__ = ('get_cluster', 'get_params')
+
+
 
 
 def get_cluster(target, numprocesses=5, frontend=DEFAULT_FRONTEND,
