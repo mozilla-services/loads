@@ -4,13 +4,10 @@ from loads import Session
 
 class TestWebSite(unittest.TestCase):
 
-
     def setUp(self):
         self.session = Session()
 
     def test_something(self):
-
-
-        res = self.session.get('http://blog.ziade.org')
-        self.assertTrue('ziade' in res.content)
+        res = self.session.get('http://localhost:9200')
+        self.assertTrue('Search' in res.content)
 
