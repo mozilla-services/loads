@@ -38,9 +38,13 @@ def run(fqn, concurrency=1, numruns=1):
     return  test_result
 
 
-if __name__ == '__main__':
+def main():
     from gevent import monkey
     monkey.patch_all()
     result = run('loads.examples.test_blog.TestWebSite.test_something', 10, 100)
     print
     print result
+
+
+if __name__ == '__main__':
+    main()

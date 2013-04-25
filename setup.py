@@ -35,7 +35,8 @@ setup(name='loads',
       test_suite = 'nose.collector',
       entry_points="""
       [console_scripts]
-      loads-broker = loads.broker:main
-      loads-worker = loads.worker:main
-      loads = loads:main
+      loads-broker = loads.transport.broker:main
+      loads-worker = loads.transport.worker:main
+      loads-cluster = loads.transport:main
+      loads = loads.runner:main
       """)
