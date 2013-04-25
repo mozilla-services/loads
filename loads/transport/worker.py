@@ -12,13 +12,14 @@ import random
 
 import zmq
 
-from loads import util
-from loads.util import (logger, set_logger, DEFAULT_BACKEND,
-                            DEFAULT_HEARTBEAT, DEFAULT_REG)
-from loads.message import Message
-from loads.util import resolve_name, decode_params, timed, dump_stacks
-from loads.heartbeat import Stethoscope
-from loads.client import DEFAULT_TIMEOUT_MOVF
+from loads.transport import util
+from loads.util import logger, set_logger, resolve_name
+from loads.transport.util import (DEFAULT_BACKEND,
+                                  DEFAULT_HEARTBEAT, DEFAULT_REG)
+from loads.transport.message import Message
+from loads.transport.util import decode_params, timed, dump_stacks
+from loads.transport.heartbeat import Stethoscope
+from loads.transport.client import DEFAULT_TIMEOUT_MOVF
 
 from zmq.eventloop import ioloop, zmqstream
 

@@ -3,11 +3,11 @@ import sys
 import argparse
 import time
 
-from loads.util import (DEFAULT_BACKEND, DEFAULT_HEARTBEAT,  # NOQA
+from loads.transport.util import (DEFAULT_BACKEND, DEFAULT_HEARTBEAT,  # NOQA
                             DEFAULT_FRONTEND, encode_params, get_params,
                             DEFAULT_REG)
-from loads.client import DEFAULT_TIMEOUT_MOVF
-from loads.worker import DEFAULT_MAX_AGE, DEFAULT_MAX_AGE_DELTA
+from loads.transport.client import DEFAULT_TIMEOUT_MOVF
+from loads.transport.worker import DEFAULT_MAX_AGE, DEFAULT_MAX_AGE_DELTA
 
 
 __all__ = ('get_cluster', 'get_params')
