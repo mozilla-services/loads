@@ -13,7 +13,7 @@ with open(os.path.join(here, 'CHANGES.rst')) as f:
     CHANGES = f.read()
 
 
-requires = ['pyzmq', 'psutil']
+requires = ['pyzmq', 'psutil', 'gevent', 'requests']
 
 
 setup(name='loads',
