@@ -3,6 +3,7 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 import os
 from setuptools import setup, find_packages
+from loads import __version__
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -17,7 +18,7 @@ requires = ['pyzmq', 'psutil', 'gevent', 'requests']
 
 
 setup(name='loads',
-      version='0.1',
+      version=__version__,
       packages=find_packages(),
       include_package_data=True,
       description='Implementation of the Request-Reply Broker pattern in ZMQ',
