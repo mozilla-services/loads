@@ -2,8 +2,8 @@ import threading
 import errno
 import time
 
-import zmq
-from zmq.eventloop import ioloop, zmqstream
+import zmq.green as zmq
+from zmq.green.eventloop import ioloop, zmqstream
 
 from loads.util import logger
 from loads.transport.util import DEFAULT_HEARTBEAT

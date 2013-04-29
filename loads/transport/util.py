@@ -8,7 +8,7 @@ import atexit
 import time
 import os
 
-import zmq
+import zmq.green as zmq
 
 # XXX part of this module needs to move to loads.transport
 #

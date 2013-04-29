@@ -8,9 +8,10 @@ import argparse
 import os
 import time
 import psutil
+import json
 
-from zmq.eventloop import ioloop, zmqstream
-import zmq
+import zmq.green as zmq
+from zmq.green.eventloop import ioloop, zmqstream
 
 from loads.util import set_logger, logger
 from loads.transport.util import (register_ipc_file, DEFAULT_FRONTEND,
@@ -133,22 +134,29 @@ class Broker(object):
                     ['%d:ERROR:No worker' % os.getpid()])
             return
 
-        # we want to decide who's going to do the work
-        found_worker = False
+        # the msg tells us which worker to work with
+        data = json.loads(msg[2])   # XXX we need to unserialize here
 
-        while not found_worker and len(self._workers) > 0:
-            worker_id = random.choice(self._workers)
-            if not self._check_worker(worker_id):
-                self._remove_worker(worker_id)
-            else:
-                found_worker = True
+        if 'worker_id' not in data:
 
-        if not found_worker:
-            logger.debug('No worker, will try later')
-            later = time.time() + 0.5 + (tentative * 0.2)
-            self.loop.add_timeout(later, lambda: self._handle_recv_front(msg,
-                                    tentative + 1))
-            return
+            # we want to decide who's going to do the work
+            found_worker = False
+
+            while not found_worker and len(self._workers) > 0:
+                worker_id = random.choice(self._workers)
+                if not self._check_worker(worker_id):
+                    self._remove_worker(worker_id)
+                else:
+                    found_worker = True
+
+            if not found_worker:
+                logger.debug('No worker, will try later')
+                later = time.time() + 0.5 + (tentative * 0.2)
+                self.loop.add_timeout(later, lambda: self._handle_recv_front(msg,
+                                        tentative + 1))
+                return
+        else:
+            worker_id = str(data['worker_id'])
 
         # start the timer
         self._worker_times[worker_id] = time.time(), None
@@ -156,7 +164,6 @@ class Broker(object):
         # now we can send to the right guy
         msg.insert(0, worker_id)
         #logger.debug('front -> back [%s]' % worker_id)
-
         try:
             self._backstream.send_multipart(msg)
         except Exception, e:

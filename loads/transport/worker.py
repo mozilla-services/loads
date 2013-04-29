@@ -6,11 +6,10 @@ import traceback
 import argparse
 import logging
 import threading
-import Queue
 import contextlib
 import random
 
-import zmq
+import zmq.green as zmq
 
 from loads.transport import util
 from loads.util import logger, set_logger, resolve_name
@@ -21,13 +20,18 @@ from loads.transport.util import decode_params, timed, dump_stacks
 from loads.transport.heartbeat import Stethoscope
 from loads.transport.client import DEFAULT_TIMEOUT_MOVF
 
-from zmq.eventloop import ioloop, zmqstream
+from zmq.green.eventloop import ioloop, zmqstream
+
+from gevent.queue import JoinableQueue, Empty
+import gevent
 
 
 DEFAULT_MAX_AGE = -1
 DEFAULT_MAX_AGE_DELTA = 0
 
 
+
+# Crappy - let's nuke this XXX
 class ExecutionTimer(threading.Thread):
 
     def __init__(self, timeout=DEFAULT_TIMEOUT_MOVF, interval=.1):
@@ -39,7 +43,7 @@ class ExecutionTimer(threading.Thread):
         self.daemon = True
 
         # creating a queue for I/O with the worker
-        self.queue = Queue.Queue()
+        self.queue = JoinableQueue()
         self.interval = interval
         self.timed_out = self.working = False
         self.last_dump = None
@@ -67,10 +71,17 @@ class ExecutionTimer(threading.Thread):
 
     def run(self):
         self.running = True
+        no_data = True
 
         while self.running:
             # arming, so waiting for ever
-            self.queue.get()
+            while no_data:
+                try:
+                    self.queue.get(timeout=0.1)
+                    no_data = False
+                except Empty:
+                    gevent.sleep(0)
+
             self.armed = True
 
             # now waiting for the second call, which means
@@ -79,7 +90,7 @@ class ExecutionTimer(threading.Thread):
             # This time we time out
             try:
                 self.queue.get(timeout=self.timeout)
-            except Queue.Empty:
+            except Empty:
                 # too late, we want to log the stack
                 self.last_dump = dump_stacks()
                 self.timed_out = True
@@ -163,15 +174,14 @@ class Worker(object):
 
         # results are sent with a PID:OK: or a PID:ERROR prefix
         try:
-            with self.timer.run_message():
-                res = target(Message.load_from_string(msg[0]))
+            #with self.timer.run_message():
+            res = target(Message.load_from_string(msg[0]))
 
             # did we timout ?
-            if self.timer.timed_out:
-                # let's dump the last
-                for line in self.timer.last_dump:
-                    logger.error(line)
-
+            #if self.timer.timed_out:
+            #    # let's dump the last
+            #    for line in self.timer.last_dump:
+            #        logger.error(line)
             if self.debug:
                 duration, res = res
 
@@ -187,10 +197,10 @@ class Worker(object):
             res = '%d:ERROR:%s' % (self.pid, '\n'.join(exc))
             logger.error(res)
 
-        if self.timer.timed_out:
-            # let's not send back anything, we know the client
-            # is gone anyway
-            return
+        #if self.timer.timed_out:
+        #   # let's not send back anything, we know the client
+        #    # is gone anyway
+        #    return
 
         if self.debug:
             logger.debug('Duration - %.6f' % duration)

@@ -2,7 +2,9 @@ import datetime
 
 from requests.sessions import Session as _Session
 from loads.stream import get_global_stream, set_global_stream
-from gevent.socket import gethostbyname
+#from gevent.socket import gethostbyname
+from socket import gethostbyname
+
 
 import urlparse
 

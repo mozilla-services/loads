@@ -17,14 +17,24 @@ def _run(num, test, test_result, numruns):
         gevent.sleep(0)
 
 
-def run(fqn, concurrency=1, numruns=1):
+def run(fqn, concurrency=1, numruns=1, stream='stdout',
+        stream_args=None):
     """ Runs a test.
 
     * fnq: fully qualified name
     * concurrency: number of concurrent runs
     * numruns: number of run per concurrent
     """
-    set_global_stream('stdout', total=concurrency * numruns)
+    from gevent import monkey
+    monkey.patch_all()
+
+    if stream_args is None:
+        if stream == 'stdout':
+            stream_args = {'total': concurrency * numruns}
+        else:
+            stream_args = {}
+
+    set_global_stream(stream, **stream_args)
     test = resolve_name(fqn)
     klass = test.im_class
     ob = klass(test.__name__)
@@ -44,13 +54,19 @@ def main():
     parser = argparse.ArgumentParser(description='Runs a load test.')
     parser.add_argument('fqnd', help='Fully qualified name of the test',
                          nargs='?')
+
     parser.add_argument('-u', '--users', help='Number of virtual users',
                         type=int, default=1)
+
     parser.add_argument('-c', '--cycles', help='Number of cycles per users',
                         type=int, default=1)
 
     parser.add_argument('--version', action='store_true', default=False,
                         help='Displays Loads version and exits.')
+
+    parser.add_argument('--stream', default='stdout',
+                        help='The stream that receives the results')
+
 
     args = parser.parse_args()
 
@@ -62,10 +78,7 @@ def main():
         parser.print_usage()
         sys.exit(0)
 
-
-    from gevent import monkey
-    monkey.patch_all()
-    result = run(args.fqnd, args.users, args.cycles)
+    result = run(args.fqnd, args.users, args.cycles, args.stream)
     print
     print result
 
