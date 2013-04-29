@@ -4,11 +4,16 @@ import sys
 import gc
 import traceback
 import threading
+import atexit
+import time
+import os
 
+import zmq
 
 # XXX part of this module needs to move to loads.transport
 #
 from loads.transport.exc import TimeoutError
+from loads.util import logger
 
 
 DEFAULT_FRONTEND = "ipc:///tmp/loads-front.ipc"
@@ -16,7 +21,6 @@ DEFAULT_BACKEND = "ipc:///tmp/loads-back.ipc"
 DEFAULT_HEARTBEAT = "ipc:///tmp/loads-beat.ipc"
 DEFAULT_REG = "ipc:///tmp/loads-reg.ipc"
 
-logger = logging.getLogger('loads')
 _IPC_FILES = []
 
 PARAMS = {}
@@ -167,7 +171,7 @@ def dump_stacks():
 def verify_broker(broker_endpoint=DEFAULT_FRONTEND, timeout=1.):
     """ Return True if there's a working broker bound at broker_endpoint
     """
-    from loads.client import Client
+    from loads.transport.client import Client
     client = Client(broker_endpoint)
     try:
         return client.ping(timeout)

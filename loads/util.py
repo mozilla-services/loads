@@ -2,6 +2,9 @@ import sys
 import logging
 
 
+logger = logging.getLogger('loads')
+
+
 def set_logger(debug=False, name='loads', logfile='stdout'):
     # setting up the logger
     logger_ = logging.getLogger(name)

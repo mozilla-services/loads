@@ -6,10 +6,11 @@ import contextlib
 
 import zmq
 
-from loads.exc import TimeoutError, ExecutionError, NoWorkerError
-from loads.message import Message
-from loads.util import (send, recv, DEFAULT_FRONTEND, logger,
-                            extract_result, timed)
+from loads.transport.exc import TimeoutError, ExecutionError, NoWorkerError
+from loads.transport.message import Message
+from loads.util import logger
+from loads.transport.util import (send, recv, DEFAULT_FRONTEND,
+                                  extract_result, timed)
 
 
 DEFAULT_TIMEOUT = 5.

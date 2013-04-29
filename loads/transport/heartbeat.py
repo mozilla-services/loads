@@ -5,7 +5,8 @@ import time
 import zmq
 from zmq.eventloop import ioloop, zmqstream
 
-from loads.util import logger, DEFAULT_HEARTBEAT
+from loads.util import logger
+from loads.transport.util import DEFAULT_HEARTBEAT
 
 
 class Stethoscope(threading.Thread):
