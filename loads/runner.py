@@ -28,7 +28,7 @@ def run(args):
 
     stream = args['stream']
     if stream == 'stdout':
-        args['stream_stdout_total'] = concurrency * numruns
+        args['stream_stdout_total'] = args['cycles'] * args['users']
 
     set_global_stream(stream, args)
     test = resolve_name(args['fqn'])

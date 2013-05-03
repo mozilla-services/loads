@@ -3,28 +3,74 @@ Loads
 
 **Loads** is a framework for load testing an HTTP service.
 
-It's a client/server architecture based on ZMQ using a very simple
-protocol based on Message Pack.
+Installation::
 
-It's heavily inspired by Funkload and the latest work
-done there to add real-time capabilities. It's also now
-quite similar to locust.io in the principles.
+    $ bin/pip install loads
 
-Each client performs load tests against a web application
-and returns a json mapping to the server for each request made
-against the app. Web sockets can also be load tested as
-each client reports back every operation made with sockets
-against an application.
 
-The server collects the data and publishes them in a single
-stream of data.
+Using Loads
+===========
 
-Since every interaction with the server is being done using
-with zmq & msgpack, the client can be built in any language.
+**Loads** uses **Requests** and Python unitest to perform load tests.
 
-**Loads** provides a built-in Python client based on the
-*Requests* API.
+Let's say you want to load test the Elastic Search root page on your
+system.
 
-**Loads** can be used within **Marteau**, a web
-application that drives **Loads** and display realtime
-reports.
+Write a unittest like this one::
+
+    import unittest
+    from loads import Session
+
+    class TestWebSite(unittest.TestCase):
+
+        def setUp(self):
+            self.session = Session()
+
+        def test_something(self):
+            res = self.session.get('http://localhost:9200')
+            self.assertTrue('Search' in res.content)
+
+
+Now run **loads-runner** against it::
+
+    $ bin/loads-runner loads.examples.test_blog.TestWebSite.test_something
+    [======================================================================]  100%
+    <unittest.result.TestResult run=1 errors=0 failures=0>
+
+This will execute your test just once - so you can control it works well.
+
+Now try to run it using 100 virtual users, each of them running the test 10 times:
+
+    $ bin/loads-runner loads.examples.test_blog.TestWebSite.test_something -u 100 -c 10
+    [======================================================================]  100%
+    <unittest.result.TestResult run=1000 errors=0 failures=0>
+
+
+Congrats, you just sent a load of 1000 hits, using 100 concurrent threads.
+
+
+Using the cluster
+=================
+
+Install Circus::
+
+    $ bin/pip install circus
+
+And run it against **loads.ini**::
+
+    $ bin/circusd --daemon loads.ini
+
+What happened ? You have just started a Loads broker with 5 agents.
+
+Let's use them now, with the **agents** option::
+
+    $ bin/load-runner loads.examples.test_blog.TestWebSite.test_something -u 10 -c 10 --agents 5
+
+Congrats, you have just sent 100 hits from 5 different agents.
+
+
+Deploying the cluster on several slaves
+=======================================
+
+XXX
+
