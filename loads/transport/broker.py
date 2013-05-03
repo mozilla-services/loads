@@ -119,6 +119,11 @@ class Broker(object):
                     return False
         return True
 
+    def _send_json(self, target, data):
+        data = json.dumps(data)
+        msg = target + ['%d:OK:%s' % (os.getpid(), data)]
+        self._frontstream.send_multipart(msg)
+
     def _handle_recv_front(self, msg, tentative=0):
         # front => back
         # if the last part of the message is 'PING', we just PONG back
@@ -127,7 +132,6 @@ class Broker(object):
             self._frontstream.send_multipart(msg[:-1] + [str(os.getpid())])
             return
 
-        #logger.debug('front -> back [choosing a worker]')
         if tentative == 3:
             logger.debug('No workers')
             self._frontstream.send_multipart(msg[:-1] +
@@ -137,8 +141,39 @@ class Broker(object):
         # the msg tells us which worker to work with
         data = json.loads(msg[2])   # XXX we need to unserialize here
 
-        if 'worker_id' not in data:
+        # broker protocol
+        if data['command'] == 'LIST':
+            # we return a list of worker ids and their status
+            self._send_json(msg[:-1], {'result': self._workers})
+            return
+        elif data['command'] == 'SIMULRUN':
+            if data['agents'] > len(self._workers):
+                self._send_json(msg[:-1], {'error': 'Not enough agents'})
+                return
 
+            # we want to run the same command on several agents
+            # provisionning them
+            workers = []
+            available = list(self._workers)
+
+            while len(workers) < data['agents']:
+                worker_id = random.choice(available)
+                if not self._check_worker(worker_id):
+                    self._remove_worker(worker_id)
+                else:
+                    workers.append(worker_id)
+                    available.remove(worker_id)
+
+            # send to every worker
+            for worker_id in workers:
+                self._send_to_worker(worker_id, msg)
+
+            # tell the client what workers where picked
+            self._send_json(msg[:-1], {'result': workers})
+            return
+
+        # regular pass-through == one worker
+        if 'worker_id' not in data:
             # we want to decide who's going to do the work
             found_worker = False
 
@@ -157,6 +192,13 @@ class Broker(object):
                 return
         else:
             worker_id = str(data['worker_id'])
+
+        # send to a single worker
+        self._send_to_worker(worker_id, msg)
+
+
+    def _send_to_worker(self, worker_id, msg):
+        msg = list(msg)
 
         # start the timer
         self._worker_times[worker_id] = time.time(), None

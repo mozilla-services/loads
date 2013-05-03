@@ -49,16 +49,24 @@ def run(args):
 def distributed_run(args):
     # XXX deal with agents
     client = LoadsClient(args['broker'])
-    res = client.run(args)
-    pid = res['pid']
-    worker_id = res['worker_id']
-    status = client.status(worker_id, pid)
-    print status
+    workers = client.run(args)
 
-    while status == 'running':
-        time.sleep(1.)
-        status = client.status(worker_id, pid)
+    for worker in workers:
+        status = client.status(worker)
         print status
+
+    done = []
+
+    while len(done) < len(workers):
+        for worker in list(workers):
+            status = client.status(worker)
+            if 'running' not in status.values():
+                done.append(worker)
+                workers.remove(worker)
+                print '%s done' % worker
+            else:
+                print '%s still working' % worker
+        time.sleep(1.)
 
 
 def main():

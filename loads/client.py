@@ -4,6 +4,10 @@ import os
 from loads.transport.client import Client
 import time
 
+
+class ExecutionError(Exception):
+    pass
+
 class LoadsClient(Client):
 
     def execute(self, *args, **kw):
@@ -14,11 +18,19 @@ class LoadsClient(Client):
         return res['result']
 
     def run(self, args, async=True):
-        return self.execute({'command': 'RUN',
+        # let's ask the broker how many agents it has
+        res = self.execute({'command': 'LIST'})
+
+        # do we have enough ?
+        agents = len(res)
+
+        if len(res) < args['agents']:
+            raise ExecutionError('Not enough agents running on that broker')
+
+        return self.execute({'command': 'SIMULRUN',
                              'async': async,
+                             'agents': args['agents'],
                              'args': args})
 
-    def status(self, worker_id, pid):
-        return self.execute({'command': 'STATUS', 'pid': pid, 'worker_id': worker_id})
-
-
+    def status(self, worker_id):
+        return self.execute({'command': 'STATUS', 'worker_id': worker_id})

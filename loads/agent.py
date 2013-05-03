@@ -52,17 +52,22 @@ class Agent(Worker):
         data = message.data
         command = data['command']
 
-        if command == 'RUN':
+        if command in ('RUN', 'SIMULRUN'):
             args = data['args']
             pid = self._run(args)
             return __({'result': {'pid': pid, 'worker_id': str(os.getpid())}})
 
         elif command == 'STATUS':
-            pid = data['pid']
-            if self._processes[pid].is_alive():
-                return __({'result': 'running'})
-            else:
-                return __({'result': 'terminated'})
+            status = {}
+
+            for pid, proc in self._processes.items():
+                if proc.is_alive():
+                    status[pid] = 'running'
+                else:
+                    status[pid] = 'terminated'
+
+            return __({'result': status})
+
 
         raise NotImplementedError()
 
