@@ -16,7 +16,7 @@ Using Loads
 Let's say you want to load test the Elastic Search root page on your
 system.
 
-Write a unittest like this one::
+Write a unittest like this one and save it in an **example.py** file::
 
     import unittest
     from loads import Session
@@ -33,7 +33,7 @@ Write a unittest like this one::
 
 Now run **loads-runner** against it::
 
-    $ bin/loads-runner loads.examples.test_blog.TestWebSite.test_something
+    $ bin/loads-runner example.TestWebSite.test_something
     [======================================================================]  100%
     <unittest.result.TestResult run=1 errors=0 failures=0>
 
@@ -41,12 +41,12 @@ This will execute your test just once - so you can control it works well.
 
 Now try to run it using 100 virtual users, each of them running the test 10 times:
 
-    $ bin/loads-runner loads.examples.test_blog.TestWebSite.test_something -u 100 -c 10
+    $ bin/loads-runner example.TestWebSite.test_something -u 100 -c 10
     [======================================================================]  100%
     <unittest.result.TestResult run=1000 errors=0 failures=0>
 
 
-Congrats, you just sent a load of 1000 hits, using 100 concurrent threads.
+Congrats, you've just sent a load of 1000 hits, using 100 concurrent threads.
 
 
 Using the cluster
@@ -64,7 +64,7 @@ What happened ? You have just started a Loads broker with 5 agents.
 
 Let's use them now, with the **agents** option::
 
-    $ bin/load-runner loads.examples.test_blog.TestWebSite.test_something -u 10 -c 10 --agents 5
+    $ bin/load-runner example.TestWebSite.test_something -u 10 -c 10 --agents 5
 
 Congrats, you have just sent 100 hits from 5 different agents.
 
