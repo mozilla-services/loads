@@ -29,7 +29,7 @@ Write a unittest like this one and save it in an **example.py** file::
     class TestWebSite(unittest.TestCase):
 
         def setUp(self):
-            self.session = Session()
+            self.session = Session(self)
 
         def test_something(self):
             res = self.session.get('http://localhost:9200')
@@ -53,6 +53,13 @@ Now try to run it using 100 virtual users, each of them running the test 10 time
 
 Congrats, you've just sent a load of 1000 hits, using 100 concurrent threads.
 
+Now let's run a cycle of 10, 20 then 30 users, each one running 20 hits::
+
+    $ bin/loads-runner loads.examples.test_blog.TestWebSite.test_something -c 20 -u 10:20:30
+    <unittest.result.TestResult run=1200 errors=0 failures=0>
+
+That's 1200 hits total.
+
 
 Using the cluster
 =================
@@ -69,11 +76,10 @@ What happened ? You have just started a Loads broker with 5 agents.
 
 Let's use them now, with the **agents** option::
 
-    $ bin/load-runner example.TestWebSite.test_something -u 10 -c 10 --agents 5
+    $ bin/load-runner example.TestWebSite.test_something -u 10:20:30 -c 20 --agents 5
     [======================================================================]  100%
-    <unittest.result.TestResult run=100 errors=0 failures=0>
 
-Congrats, you have just sent 100 hits from 5 different agents.
+Congrats, you have just sent 6000 hits from 5 different agents.
 
 
 Reports

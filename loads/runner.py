@@ -15,20 +15,25 @@ from loads.client import LoadsClient
 from loads.transport.util import DEFAULT_FRONTEND
 
 
-def _run(num, test, test_result, cycles):
+def _run(num, test, test_result, cycles, user):
     for cycle in cycles:
-        for i in range(cycle):
+        test.current_cycle = cycle
+        test.current_user = user
+        for x in range(cycle):
             test(test_result)
             gevent.sleep(0)
 
 
-def _cycles(args):
+def _compute(args):
+    users = [int(user) for user in args['users'].split(':')]
     cycles = [int(cycle) for cycle in args['cycles'].split(':')]
     agents = args['agents']
-    total = sum([cycle * args['users'] for cycle in cycles])
+    total = 0
+    for user in users:
+        total += sum([cycle * user for cycle in cycles])
     if agents is not None:
         total *= agents
-    return total, cycles, agents
+    return total, cycles, users, agents
 
 
 def run(args):
@@ -37,7 +42,7 @@ def run(args):
     from gevent import monkey
     monkey.patch_all()
 
-    total, cycles, agents = _cycles(args)
+    total, cycles, users, agents = _compute(args)
     stream = args['stream']
 
     if stream == 'stdout':
@@ -49,12 +54,13 @@ def run(args):
     ob = klass(test.__name__)
     test_result = unittest.TestResult()
 
-    group = Group()
+    for user in users:
+        group = Group()
 
-    for i in range(args['users']):
-        group.spawn(_run, i, ob, test_result, cycles)
+        for i in range(user):
+            group.spawn(_run, i, ob, test_result, cycles, user)
 
-    group.join()
+        group.join()
 
     return  test_result
 
@@ -63,7 +69,7 @@ def distributed_run(args):
     # in distributed mode the stream is forced to 'zmq'
     args['stream'] = 'zmq'
     set_global_stream('zmq', args)
-    total, cycles, agents = _cycles(args)
+    total, cycles, users, agents = _compute(args)
 
     # setting up the stream of results
     #
@@ -103,7 +109,7 @@ def main():
                          nargs='?')
 
     parser.add_argument('-u', '--users', help='Number of virtual users',
-                        type=int, default=1)
+                        type=str, default='1')
 
     parser.add_argument('-c', '--cycles', help='Number of cycles per users',
                         type=str, default='1')

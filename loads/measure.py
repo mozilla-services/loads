@@ -10,9 +10,14 @@ import urlparse
 
 
 def _measure(req):
-    data = {'elapsed': req.elapsed, 'started': req.started,
-            'status': req.status_code, 'url': req.url,
-            'method': req.method}
+    data = {'elapsed': req.elapsed,
+            'started': req.started,
+            'status': req.status_code,
+            'url': req.url,
+            'method': req.method,
+            'cycle': req.current_cycle,
+            'user': req.current_user}
+
     stream = get_global_stream()
 
     if stream is None:
@@ -41,6 +46,10 @@ def resolve(url):
 
 class Session(_Session):
 
+    def __init__(self, test):
+        _Session.__init__(self)
+        self.test = test
+
     def send(self, request, **kwargs):
         request.url = resolve(request.url)
         # started
@@ -48,5 +57,7 @@ class Session(_Session):
         res = _Session.send(self, request, **kwargs)
         res.started = start
         res.method = request.method
+        res.current_cycle = self.test.current_cycle
+        res.current_user = self.test.current_user
         _measure(res)
         return res
