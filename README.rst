@@ -70,8 +70,18 @@ What happened ? You have just started a Loads broker with 5 agents.
 Let's use them now, with the **agents** option::
 
     $ bin/load-runner example.TestWebSite.test_something -u 10 -c 10 --agents 5
+    [======================================================================]  100%
+    <unittest.result.TestResult run=100 errors=0 failures=0>
 
 Congrats, you have just sent 100 hits from 5 different agents.
+
+
+Reports
+=======
+
+realtime / vs static
+XXX
+XXX interaction shell, curl
 
 
 Deploying the cluster on several slaves

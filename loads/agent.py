@@ -40,7 +40,6 @@ class Agent(Worker):
         self._processes = {}
 
     def _run(self, args):
-
         from multiprocessing import Process
         p = Process(target=functools.partial(run, args))
         p.start()

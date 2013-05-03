@@ -84,3 +84,25 @@ class StdStream(object):
         sys.stdout.flush()
 
 register_stream(StdStream)
+
+import zmq.green as zmq
+from zmq.green.eventloop import ioloop, zmqstream
+
+
+class ZMQStream(object):
+    name = 'zmq'
+    options = {'endpoint': ('Socket to send the results to',
+                            str, 'tcp://127.0.0.1:5558', True)}
+
+    def __init__(self, args):
+        self.context = zmq.Context()
+        self._push = self.context.socket(zmq.PUSH)
+        self._push.connect(args['stream_zmq_endpoint'])
+        self.encoder = DateTimeJSONEncoder()
+
+    def push(self, data):
+        self._push.send(self.encoder.encode(data), zmq.NOBLOCK)
+
+
+register_stream(ZMQStream)
+

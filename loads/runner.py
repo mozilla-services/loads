@@ -3,12 +3,13 @@ import unittest
 import argparse
 import sys
 import time
+import json
 
 from gevent.pool import Group
 import gevent
 
 from loads.util import resolve_name
-from loads.stream import set_global_stream, stream_list
+from loads.stream import set_global_stream, stream_list, StdStream
 from loads import __version__
 from loads.client import LoadsClient
 from loads.transport.util import DEFAULT_FRONTEND
@@ -47,26 +48,41 @@ def run(args):
 
 
 def distributed_run(args):
-    # XXX deal with agents
+    # in distributed mode the stream is forced to 'zmq'
+    args['stream'] = 'zmq'
+    set_global_stream('zmq', args)
+
+    # setting up the stream of results
+    #
+    import zmq.green as zmq
+    from zmq.green.eventloop import ioloop, zmqstream
+
+    context = zmq.Context()
+    pull = context.socket(zmq.PULL)
+    pull.bind(args['stream_zmq_endpoint'])
+
+    # calling the clients now
     client = LoadsClient(args['broker'])
     workers = client.run(args)
 
-    for worker in workers:
-        status = client.status(worker)
-        print status
+    # local echo
+    total = args['agents'] * args['cycles'] * args['users']
+    echo = StdStream({'stream_stdout_total': total})
 
-    done = []
+    # io loop
+    received = [0]
+    loop = ioloop.IOLoop()
 
-    while len(done) < len(workers):
-        for worker in list(workers):
-            status = client.status(worker)
-            if 'running' not in status.values():
-                done.append(worker)
-                workers.remove(worker)
-                print '%s done' % worker
-            else:
-                print '%s still working' % worker
-        time.sleep(1.)
+    def recv_result(msg):
+        data = json.loads(msg[0])
+        echo.push(data)
+        received[0] += 1
+        if received[0] == total:
+            loop.stop()
+
+    stream = zmqstream.ZMQStream(pull, loop)
+    stream.on_recv(recv_result)
+    loop.start()
 
 
 def main():
