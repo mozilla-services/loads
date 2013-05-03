@@ -67,5 +67,3 @@ def resolve_name(name):
             raise ImportError(exc)
 
     return ret
-
-

@@ -4,6 +4,7 @@ import argparse
 import sys
 import time
 import json
+from datetime import datetime
 
 from gevent.pool import Group
 import gevent
@@ -93,6 +94,8 @@ def distributed_run(args):
 
     def recv_result(msg):
         data = json.loads(msg[0])
+        started = data['started']
+        data['started'] = datetime.strptime(started, '%Y-%m-%dT%H:%M:%S.%f')
         echo.push(data)
         received[0] += 1
         if received[0] == total:
