@@ -1,6 +1,11 @@
 Loads
 =====
 
+.. warning::
+
+   This is an untested, fast moving prototype
+
+
 **Loads** is a framework for load testing an HTTP service.
 
 Installation::
@@ -39,7 +44,7 @@ Now run **loads-runner** against it::
 
 This will execute your test just once - so you can control it works well.
 
-Now try to run it using 100 virtual users, each of them running the test 10 times:
+Now try to run it using 100 virtual users, each of them running the test 10 times::
 
     $ bin/loads-runner example.TestWebSite.test_something -u 100 -c 10
     [======================================================================]  100%
