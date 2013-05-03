@@ -39,10 +39,10 @@ class Agent(Worker):
         self.env = os.environ.copy()
         self._processes = {}
 
-    def _run(self, fqnd, concurrency, numruns, stream):
+    def _run(self, args):
+
         from multiprocessing import Process
-        p = Process(target=functools.partial(run, fqnd, concurrency, numruns,
-            stream))
+        p = Process(target=functools.partial(run, args))
         p.start()
         self._processes[p.pid] = p
         return p.pid
@@ -53,11 +53,8 @@ class Agent(Worker):
         command = data['command']
 
         if command == 'RUN':
-            fqnd = data['fqnd']
-            concurrency = data.get('concurrency', 1)
-            numruns = data.get('numruns', 1)
-            stream = data.get('stream', 'stdout')
-            pid = self._run(fqnd, concurrency, numruns, stream)
+            args = data['args']
+            pid = self._run(args)
             return __({'result': {'pid': pid, 'worker_id': str(os.getpid())}})
 
         elif command == 'STATUS':

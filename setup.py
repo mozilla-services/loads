@@ -40,5 +40,4 @@ setup(name='loads',
       loads-agent  = loads.agent:main
       loads-runner  = loads.runner:main
       loads-cluster = loads.transport:main
-      loads = loads.runner:main
       """)

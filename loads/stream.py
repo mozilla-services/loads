@@ -57,7 +57,7 @@ class FileStream(object):
 
     def __init__(self, args):
         self.current = 0
-        self.filename = args.stream_file_filename
+        self.filename = args['stream_file_filename']
         self.encoder = DateTimeJSONEncoder()
 
     def push(self, data):
@@ -74,7 +74,7 @@ class StdStream(object):
 
     def __init__(self, args):
         self.current = 0
-        self.total = args.stream_stdout_total
+        self.total = args['stream_stdout_total']
 
     def push(self, data):
         self.current += 1

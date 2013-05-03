@@ -13,38 +13,12 @@ class LoadsClient(Client):
             raise ValueError(res['error'])
         return res['result']
 
-    def run(self, fqnd, concurrency=1, numruns=1, async=True):
+    def run(self, args, async=True):
         return self.execute({'command': 'RUN',
-                             'fqnd': fqnd,
-                             'concurrency': concurrency,
-                             'numruns': numruns,
-                             'async': async})
+                             'async': async,
+                             'args': args})
 
     def status(self, worker_id, pid):
         return self.execute({'command': 'STATUS', 'pid': pid, 'worker_id': worker_id})
 
-
-
-c = LoadsClient()
-
-
-if os.path.exists('/tmp/testing'):
-    os.remove('/tmp/testing')
-
-res = c.run('loads.examples.test_blog.TestWebSite.test_something',
-       concurrency=10, numruns=100)
-pid = res['pid']
-worker_id = res['worker_id']
-
-status = c.status(worker_id, pid)
-print status
-
-while status == 'running':
-    time.sleep(1.)
-    status = c.status(worker_id, pid)
-    print status
-
-
-with open('/tmp/testing') as f:
-    print f.read()
 

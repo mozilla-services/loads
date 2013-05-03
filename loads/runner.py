@@ -2,6 +2,7 @@
 import unittest
 import argparse
 import sys
+import time
 
 from gevent.pool import Group
 import gevent
@@ -9,6 +10,8 @@ import gevent
 from loads.util import resolve_name
 from loads.stream import set_global_stream, stream_list
 from loads import __version__
+from loads.client import LoadsClient
+from loads.transport.util import DEFAULT_FRONTEND
 
 
 def _run(num, test, test_result, numruns):
@@ -17,38 +20,50 @@ def _run(num, test, test_result, numruns):
         gevent.sleep(0)
 
 
-def run(fqn, concurrency=1, numruns=1, stream='stdout', args=None):
+def run(args):
     """ Runs a test.
-
-    * fnq: fully qualified name
-    * concurrency: number of concurrent runs
-    * numruns: number of run per concurrent
     """
     from gevent import monkey
     monkey.patch_all()
 
-    if args.stream == 'stdout':
-        args.stream_stdout_total = concurrency * numruns
+    stream = args['stream']
+    if stream == 'stdout':
+        args['stream_stdout_total'] = concurrency * numruns
 
     set_global_stream(stream, args)
-    test = resolve_name(fqn)
+    test = resolve_name(args['fqn'])
     klass = test.im_class
     ob = klass(test.__name__)
     test_result = unittest.TestResult()
 
     group = Group()
 
-    for i in range(concurrency):
-        group.spawn(_run, i, ob, test_result, numruns)
+    for i in range(args['users']):
+        group.spawn(_run, i, ob, test_result, args['cycles'])
 
     group.join()
 
     return  test_result
 
 
+def distributed_run(args):
+    # XXX deal with agents
+    client = LoadsClient(args['broker'])
+    res = client.run(args)
+    pid = res['pid']
+    worker_id = res['worker_id']
+    status = client.status(worker_id, pid)
+    print status
+
+    while status == 'running':
+        time.sleep(1.)
+        status = client.status(worker_id, pid)
+        print status
+
+
 def main():
     parser = argparse.ArgumentParser(description='Runs a load test.')
-    parser.add_argument('fqnd', help='Fully qualified name of the test',
+    parser.add_argument('fqn', help='Fully qualified name of the test',
                          nargs='?')
 
     parser.add_argument('-u', '--users', help='Number of virtual users',
@@ -59,6 +74,11 @@ def main():
 
     parser.add_argument('--version', action='store_true', default=False,
                         help='Displays Loads version and exits.')
+
+    parser.add_argument('-a', '--agents', help='Number of agents to use',
+                        type=int)
+    parser.add_argument('-b', '--broker', help='Broker endpoint',
+                        default=DEFAULT_FRONTEND)
 
     streams = [st.name for st in stream_list()]
     streams.sort()
@@ -88,14 +108,24 @@ def main():
         print(__version__)
         sys.exit(0)
 
-    if args.fqnd is None:
+    if args.fqn is None:
         parser.print_usage()
         sys.exit(0)
 
-    result = run(args.fqnd, args.users, args.cycles, args.stream, args)
-    print
-    print result
+    args = dict(args._get_kwargs())
 
+    if args.get('agents') is None:
+        # direct run
+        #
+        result = run(args)
+        print
+        print result
+    else:
+        # distributed run
+        # contact the broker and send the load
+        result = distributed_run(args)
+        print
+        print result
 
 if __name__ == '__main__':
     main()
