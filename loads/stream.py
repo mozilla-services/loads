@@ -11,12 +11,12 @@ def get_global_stream():
     return _STREAM
 
 
-def set_global_stream(kind, **args):
+def set_global_stream(kind, args):
     global _STREAM
     if kind not in _STREAMS:
         raise NotImplementedError(kind)
 
-    _STREAM = _STREAMS[kind](**args)
+    _STREAM = _STREAMS[kind](args)
     return _STREAM
 
 
@@ -24,10 +24,15 @@ def register_stream(klass):
     _STREAMS[klass.name] = klass
 
 
+def stream_list():
+    return _STREAMS.values()
+
+
 class NullStream(object):
     name = 'null'
+    options = {}
 
-    def __init__(self, **options):
+    def __init__(self, args):
         pass
 
     def push(self, data):
@@ -48,10 +53,11 @@ class DateTimeJSONEncoder(json.JSONEncoder):
 
 class FileStream(object):
     name = 'file'
+    options = {'filename': ('Filename', str, None, True)}
 
-    def __init__(self, filename='/tmp/testing'):
+    def __init__(self, args):
         self.current = 0
-        self.filename = filename
+        self.filename = args.stream_file_filename
         self.encoder = DateTimeJSONEncoder()
 
     def push(self, data):
@@ -64,10 +70,11 @@ register_stream(FileStream)
 
 class StdStream(object):
     name = 'stdout'
+    options = {'total': ('Total Number of items', int, None, False)}
 
-    def __init__(self, total):
+    def __init__(self, args):
         self.current = 0
-        self.total = total
+        self.total = args.stream_stdout_total
 
     def push(self, data):
         self.current += 1
