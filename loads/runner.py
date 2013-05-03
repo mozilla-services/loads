@@ -15,10 +15,20 @@ from loads.client import LoadsClient
 from loads.transport.util import DEFAULT_FRONTEND
 
 
-def _run(num, test, test_result, numruns):
-    for i in range(numruns):
-        test(test_result)
-        gevent.sleep(0)
+def _run(num, test, test_result, cycles):
+    for cycle in cycles:
+        for i in range(cycle):
+            test(test_result)
+            gevent.sleep(0)
+
+
+def _cycles(args):
+    cycles = [int(cycle) for cycle in args['cycles'].split(':')]
+    agents = args['agents']
+    total = sum([cycle * args['users'] for cycle in cycles])
+    if agents is not None:
+        total *= agents
+    return total, cycles, agents
 
 
 def run(args):
@@ -27,9 +37,11 @@ def run(args):
     from gevent import monkey
     monkey.patch_all()
 
+    total, cycles, agents = _cycles(args)
     stream = args['stream']
+
     if stream == 'stdout':
-        args['stream_stdout_total'] = args['cycles'] * args['users']
+        args['stream_stdout_total'] = total
 
     set_global_stream(stream, args)
     test = resolve_name(args['fqn'])
@@ -40,7 +52,7 @@ def run(args):
     group = Group()
 
     for i in range(args['users']):
-        group.spawn(_run, i, ob, test_result, args['cycles'])
+        group.spawn(_run, i, ob, test_result, cycles)
 
     group.join()
 
@@ -51,6 +63,7 @@ def distributed_run(args):
     # in distributed mode the stream is forced to 'zmq'
     args['stream'] = 'zmq'
     set_global_stream('zmq', args)
+    total, cycles, agents = _cycles(args)
 
     # setting up the stream of results
     #
@@ -66,7 +79,6 @@ def distributed_run(args):
     workers = client.run(args)
 
     # local echo
-    total = args['agents'] * args['cycles'] * args['users']
     echo = StdStream({'stream_stdout_total': total})
 
     # io loop
@@ -94,7 +106,7 @@ def main():
                         type=int, default=1)
 
     parser.add_argument('-c', '--cycles', help='Number of cycles per users',
-                        type=int, default=1)
+                        type=str, default='1')
 
     parser.add_argument('--version', action='store_true', default=False,
                         help='Displays Loads version and exits.')
