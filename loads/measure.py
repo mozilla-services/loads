@@ -40,7 +40,7 @@ def resolve(url):
     resolved = gethostbyname(original)
     netloc = resolved + ':' + netloc[1]
     parts = (parts.scheme, netloc) + parts[2:]
-    _CACHE[url] = urlparse.urlunparse(parts)
+    _CACHE[url] = urlparse.urlunparse(parts), original, resolved
     return _CACHE[url]
 
 
@@ -51,7 +51,9 @@ class Session(_Session):
         self.test = test
 
     def send(self, request, **kwargs):
-        request.url = resolve(request.url)
+        request.url, original, resolved = resolve(request.url)
+        request.headers['Host'] = original
+
         # started
         start = datetime.datetime.utcnow()
         res = _Session.send(self, request, **kwargs)
