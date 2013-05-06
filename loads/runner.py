@@ -8,6 +8,9 @@ from datetime import datetime
 from gevent.pool import Group
 import gevent
 
+import zmq.green as zmq
+from zmq.green.eventloop import ioloop, zmqstream
+
 from loads.util import resolve_name
 from loads.stream import (set_global_stream, stream_list, StdStream,
                           get_global_stream)
@@ -18,8 +21,6 @@ from loads.transport.util import DEFAULT_FRONTEND
 
 class Runner(object):
     def __init__(self, args):
-        self.ended = 0
-        self.echo = self.loop = None
         self.args = args
         self.total, self.cycles, self.users, self.agents = self._compute()
         self.fqn = args['fqn']
@@ -101,6 +102,20 @@ class Runner(object):
 class DistributedRunner(Runner):
     """ Runner that collects results via ZMQ.
     """
+    def __init__(self, args):
+        super(DistributedRunner, self).__init__(args)
+        self.ended = self.hits = 0
+        self.loop = None
+        # local echo
+        self.echo = StdStream({'stream_stdout_total': self.total})
+        context = zmq.Context()
+        pull = context.socket(zmq.PULL)
+        pull.bind(self.args['stream_zmq_endpoint'])
+        # io loop
+        self.loop = ioloop.IOLoop()
+        self.zstream = zmqstream.ZMQStream(pull, self.loop)
+        self.zstream.on_recv(self._recv_result)
+
     def _recv_result(self, msg):
         data = json.loads(msg[0])
         if 'END' in data:
@@ -114,30 +129,19 @@ class DistributedRunner(Runner):
             self.test_result.failures.append((None, data['error']))
             self.test_result._mirrorOutput = True
         else:
+            self.hits += 1
+            if self.hits == self.total:
+                self.zstream.flush()
+                self.loop.stop()
             started = data['started']
             data['started'] = datetime.strptime(started,
                                                 '%Y-%m-%dT%H:%M:%S.%f')
             self.echo.push(data)
 
     def _execute(self):
-        import zmq.green as zmq
-        from zmq.green.eventloop import ioloop, zmqstream
-
-        context = zmq.Context()
-        pull = context.socket(zmq.PULL)
-        pull.bind(self.args['stream_zmq_endpoint'])
-
         # calling the clients now
         client = Client(self.args['broker'])
         client.run(self.args)
-
-        # local echo
-        self.echo = StdStream({'stream_stdout_total': self.total})
-
-        # io loop
-        self.loop = ioloop.IOLoop()
-        stream = zmqstream.ZMQStream(pull, self.loop)
-        stream.on_recv(self._recv_result)
         self.loop.start()
         return self.test_result
 

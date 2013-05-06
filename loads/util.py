@@ -2,6 +2,9 @@ import sys
 import logging
 import json
 import datetime
+import urlparse
+
+from gevent.socket import gethostbyname
 
 
 logger = logging.getLogger('loads')
@@ -78,3 +81,22 @@ class DateTimeJSONEncoder(json.JSONEncoder):
             return obj.seconds, obj.microseconds
         else:
             return super(DateTimeJSONEncoder, self).default(obj)
+
+
+_CACHE = {}
+
+
+def dns_resolve(url):
+    if url in _CACHE:
+        return _CACHE[url]
+
+    parts = urlparse.urlparse(url)
+    netloc = parts.netloc.rsplit(':')
+    if len(netloc) == 1:
+        netloc.append('80')
+    original = netloc[0]
+    resolved = gethostbyname(original)
+    netloc = resolved + ':' + netloc[1]
+    parts = (parts.scheme, netloc) + parts[2:]
+    _CACHE[url] = urlparse.urlunparse(parts), original, resolved
+    return _CACHE[url]
