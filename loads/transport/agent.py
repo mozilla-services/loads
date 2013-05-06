@@ -87,6 +87,9 @@ class Agent(object):
         self.lock = threading.RLock()
         self.env = os.environ.copy()
         self._processes = {}
+        self._check = ioloop.PeriodicCallback(self._check_proc,
+                                              ping_delay * 1000,
+                                              io_loop=self.loop)
 
     def _run(self, args):
         from multiprocessing import Process
@@ -118,6 +121,11 @@ class Agent(object):
             return __({'result': status})
 
         raise NotImplementedError()
+
+    def _check_proc(self):
+        for pid, proc in self._processes.items():
+            if not proc.is_alive():
+                del self._processes[pid]
 
     def _handle_recv_back(self, msg):
         # do the message and send the result
@@ -189,6 +197,7 @@ class Agent(object):
             pass
         self.loop.stop()
         self.ping.stop()
+        self._check.stop()
         time.sleep(.1)
         self.ctx.destroy(0)
         logger.debug('Worker is stopped')
@@ -201,6 +210,7 @@ class Agent(object):
 
         # running the pinger
         self.ping.start()
+        self._check.start()
         self.running = True
 
         # telling the broker we are ready
