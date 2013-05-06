@@ -16,114 +16,137 @@ from loads.transport.client import Client
 from loads.transport.util import DEFAULT_FRONTEND
 
 
-def _run(num, test, test_result, cycles, user):
-    for cycle in cycles:
-        test.current_cycle = cycle
-        test.current_user = user
-        for x in range(cycle):
-            test(test_result)
-            gevent.sleep(0)
+class Runner(object):
+    def __init__(self, args):
+        self.ended = 0
+        self.echo = self.loop = None
+        self.args = args
+        self.total, self.cycles, self.users, self.agents = self._compute()
+        self.fqn = args['fqn']
+        self.test = resolve_name(self.fqn)
+        self.slave = 'slave' in args
+
+        # slave mode, results sent via ZMQ
+        if self.slave:
+            self.stream = self.args['stream'] = 'zmq'
+            set_global_stream('zmq', self.args)
+            # the test results are collected from ZMQ
+            self.test_result = get_global_stream()
+
+        # classical one-node mode
+        else:
+            self.stream = args.get('stream', 'stdout')
+            if self.stream == 'stdout':
+                args['stream_stdout_total'] = self.total
+            set_global_stream(self.stream, args)
+            self.test_result = unittest.TestResult()
+
+    def execute(self):
+        result = self._execute()
+
+        if len(result.errors) > 0:
+            error = result.errors[0]
+        elif len(result.failures) > 0:
+            error = result.failures[0]
+        else:
+            error = None
+
+        if error is not None:
+            tb = error[-1]
+            print tb
+            return 1
+        else:
+            return 0
+
+    def _run(self, num, test, cycles, user):
+        for cycle in cycles:
+            test.current_cycle = cycle
+            test.current_user = user
+            for x in range(cycle):
+                test(self.test_result)
+                gevent.sleep(0)
+
+    def _compute(self):
+        args = self.args
+        users = args.get('users', '1')
+        cycles = args.get('cycles', '1')
+        users = [int(user) for user in users.split(':')]
+        cycles = [int(cycle) for cycle in cycles.split(':')]
+        agents = args.get('agents', 1)
+        total = 0
+        for user in users:
+            total += sum([cycle * user for cycle in cycles])
+        if agents is not None:
+            total *= agents
+        return total, cycles, users, agents
+
+    def _execute(self):
+        from gevent import monkey
+        monkey.patch_all()
+
+        klass = self.test.im_class
+        ob = klass(self.test.__name__)
+        for user in self.users:
+            group = Group()
+            for i in range(user):
+                group.spawn(self._run, i, ob, self.cycles, user)
+            group.join()
+
+        if self.stream == 'zmq':
+            self.test_result.push({'END': True})
+
+        return self.test_result
 
 
-def _compute(args):
-    users = args.get('users', '1')
-    cycles = args.get('cycles', '1')
-    users = [int(user) for user in users.split(':')]
-    cycles = [int(cycle) for cycle in cycles.split(':')]
-    agents = args.get('agents', 1)
-    total = 0
-    for user in users:
-        total += sum([cycle * user for cycle in cycles])
-    if agents is not None:
-        total *= agents
-    return total, cycles, users, agents
-
-
-def run(args):
-    """ Runs a test.
+class DistributedRunner(Runner):
+    """ Runner that collects results via ZMQ.
     """
-    from gevent import monkey
-    monkey.patch_all()
-
-    total, cycles, users, agents = _compute(args)
-    stream = args.get('stream', 'stdout')
-
-    if stream == 'stdout':
-        args['stream_stdout_total'] = total
-
-    set_global_stream(stream, args)
-    test = resolve_name(args['fqn'])
-    klass = test.im_class
-    ob = klass(test.__name__)
-
-    if stream == 'zmq':
-        test_result = get_global_stream()
-    else:
-        test_result = unittest.TestResult()
-
-    for user in users:
-        group = Group()
-        for i in range(user):
-            group.spawn(_run, i, ob, test_result, cycles, user)
-        group.join()
-
-    if stream == 'zmq':
-        test_result.push({'END': True})
-
-    return test_result
-
-
-def distributed_run(args):
-    # in distributed mode the stream is forced to 'zmq'
-    args['stream'] = 'zmq'
-    set_global_stream('zmq', args)
-    total, cycles, users, agents = _compute(args)
-
-    # setting up the stream of results
-    #
-    import zmq.green as zmq
-    from zmq.green.eventloop import ioloop, zmqstream
-
-    context = zmq.Context()
-    pull = context.socket(zmq.PULL)
-    pull.bind(args['stream_zmq_endpoint'])
-
-    # calling the clients now
-    client = Client(args['broker'])
-    client.run(args)
-
-    # local echo
-    echo = StdStream({'stream_stdout_total': total})
-
-    # io loop
-    loop = ioloop.IOLoop()
-    test_result = unittest.TestResult()
-
-    ended = [0]
-
-    def recv_result(msg):
+    def _recv_result(self, msg):
         data = json.loads(msg[0])
         if 'END' in data:
-            ended[0] += 1
-            if ended[0] == agents:
-                loop.stop()
+            self.ended += 1
+            if self.ended == self.agents:
+                self.loop.stop()
         elif 'failure' in data:
-            test_result.failures.append((None, data['failure']))
-            test_result._mirrorOutput = True
+            self.test_result.failures.append((None, data['failure']))
+            self.test_result._mirrorOutput = True
         elif 'error' in data:
-            test_result.failures.append((None, data['error']))
-            test_result._mirrorOutput = True
+            self.test_result.failures.append((None, data['error']))
+            self.test_result._mirrorOutput = True
         else:
             started = data['started']
             data['started'] = datetime.strptime(started,
                                                 '%Y-%m-%dT%H:%M:%S.%f')
-            echo.push(data)
+            self.echo.push(data)
 
-    stream = zmqstream.ZMQStream(pull, loop)
-    stream.on_recv(recv_result)
-    loop.start()
+    def _execute(self):
+        import zmq.green as zmq
+        from zmq.green.eventloop import ioloop, zmqstream
 
-    return test_result
+        context = zmq.Context()
+        pull = context.socket(zmq.PULL)
+        pull.bind(self.args['stream_zmq_endpoint'])
+
+        # calling the clients now
+        client = Client(self.args['broker'])
+        client.run(self.args)
+
+        # local echo
+        self.echo = StdStream({'stream_stdout_total': self.total})
+
+        # io loop
+        self.loop = ioloop.IOLoop()
+        stream = zmqstream.ZMQStream(pull, self.loop)
+        stream.on_recv(self._recv_result)
+        self.loop.start()
+        return self.test_result
+
+
+def run(args):
+    if args.get('agents') is None or args.get('slave'):
+        return Runner(args).execute()
+    else:
+        return DistributedRunner(args).execute()
 
 
 def main():
@@ -177,28 +200,8 @@ def main():
         sys.exit(0)
 
     args = dict(args._get_kwargs())
+    return run(args)
 
-    if args.get('agents') is None:
-        # direct run
-        result = run(args)
-    else:
-        # distributed run
-        # contact the broker and send the load
-        result = distributed_run(args)
-
-    if len(result.errors) > 0:
-        error = result.errors[0]
-    elif len(result.failures) > 0:
-        error = result.failures[0]
-    else:
-        error = None
-
-    if error is not None:
-        tb = error[-1]
-        print tb
-        return 1
-    else:
-        return 0
 
 if __name__ == '__main__':
     sys.exit(main())

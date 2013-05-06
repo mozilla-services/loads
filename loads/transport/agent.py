@@ -90,6 +90,7 @@ class Agent(object):
 
     def _run(self, args):
         from multiprocessing import Process
+        args['slave'] = True
         p = Process(target=functools.partial(run, args))
         p.start()
         self._processes[p.pid] = p

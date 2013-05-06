@@ -123,6 +123,8 @@ class ZMQStream(object):
         self._push.connect(args['stream_zmq_endpoint'])
         self.encoder = DateTimeJSONEncoder()
         self._result = TestResult()
+        self.errors = []
+        self.failures = []
 
     # unittest.TestResult APIS
     def startTest(self, test):
@@ -131,11 +133,16 @@ class ZMQStream(object):
 
     def addFailure(self, test, failure):
         exc_info = self._result._exc_info_to_string(failure, test)
+        self.failures.append((test, exc_info))
         self.push({'failure': exc_info})
 
     def addError(self, test, error):
         exc_info = self._result._exc_info_to_string(error, test)
+        self.errors.append((test, exc_info))
         self.push({'error': exc_info})
+
+    def addSuccess(self, test):
+        pass
 
     def push(self, data):
         self._push.send(self.encoder.encode(data), zmq.NOBLOCK)
