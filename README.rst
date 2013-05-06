@@ -24,16 +24,17 @@ system.
 Write a unittest like this one and save it in an **example.py** file::
 
     import unittest
-    from loads import Session
+    from loads import TestCase
 
-    class TestWebSite(unittest.TestCase):
-
-        def setUp(self):
-            self.session = Session(self)
+    class TestWebSite(TestCase):
 
         def test_something(self):
             res = self.session.get('http://localhost:9200')
             self.assertTrue('Search' in res.content)
+
+
+The *TestCase* class provided by loads sets a *session* object you can use
+to interact with an HTTP server. It's a **Session** instance from Requests.
 
 
 Now run **loads-runner** against it::
