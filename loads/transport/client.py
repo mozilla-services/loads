@@ -3,6 +3,7 @@ from Queue import Queue
 from collections import defaultdict
 import errno
 import contextlib
+import json
 
 import zmq
 
@@ -10,12 +11,9 @@ from loads.transport.exc import TimeoutError, ExecutionError, NoWorkerError
 from loads.transport.message import Message
 from loads.util import logger
 from loads.transport.util import (send, recv, DEFAULT_FRONTEND,
-                                  extract_result, timed)
-
-
-DEFAULT_TIMEOUT = 5.
-DEFAULT_TIMEOUT_MOVF = 7.5
-DEFAULT_TIMEOUT_OVF = 1
+                                  extract_result, timed, DEFAULT_TIMEOUT,
+                                  DEFAULT_TIMEOUT_MOVF,
+                                  DEFAULT_TIMEOUT_OVF)
 
 
 class Client(object):
@@ -99,7 +97,10 @@ class Client(object):
             logger.exception('Failed to execute the job.')
             raise
 
-        return data
+        res = json.loads(data)
+        if 'error' in res:
+            raise ValueError(res['error'])
+        return res['result']
 
     def ping(self, timeout=1.):
         """Can be used to simply ping the broker to make sure
@@ -157,6 +158,30 @@ class Client(object):
             return extract_result(recv(self.master))
 
         raise TimeoutError(timeout / 1000)
+
+    def run(self, args, async=True):
+        # let's ask the broker how many agents it has
+        res = self.execute({'command': 'LIST'})
+
+        # do we have enough ?
+        agents = len(res)
+        agents_needed = args.get('agents', 1)
+        if len(res) < agents_needed:
+            msg = 'Not enough agents running on that broker. '
+            msg += 'Asked: %d, Got: %d' % (agents_needed, agents)
+
+            raise ExecutionError(msg)
+
+        return self.execute({'command': 'SIMULRUN',
+                             'async': async,
+                             'agents': agents_needed,
+                             'args': args})
+
+    def status(self, worker_id):
+        return self.execute({'command': 'STATUS', 'worker_id': worker_id})
+
+    def list(self):
+        return self.execute({'command': 'LIST'})
 
 
 class Pool(object):
@@ -223,3 +248,15 @@ class Pool(object):
     def ping(self, timeout=.1):
         with self._connector(self.timeout) as connector:
             return connector.ping(timeout)
+
+    def run(self, args, async=True):
+        with self._connector(self.timeout) as connector:
+            return connector.run(args, async)
+
+    def status(self, worker_id):
+        with self._connector(self.timeout) as connector:
+            return connector.status(worker_id)
+
+    def list(self):
+        with self._connector(self.timeout) as connector:
+            return connector.list()

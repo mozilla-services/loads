@@ -3,7 +3,11 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 import time
 import sys
+import unittest
+
 from loads.util import logger, set_logger
+from loads import TestCase
+
 
 set_logger(True, logfile='stdout')
 
@@ -40,9 +44,11 @@ def timeout_overflow(job):
         _p('Ending loads.tests.jobs.timeout_overflow')
 
 
-def success(job):
-    _p('Starting loads.tests.jobs.success')
-    try:
-        return job.data['arg']
-    finally:
-        _p('Ending loads.tests.jobs.success')
+class SomeTests(TestCase):
+
+    def test_success(self):
+        _p('Starting loads.tests.jobs.SomeTests.test_success')
+        try:
+            time.sleep(.1)
+        finally:
+            _p('Ending loads.tests.jobs.SomeTests.test_success')

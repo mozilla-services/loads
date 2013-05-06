@@ -12,7 +12,7 @@ import gevent
 from loads.util import resolve_name
 from loads.stream import set_global_stream, stream_list, StdStream
 from loads import __version__
-from loads.client import LoadsClient
+from loads.transport.client import Client
 from loads.transport.util import DEFAULT_FRONTEND
 
 
@@ -26,9 +26,11 @@ def _run(num, test, test_result, cycles, user):
 
 
 def _compute(args):
-    users = [int(user) for user in args['users'].split(':')]
-    cycles = [int(cycle) for cycle in args['cycles'].split(':')]
-    agents = args['agents']
+    users = args.get('users', '1')
+    cycles = args.get('cycles', '1')
+    users = [int(user) for user in users.split(':')]
+    cycles = [int(cycle) for cycle in cycles.split(':')]
+    agents = args.get('agents', 1)
     total = 0
     for user in users:
         total += sum([cycle * user for cycle in cycles])
@@ -44,7 +46,7 @@ def run(args):
     monkey.patch_all()
 
     total, cycles, users, agents = _compute(args)
-    stream = args['stream']
+    stream = args.get('stream', 'stdout')
 
     if stream == 'stdout':
         args['stream_stdout_total'] = total
@@ -57,13 +59,11 @@ def run(args):
 
     for user in users:
         group = Group()
-
         for i in range(user):
             group.spawn(_run, i, ob, test_result, cycles, user)
-
         group.join()
 
-    return  test_result
+    return test_result
 
 
 def distributed_run(args):
@@ -82,7 +82,7 @@ def distributed_run(args):
     pull.bind(args['stream_zmq_endpoint'])
 
     # calling the clients now
-    client = LoadsClient(args['broker'])
+    client = Client(args['broker'])
     workers = client.run(args)
 
     # local echo

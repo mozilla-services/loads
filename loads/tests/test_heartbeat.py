@@ -3,7 +3,7 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 import unittest
 import time
-from loads.heartbeat import Stethoscope, Heartbeat
+from loads.transport.heartbeat import Stethoscope, Heartbeat
 
 
 class TestHeartbeat(unittest.TestCase):

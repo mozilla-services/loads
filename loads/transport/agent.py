@@ -1,3 +1,9 @@
+""" The agent does several things:
+
+- maintains a connection to a master
+- gets load testing orders & performs them
+- sends back the results in RT
+"""
 import os
 import errno
 import time
@@ -8,17 +14,24 @@ import logging
 import threading
 import contextlib
 import random
+import json
+import functools
+
+import psutil
 
 import zmq.green as zmq
 
+from loads.runner import run
+from loads.util import set_logger, logger
 from loads.transport import util
 from loads.util import logger, set_logger, resolve_name
 from loads.transport.util import (DEFAULT_BACKEND,
-                                  DEFAULT_HEARTBEAT, DEFAULT_REG)
+                                  DEFAULT_HEARTBEAT, DEFAULT_REG,
+                                  DEFAULT_TIMEOUT_MOVF, DEFAULT_MAX_AGE,
+                                  DEFAULT_MAX_AGE_DELTA)
 from loads.transport.message import Message
 from loads.transport.util import decode_params, timed, dump_stacks
 from loads.transport.heartbeat import Stethoscope
-from loads.transport.client import DEFAULT_TIMEOUT_MOVF
 
 from zmq.green.eventloop import ioloop, zmqstream
 
@@ -26,93 +39,15 @@ from gevent.queue import JoinableQueue, Empty
 import gevent
 
 
-DEFAULT_MAX_AGE = -1
-DEFAULT_MAX_AGE_DELTA = 0
+
+__ = json.dumps
 
 
-
-# Crappy - let's nuke this XXX
-class ExecutionTimer(threading.Thread):
-
-    def __init__(self, timeout=DEFAULT_TIMEOUT_MOVF, interval=.1):
-        logger.debug('Initializing the execution timer. timeout is %.2f' \
-                % timeout)
-        threading.Thread.__init__(self)
-        self.armed = self.running = False
-        self.timeout = timeout
-        self.daemon = True
-
-        # creating a queue for I/O with the worker
-        self.queue = JoinableQueue()
-        self.interval = interval
-        self.timed_out = self.working = False
-        self.last_dump = None
-
-    @contextlib.contextmanager
-    def run_message(self):
-        self.message_starts()
-        try:
-            yield
-        finally:
-            self.message_ends()
-
-    def message_starts(self):
-        if self.working:
-            raise ValueError("The worker is already busy -- call message_ends")
-        self.working = True
-        self.timed_out = False
-        self.queue.put('STARTING')
-
-    def message_ends(self):
-        if not self.working:
-            raise ValueError("The worker is not busy -- call message_starts")
-        self.queue.put('DONE')
-        self.working = self.armed = False
-
-    def run(self):
-        self.running = True
-        no_data = True
-
-        while self.running:
-            # arming, so waiting for ever
-            while no_data:
-                try:
-                    self.queue.get(timeout=0.1)
-                    no_data = False
-                except Empty:
-                    gevent.sleep(0)
-
-            self.armed = True
-
-            # now waiting for the second call, which means
-            # the worker has done the work.
-            #
-            # This time we time out
-            try:
-                self.queue.get(timeout=self.timeout)
-            except Empty:
-                # too late, we want to log the stack
-                self.last_dump = dump_stacks()
-                self.timed_out = True
-            finally:
-                self.armed = False
-
-    def stop(self):
-        self.running = False
-        if not self.armed:
-            self.queue.put('STARTING')
-        self.queue.put('DONE')
-        if self.isAlive():
-            self.join()
-
-
-class Worker(object):
+class Agent(object):
     """Class that links a callable to a broker.
 
     Options:
 
-    - **target**: The Python callable that will be called when the broker
-      send a message.
     - **backend**: The ZMQ socket to connect to the broker.
     - **heartbeat**: The ZMQ socket to perform PINGs on the broker to make
       sure it's still alive.
@@ -131,7 +66,7 @@ class Worker(object):
       This is done to avoid having all workers quit at the same instant.
       Defaults to 0. The value must be an integer.
     """
-    def __init__(self, target, backend=DEFAULT_BACKEND,
+    def __init__(self, backend=DEFAULT_BACKEND,
                  heartbeat=DEFAULT_HEARTBEAT, register=DEFAULT_REG,
                  ping_delay=10., ping_retries=3,
                  params=None, timeout=DEFAULT_TIMEOUT_MOVF,
@@ -144,7 +79,6 @@ class Worker(object):
         self._backend = self.ctx.socket(zmq.REP)
         self._backend.identity = str(os.getpid())
         self._backend.connect(self.backend)
-        self.target = target
         self.running = False
         self.loop = ioloop.IOLoop()
         self._backstream = zmqstream.ZMQStream(self._backend, self.loop)
@@ -156,32 +90,56 @@ class Worker(object):
         self.params = params
         self.pid = os.getpid()
         self.timeout = timeout
-        self.timer = ExecutionTimer(timeout=timeout)
         self.max_age = max_age
         self.max_age_delta = max_age_delta
         self.delayed_exit = None
         self.lock = threading.RLock()
+        self.env = os.environ.copy()
+        self._processes = {}
+
+    def _run(self, args):
+        from multiprocessing import Process
+        p = Process(target=functools.partial(run, args))
+        p.start()
+        self._processes[p.pid] = p
+        return p.pid
+
+    def handle(self, message):
+        # we get the message from the broker here
+        data = message.data
+        command = data['command']
+
+        if command in ('RUN', 'SIMULRUN'):
+            args = data['args']
+            pid = self._run(args)
+            return __({'result': {'pid': pid, 'worker_id': str(os.getpid())}})
+
+        elif command == 'STATUS':
+            status = {}
+
+            for pid, proc in self._processes.items():
+                if proc.is_alive():
+                    status[pid] = 'running'
+                else:
+                    status[pid] = 'terminated'
+
+            return __({'result': status})
+
+        raise NotImplementedError()
 
     def _handle_recv_back(self, msg):
         # do the message and send the result
         if self.debug:
             logger.debug('Message received')
-            target = timed()(self.target)
+            target = timed()(self.handle)
         else:
-            target = self.target
+            target = self.handle
 
         duration = -1
 
         # results are sent with a PID:OK: or a PID:ERROR prefix
         try:
-            #with self.timer.run_message():
             res = target(Message.load_from_string(msg[0]))
-
-            # did we timout ?
-            #if self.timer.timed_out:
-            #    # let's dump the last
-            #    for line in self.timer.last_dump:
-            #        logger.error(line)
             if self.debug:
                 duration, res = res
 
@@ -196,11 +154,6 @@ class Worker(object):
             exc.insert(0, str(e))
             res = '%d:ERROR:%s' % (self.pid, '\n'.join(exc))
             logger.error(res)
-
-        #if self.timer.timed_out:
-        #   # let's not send back anything, we know the client
-        #    # is gone anyway
-        #    return
 
         if self.debug:
             logger.debug('Duration - %.6f' % duration)
@@ -244,7 +197,6 @@ class Worker(object):
             pass
         self.loop.stop()
         self.ping.stop()
-        self.timer.stop()
         time.sleep(.1)
         self.ctx.destroy(0)
         logger.debug('Worker is stopped')
@@ -257,7 +209,6 @@ class Worker(object):
 
         # running the pinger
         self.ping.start()
-        self.timer.start()
         self.running = True
 
         # telling the broker we are ready
@@ -296,6 +247,7 @@ class Worker(object):
         logger.debug('Worker loop over')
 
 
+
 def main(args=sys.argv):
 
     parser = argparse.ArgumentParser(description='Run some watchers.')
@@ -307,8 +259,6 @@ def main(args=sys.argv):
     parser.add_argument('--register', dest='register',
                         default=DEFAULT_REG,
                         help="ZMQ socket for the registration.")
-
-    parser.add_argument('target', help="Fully qualified name of the callable.")
 
     parser.add_argument('--debug', action='store_true', default=False,
                         help="Debug mode")
@@ -342,25 +292,25 @@ def main(args=sys.argv):
     args = parser.parse_args()
     set_logger(args.debug, logfile=args.logfile)
     sys.path.insert(0, os.getcwd())  # XXX
-    target = resolve_name(args.target)
+
     if args.params is None:
         params = {}
     else:
         params = decode_params(args.params)
 
-    logger.info('Worker registers at %s' % args.backend)
+    logger.info('Agent registers at %s' % args.backend)
     logger.info('The heartbeat socket is at %r' % args.heartbeat)
-    worker = Worker(target, backend=args.backend, heartbeat=args.heartbeat,
-                    register=args.register,
-                    params=params, timeout=args.timeout, max_age=args.max_age,
-                    max_age_delta=args.max_age_delta)
+    agent = Agent(backend=args.backend, heartbeat=args.heartbeat,
+                   register=args.register,
+                   params=params, timeout=args.timeout, max_age=args.max_age,
+                   max_age_delta=args.max_age_delta)
 
     try:
-        worker.start()
+        agent.start()
     except KeyboardInterrupt:
         return 1
     finally:
-        worker.stop()
+        agent.stop()
 
     return 0
 

@@ -5,9 +5,8 @@ import time
 
 from loads.transport.util import (DEFAULT_BACKEND, DEFAULT_HEARTBEAT,  # NOQA
                             DEFAULT_FRONTEND, encode_params, get_params,
-                            DEFAULT_REG)
-from loads.transport.client import DEFAULT_TIMEOUT_MOVF
-from loads.transport.worker import DEFAULT_MAX_AGE, DEFAULT_MAX_AGE_DELTA
+                            DEFAULT_REG, DEFAULT_TIMEOUT_MOVF,
+                            DEFAULT_MAX_AGE, DEFAULT_MAX_AGE_DELTA)
 
 
 __all__ = ('get_cluster', 'get_params')
@@ -15,7 +14,7 @@ __all__ = ('get_cluster', 'get_params')
 
 
 
-def get_cluster(target, numprocesses=5, frontend=DEFAULT_FRONTEND,
+def get_cluster(numprocesses=5, frontend=DEFAULT_FRONTEND,
                 backend=DEFAULT_BACKEND, heartbeat=DEFAULT_HEARTBEAT,
                 register=DEFAULT_REG,
                 working_dir='.', logfile='stdout',
@@ -26,8 +25,6 @@ def get_cluster(target, numprocesses=5, frontend=DEFAULT_FRONTEND,
 
     Options:
 
-    - **callable**: The Python callable that will be called when the broker
-      receive a job.
     - **numprocesses**: The number of workers. Defaults to 5.
     - **frontend**: the ZMQ socket to receive jobs.
     - **backend**: the ZMQ socket to communicate with workers.
@@ -59,11 +56,11 @@ def get_cluster(target, numprocesses=5, frontend=DEFAULT_FRONTEND,
     if worker_params:
         params = encode_params(worker_params)
 
-    broker_cmd = [python, '-m', 'loads.broker', '--logfile',  logfile,
-                  debug, '--frontend', frontend, '--backend', backend,
-                  '--heartbeat', heartbeat]
+    broker_cmd = [python, '-m', 'loads.transport.broker', '--logfile',
+                  logfile, debug, '--frontend', frontend, '--backend',
+                  backend, '--heartbeat', heartbeat]
 
-    worker_cmd = [python, '-m', 'loads.worker', target, '--logfile',
+    worker_cmd = [python, '-m', 'loads.transport.agent', '--logfile',
                   logfile, debug, '--backend', backend, '--heartbeat',
                   heartbeat, '--timeout', str(timeout), '--max-age',
                   str(max_age), '--max-age-delta', str(max_age_delta)]

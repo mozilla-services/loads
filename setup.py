@@ -37,7 +37,7 @@ setup(name='loads',
       entry_points="""
       [console_scripts]
       loads-broker = loads.transport.broker:main
-      loads-agent  = loads.agent:main
+      loads-agent  = loads.transport.agent:main
       loads-runner  = loads.runner:main
       loads-cluster = loads.transport:main
       """)

@@ -1,11 +1,8 @@
 import unittest
-from loads import Session
+from loads import TestCase
 
 
-class TestWebSite(unittest.TestCase):
-
-    def setUp(self):
-        self.session = Session(self)
+class TestWebSite(TestCase):
 
     def test_something(self):
         res = self.session.get('http://faitmain.org/index.html')

@@ -94,7 +94,10 @@ class StdStream(object):
 
         if self.current == self.total:
             seconds = (self.end - self.start).total_seconds()
-            rps = float(self.total) / seconds
+            if seconds == 0:
+                rps = self.total
+            else:
+                rps = float(self.total) / seconds
             sys.stdout.write("\nHits: %d" % self.total)
             sys.stdout.write("\nStarted: %s" % self.start)
             sys.stdout.write("\nDuration: %.2f seconds" % seconds)

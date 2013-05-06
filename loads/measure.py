@@ -14,14 +14,16 @@ def _measure(req):
             'started': req.started,
             'status': req.status_code,
             'url': req.url,
-            'method': req.method,
-            'cycle': req.current_cycle,
-            'user': req.current_user}
+            'method': req.method}
+
+    if hasattr(req, 'current_cycle'):
+        data['cycle'] = req.current_cycle
+        data['user'] = req.current_user
 
     stream = get_global_stream()
 
     if stream is None:
-        stream = set_global_stream('stdout')
+        stream = set_global_stream('stdout', {'stream_stdout_total': 1})
 
     stream.push(data)
 
@@ -59,7 +61,8 @@ class Session(_Session):
         res = _Session.send(self, request, **kwargs)
         res.started = start
         res.method = request.method
-        res.current_cycle = self.test.current_cycle
-        res.current_user = self.test.current_user
+        if hasattr(self.test, 'current_cycle'):
+            res.current_cycle = self.test.current_cycle
+            res.current_user = self.test.current_user
         _measure(res)
         return res

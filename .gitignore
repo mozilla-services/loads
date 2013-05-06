@@ -1,0 +1,7 @@
+*.un~
+*.pyc
+bin
+include
+lib
+*.egg-info
+.Python
