@@ -1,5 +1,7 @@
 import sys
 import logging
+import json
+import datetime
 
 
 logger = logging.getLogger('loads')
@@ -66,3 +68,13 @@ def resolve_name(name):
             raise ImportError(exc)
 
     return ret
+
+
+class DateTimeJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime.datetime):
+            return obj.isoformat()
+        elif isinstance(obj, datetime.timedelta):
+            return obj.seconds, obj.microseconds
+        else:
+            return super(DateTimeJSONEncoder, self).default(obj)
