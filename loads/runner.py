@@ -9,7 +9,8 @@ from gevent.pool import Group
 import gevent
 
 from loads.util import resolve_name
-from loads.stream import set_global_stream, stream_list, StdStream
+from loads.stream import (set_global_stream, stream_list, StdStream,
+                          get_global_stream)
 from loads import __version__
 from loads.transport.client import Client
 from loads.transport.util import DEFAULT_FRONTEND
@@ -54,13 +55,20 @@ def run(args):
     test = resolve_name(args['fqn'])
     klass = test.im_class
     ob = klass(test.__name__)
-    test_result = unittest.TestResult()
+
+    if stream == 'zmq':
+        test_result = get_global_stream()
+    else:
+        test_result = unittest.TestResult()
 
     for user in users:
         group = Group()
         for i in range(user):
             group.spawn(_run, i, ob, test_result, cycles, user)
         group.join()
+
+    if stream == 'zmq':
+        test_result.push({'END': True})
 
     return test_result
 
@@ -88,21 +96,34 @@ def distributed_run(args):
     echo = StdStream({'stream_stdout_total': total})
 
     # io loop
-    received = [0]
     loop = ioloop.IOLoop()
+    test_result = unittest.TestResult()
+
+    ended = [0]
 
     def recv_result(msg):
         data = json.loads(msg[0])
-        started = data['started']
-        data['started'] = datetime.strptime(started, '%Y-%m-%dT%H:%M:%S.%f')
-        echo.push(data)
-        received[0] += 1
-        if received[0] == total:
-            loop.stop()
+        if 'END' in data:
+            ended[0] += 1
+            if ended[0] == agents:
+                loop.stop()
+        elif 'failure' in data:
+            test_result.failures.append((None, data['failure']))
+            test_result._mirrorOutput = True
+        elif 'error' in data:
+            test_result.failures.append((None, data['error']))
+            test_result._mirrorOutput = True
+        else:
+            started = data['started']
+            data['started'] = datetime.strptime(started,
+                                                '%Y-%m-%dT%H:%M:%S.%f')
+            echo.push(data)
 
     stream = zmqstream.ZMQStream(pull, loop)
     stream.on_recv(recv_result)
     loop.start()
+
+    return test_result
 
 
 def main():
@@ -159,16 +180,25 @@ def main():
 
     if args.get('agents') is None:
         # direct run
-        #
         result = run(args)
-        print
-        print result
     else:
         # distributed run
         # contact the broker and send the load
         result = distributed_run(args)
-        print
-        print result
+
+    if len(result.errors) > 0:
+        error = result.errors[0]
+    elif len(result.failures) > 0:
+        error = result.failures[0]
+    else:
+        error = None
+
+    if error is not None:
+        tb = error[-1]
+        print tb
+        return 1
+    else:
+        return 0
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

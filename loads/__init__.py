@@ -1,5 +1,7 @@
 import unittest
+
 from loads.measure import Session
+from loads import _patch  # NOQA
 
 __version__ = '0.1'
 

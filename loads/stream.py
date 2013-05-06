@@ -1,6 +1,7 @@
 import sys
 import json
 import datetime
+from unittest import TestResult
 
 import zmq.green as zmq
 
@@ -121,6 +122,20 @@ class ZMQStream(object):
         self._push = self.context.socket(zmq.PUSH)
         self._push.connect(args['stream_zmq_endpoint'])
         self.encoder = DateTimeJSONEncoder()
+        self._result = TestResult()
+
+    # unittest.TestResult APIS
+    def startTest(self, test):
+        pass
+    stopTest = startTest
+
+    def addFailure(self, test, failure):
+        exc_info = self._result._exc_info_to_string(failure, test)
+        self.push({'failure': exc_info})
+
+    def addError(self, test, error):
+        exc_info = self._result._exc_info_to_string(error, test)
+        self.push({'error': exc_info})
 
     def push(self, data):
         self._push.send(self.encoder.encode(data), zmq.NOBLOCK)
