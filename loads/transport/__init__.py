@@ -12,8 +12,6 @@ from loads.transport.util import (DEFAULT_BACKEND, DEFAULT_HEARTBEAT,  # NOQA
 __all__ = ('get_cluster', 'get_params')
 
 
-
-
 def get_cluster(numprocesses=5, frontend=DEFAULT_FRONTEND,
                 backend=DEFAULT_BACKEND, heartbeat=DEFAULT_HEARTBEAT,
                 register=DEFAULT_REG,

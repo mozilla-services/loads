@@ -2,7 +2,6 @@
 import unittest
 import argparse
 import sys
-import time
 import json
 from datetime import datetime
 
@@ -83,7 +82,7 @@ def distributed_run(args):
 
     # calling the clients now
     client = Client(args['broker'])
-    workers = client.run(args)
+    client.run(args)
 
     # local echo
     echo = StdStream({'stream_stdout_total': total})
@@ -109,7 +108,7 @@ def distributed_run(args):
 def main():
     parser = argparse.ArgumentParser(description='Runs a load test.')
     parser.add_argument('fqn', help='Fully qualified name of the test',
-                         nargs='?')
+                        nargs='?')
 
     parser.add_argument('-u', '--users', help='Number of virtual users',
                         type=str, default='1')
@@ -131,7 +130,6 @@ def main():
     parser.add_argument('--stream', default='stdout',
                         help='The stream that receives the results',
                         choices=streams)
-
 
     # per-stream options
     for stream in stream_list():

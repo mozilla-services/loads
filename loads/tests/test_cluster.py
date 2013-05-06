@@ -7,10 +7,7 @@ import os
 import tempfile
 import time
 
-import psutil
-
 from loads.transport import get_cluster
-from loads.transport.exc import ExecutionError, TimeoutError
 from loads.transport import client
 
 
@@ -66,7 +63,7 @@ class TestCluster(unittest.TestCase):
         cli = client.Pool(size=3, frontend=front, debug=True,
                           timeout=client.DEFAULT_TIMEOUT,
                           timeout_max_overflow=client.DEFAULT_TIMEOUT_MOVF,
-                           timeout_overflows=client.DEFAULT_TIMEOUT_OVF)
+                          timeout_overflows=client.DEFAULT_TIMEOUT_OVF)
         workers = cli.list()
         while len(workers) != 1:
             time.sleep(1.)

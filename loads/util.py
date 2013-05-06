@@ -25,7 +25,6 @@ def set_logger(debug=False, name='loads', logfile='stdout'):
     logger_.addHandler(ch)
 
 
-
 # taken from distutils2
 def resolve_name(name):
     """Resolve a name like ``module.object`` to an object and return it.

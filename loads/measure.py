@@ -30,6 +30,7 @@ def _measure(req):
 
 _CACHE = {}
 
+
 def resolve(url):
     if url in _CACHE:
         return _CACHE[url]

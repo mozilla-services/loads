@@ -1,5 +1,3 @@
-import logging
-import logging.handlers
 import sys
 import gc
 import traceback
@@ -10,11 +8,8 @@ import os
 
 import zmq.green as zmq
 
-# XXX part of this module needs to move to loads.transport
-#
 from loads.transport.exc import TimeoutError
 from loads.util import logger
-
 
 DEFAULT_FRONTEND = "ipc:///tmp/loads-front.ipc"
 DEFAULT_BACKEND = "ipc:///tmp/loads-back.ipc"
@@ -25,10 +20,7 @@ DEFAULT_TIMEOUT_MOVF = 7.5
 DEFAULT_TIMEOUT_OVF = 1
 DEFAULT_MAX_AGE = -1
 DEFAULT_MAX_AGE_DELTA = 0
-
-
 _IPC_FILES = []
-
 PARAMS = {}
 
 
@@ -86,7 +78,6 @@ def recv(socket, max_retries=3, retry_sleep=0.1):
 
     logger.debug('Receiving failed')
     raise TimeoutError()
-
 
 
 if sys.platform == "win32":
@@ -148,7 +139,7 @@ def dump_stacks():
 
     # threads
     threads = dict([(th.ident, th.name)
-                        for th in threading.enumerate()])
+                    for th in threading.enumerate()])
 
     for thread, frame in sys._current_frames().items():
         dump.append('Thread 0x%x (%s)\n' % (thread, threads[thread]))

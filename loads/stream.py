@@ -2,6 +2,8 @@ import sys
 import json
 import datetime
 
+import zmq.green as zmq
+
 
 _STREAM = None
 _STREAMS = {}
@@ -108,9 +110,6 @@ class StdStream(object):
 
 register_stream(StdStream)
 
-import zmq.green as zmq
-from zmq.green.eventloop import ioloop, zmqstream
-
 
 class ZMQStream(object):
     name = 'zmq'
@@ -128,4 +127,3 @@ class ZMQStream(object):
 
 
 register_stream(ZMQStream)
-

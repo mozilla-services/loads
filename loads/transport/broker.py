@@ -115,7 +115,7 @@ class Broker(object):
                 duration = start - stop
                 if duration > self.worker_timeout:
                     logger.debug('The worker %r is slow (%.2f)' % (worker_id,
-                            duration))
+                                                                   duration))
                     return False
         return True
 
@@ -134,8 +134,8 @@ class Broker(object):
 
         if tentative == 3:
             logger.debug('No workers')
-            self._frontstream.send_multipart(msg[:-1] +
-                    ['%d:ERROR:No worker' % os.getpid()])
+            msg = msg[:-1] + ['%d:ERROR:No worker' % os.getpid()]
+            self._frontstream.send_multipart(msg)
             return
 
         # the msg tells us which worker to work with
@@ -187,15 +187,14 @@ class Broker(object):
             if not found_worker:
                 logger.debug('No worker, will try later')
                 later = time.time() + 0.5 + (tentative * 0.2)
-                self.loop.add_timeout(later, lambda: self._handle_recv_front(msg,
-                                        tentative + 1))
+                func = self._handle_recv_front
+                self.loop.add_timeout(later, lambda: func(msg, tentative + 1))
                 return
         else:
             worker_id = str(data['worker_id'])
 
         # send to a single worker
         self._send_to_worker(worker_id, msg)
-
 
     def _send_to_worker(self, worker_id, msg):
         msg = list(msg)
@@ -331,8 +330,8 @@ def main(args=sys.argv):
         if len(ghosts) == 0:
             logger.info('No ghosts where killed.')
         else:
-            logger.info('Ghost(s) killed: %s' \
-                    % ', '.join([str(g) for g in ghosts]))
+            logger.info('Ghost(s) killed: %s'
+                        % ', '.join([str(g) for g in ghosts]))
         return 0
 
     if args.check:

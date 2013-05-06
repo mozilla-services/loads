@@ -14,4 +14,3 @@ class Message(object):
     @classmethod
     def load_from_string(cls, data):
         return cls(**json.loads(data))
-

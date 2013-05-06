@@ -12,32 +12,23 @@ import traceback
 import argparse
 import logging
 import threading
-import contextlib
 import random
 import json
 import functools
 
-import psutil
-
 import zmq.green as zmq
+from zmq.green.eventloop import ioloop, zmqstream
 
 from loads.runner import run
-from loads.util import set_logger, logger
 from loads.transport import util
-from loads.util import logger, set_logger, resolve_name
+from loads.util import logger, set_logger
 from loads.transport.util import (DEFAULT_BACKEND,
                                   DEFAULT_HEARTBEAT, DEFAULT_REG,
                                   DEFAULT_TIMEOUT_MOVF, DEFAULT_MAX_AGE,
                                   DEFAULT_MAX_AGE_DELTA)
 from loads.transport.message import Message
-from loads.transport.util import decode_params, timed, dump_stacks
+from loads.transport.util import decode_params, timed
 from loads.transport.heartbeat import Stethoscope
-
-from zmq.green.eventloop import ioloop, zmqstream
-
-from gevent.queue import JoinableQueue, Empty
-import gevent
-
 
 
 __ = json.dumps
@@ -247,9 +238,7 @@ class Agent(object):
         logger.debug('Worker loop over')
 
 
-
 def main(args=sys.argv):
-
     parser = argparse.ArgumentParser(description='Run some watchers.')
 
     parser.add_argument('--backend', dest='backend',
@@ -301,9 +290,9 @@ def main(args=sys.argv):
     logger.info('Agent registers at %s' % args.backend)
     logger.info('The heartbeat socket is at %r' % args.heartbeat)
     agent = Agent(backend=args.backend, heartbeat=args.heartbeat,
-                   register=args.register,
-                   params=params, timeout=args.timeout, max_age=args.max_age,
-                   max_age_delta=args.max_age_delta)
+                  register=args.register,
+                  params=params, timeout=args.timeout, max_age=args.max_age,
+                  max_age_delta=args.max_age_delta)
 
     try:
         agent.start()

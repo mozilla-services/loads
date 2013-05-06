@@ -53,7 +53,8 @@ class Stethoscope(threading.Thread):
         self._stream = zmqstream.ZMQStream(self._endpoint, self.loop)
         self._stream.on_recv(self._handle_recv)
         self._timer = ioloop.PeriodicCallback(self._delayed,
-                self.delay * 1000, io_loop=self.loop)
+                                              self.delay * 1000,
+                                              io_loop=self.loop)
 
     def _delayed(self):
         self.tries += 1

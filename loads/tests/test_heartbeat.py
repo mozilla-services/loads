@@ -48,7 +48,7 @@ class TestHeartbeat(unittest.TestCase):
         time.sleep(.2)
 
         stetho = Stethoscope('ipc:///tmp/stetho.ipc', onbeat=_onbeat,
-                    onbeatlost=_onbeatlost, delay=0.1)
+                             onbeatlost=_onbeatlost, delay=0.1)
         stetho.start()
 
         time.sleep(2.)
