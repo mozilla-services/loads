@@ -29,8 +29,8 @@ class Runner(object):
     """
     def __init__(self, args):
         self.args = args
-        self.total, self.cycles, self.users, self.agents =\
-                self._compute_arguments(args)
+        (self.total, self.cycles,
+         self.users, self.agents) = self._compute_arguments(args)
         self.fqn = args['fqn']
         self.test = resolve_name(self.fqn)
         self.slave = 'slave' in args
@@ -195,9 +195,6 @@ def main():
 
     parser.add_argument('-b', '--broker', help='Broker endpoint',
                         default=DEFAULT_FRONTEND)
-
-    parser.add_argument('-s', '--slave', action='store_true',
-                        help='Run in slave mode', default=False)
 
     streams = [st.name for st in stream_list()]
     streams.sort()
