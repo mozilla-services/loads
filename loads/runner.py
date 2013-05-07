@@ -29,7 +29,8 @@ class Runner(object):
     """
     def __init__(self, args):
         self.args = args
-        self.total, self.cycles, self.users, self.agents = self._compute(args)
+        self.total, self.cycles, self.users, self.agents =\
+                self._compute_arguments(args)
         self.fqn = args['fqn']
         self.test = resolve_name(self.fqn)
         self.slave = 'slave' in args
@@ -52,7 +53,7 @@ class Runner(object):
     def execute(self):
         result = self._execute()
 
-        # XXX Don't remove the other errors here
+        # XXX Don't remove the other errors here?
         if len(result.errors) > 0:
             error = result.errors[0]
         elif len(result.failures) > 0:
@@ -73,9 +74,9 @@ class Runner(object):
                 test(self.test_result, cycle, user, current_cycle + 1)
                 gevent.sleep(0)
 
-    def _compute(self, args):
+    def _compute_arguments(self, args):
         """
-        Read the given args and builds up the total number of runs, the
+        Read the given :param args: and builds up the total number of runs, the
         number of cycles, users and agents to use.
 
         Returns a tuple of (total, cycles, users, agents).
@@ -93,6 +94,11 @@ class Runner(object):
         return total, cycles, users, agents
 
     def _execute(self):
+        """Spawn as many greenlets as asked, each of them will call the :method
+        _run:
+
+        Wait for all of them to be done and finish.
+        """
         from gevent import monkey
         monkey.patch_all()
 
@@ -186,8 +192,12 @@ def main():
 
     parser.add_argument('-a', '--agents', help='Number of agents to use',
                         type=int)
+
     parser.add_argument('-b', '--broker', help='Broker endpoint',
                         default=DEFAULT_FRONTEND)
+
+    parser.add_argument('-s', '--slave', action='store_true',
+                        help='Run in slave mode', default=False)
 
     streams = [st.name for st in stream_list()]
     streams.sort()
