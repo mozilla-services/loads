@@ -110,10 +110,7 @@ class Runner(object):
                 group.spawn(self._run, i, ob, self.cycles, user)
             group.join()
 
-        if self.stream == 'zmq':
-            self.test_result.push({'END': True,
-                                   'wid': self.args['worker_id']})
-
+        gevent.sleep(.1)
         return self.test_result
 
 
@@ -128,23 +125,23 @@ class DistributedRunner(Runner):
         # local echo
         self.echo = StdStream({'stream_stdout_total': self.total})
         context = zmq.Context()
-        pull = context.socket(zmq.PULL)
-        pull.bind(self.args['stream_zmq_endpoint'])
+        self.pull = context.socket(zmq.PULL)
+        self.pull.setsockopt(zmq.HWM, 8096 * 4)
+        self.pull.setsockopt(zmq.SWAP, 200*2**10)
+        self.pull.setsockopt(zmq.LINGER, 1000)
+        self.pull.bind(self.args['stream_zmq_endpoint'])
+
         # io loop
         self.loop = ioloop.IOLoop()
-        self.zstream = zmqstream.ZMQStream(pull, self.loop)
+        self.zstream = zmqstream.ZMQStream(self.pull, self.loop)
         self.zstream.on_recv(self._recv_result)
 
     def _recv_result(self, msg):
         data = json.loads(msg[0])
-        if 'END' in data:
-            self.ended += 1
-            if self.ended == self.agents:
-                self.loop.stop()
-        elif 'test_start' in data:
+        if 'test_start' in data:
             pass
         elif 'test_stop' in data:
-            pass
+            self.ended += 1
         elif 'test_success' in data:
             pass
         elif 'failure' in data:
@@ -160,6 +157,9 @@ class DistributedRunner(Runner):
             data['started'] = datetime.strptime(started,
                                                 '%Y-%m-%dT%H:%M:%S.%f')
             self.echo.push(data)
+
+        if self.ended == self.total:
+            self.loop.stop()
 
     def _execute(self):
         # calling the clients now
