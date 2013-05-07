@@ -22,6 +22,7 @@ clean:
 	rm -rf $(BUILD_DIRS)
 
 test: build
+	$(BIN)/pip install nose coverage circus
 	$(BIN)/nosetests -s -d -v --with-coverage --cover-package loads loads/tests
 
 bin/sphinx-build:
