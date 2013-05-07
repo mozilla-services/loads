@@ -26,7 +26,7 @@ The server collects the data and publishes them in a single
 stream of data.
 
 Since every interaction with the server is being done using
-with zmq & msgpack, the client can be built in any language.
+zmq & msgpack, the client can be built in any language.
 
 **Loads** provides a built-in Python client based on the
 *Requests* API.
@@ -34,5 +34,3 @@ with zmq & msgpack, the client can be built in any language.
 **Loads** can be used within **Marteau**, a web
 application that drives **Loads** and display realtime
 reports.
-
-

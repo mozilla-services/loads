@@ -19,7 +19,7 @@ def get_cluster(numprocesses=5, frontend=DEFAULT_FRONTEND,
                 debug=False, background=False, worker_params=None,
                 timeout=DEFAULT_TIMEOUT_MOVF, max_age=DEFAULT_MAX_AGE,
                 max_age_delta=DEFAULT_MAX_AGE_DELTA):
-    """Runs a Powerhose cluster.
+    """Runs a Loads cluster.
 
     Options:
 

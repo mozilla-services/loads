@@ -2,6 +2,7 @@ from loads.util import DateTimeJSONEncoder
 
 
 class FileStream(object):
+    """A streamer that writes everything you push to it to a file."""
     name = 'file'
     options = {'filename': ('Filename', str, None, True)}
 
@@ -9,7 +10,10 @@ class FileStream(object):
         self.current = 0
         self.filename = args['stream_file_filename']
         self.encoder = DateTimeJSONEncoder()
+        self.fd = open(self.filename, 'a+')
 
     def push(self, data):
-        with open(self.filename, 'a+') as f:
-            f.write(self.encoder.encode(data) + '\n')
+        self.fd.write(self.encoder.encode(data) + '\n')
+
+    def __del__(self):
+        self.fd.close()

@@ -10,7 +10,12 @@ from loads.transport.util import DEFAULT_HEARTBEAT
 
 
 class Stethoscope(threading.Thread):
-    """Class that implements a ZMQ heartbeat client.
+    """Implements a ZMQ heartbeat client.
+
+    Listens to a given ZMQ endpoint and expect to find there a beat.
+
+    If no beat is found, it calls the :param onbeatlost: callable.
+    When a beat is found, calls the :param onbeat: callable.
 
     Options:
 

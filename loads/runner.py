@@ -20,9 +20,16 @@ from loads.transport.util import DEFAULT_FRONTEND
 
 
 class Runner(object):
+    """The tests runner.
+
+    Runs the given test suite. It has two modes:
+
+    - "slave", where results are sent via a ZMQ endpoint
+    - "classical", where the results are sent to stdout.
+    """
     def __init__(self, args):
         self.args = args
-        self.total, self.cycles, self.users, self.agents = self._compute()
+        self.total, self.cycles, self.users, self.agents = self._compute(args)
         self.fqn = args['fqn']
         self.test = resolve_name(self.fqn)
         self.slave = 'slave' in args
@@ -45,6 +52,7 @@ class Runner(object):
     def execute(self):
         result = self._execute()
 
+        # XXX Don't remove the other errors here
         if len(result.errors) > 0:
             error = result.errors[0]
         elif len(result.failures) > 0:
@@ -65,8 +73,13 @@ class Runner(object):
                 test(self.test_result, cycle, user, current_cycle + 1)
                 gevent.sleep(0)
 
-    def _compute(self):
-        args = self.args
+    def _compute(self, args):
+        """
+        Read the given args and builds up the total number of runs, the
+        number of cycles, users and agents to use.
+
+        Returns a tuple of (total, cycles, users, agents).
+        """
         users = args.get('users', '1')
         cycles = args.get('cycles', '1')
         users = [int(user) for user in users.split(':')]
@@ -99,7 +112,8 @@ class Runner(object):
 
 
 class DistributedRunner(Runner):
-    """ Runner that collects results via ZMQ.
+    """ Runner that distributes the load on a cluster and collects results via
+    ZMQ.
     """
     def __init__(self, args):
         super(DistributedRunner, self).__init__(args)

@@ -4,6 +4,7 @@ from loads.util import DateTimeJSONEncoder
 
 
 class ZMQStream(object):
+    """Writes everything you send to it to a zmq endpoint"""
     name = 'zmq'
     options = {'endpoint': ('Socket to send the results to',
                             str, 'tcp://127.0.0.1:5558', True)}

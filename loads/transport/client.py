@@ -17,7 +17,7 @@ from loads.transport.util import (send, recv, DEFAULT_FRONTEND,
 
 
 class Client(object):
-    """Class to call a Loads cluster.
+    """Class to drive a Loads cluster.
 
     Options:
 
