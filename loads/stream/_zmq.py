@@ -17,24 +17,48 @@ class ZMQStream(object):
         self._result = TestResult()
         self.errors = []
         self.failures = []
+        self.args = args
+        self.wid = self.args['worker_id']
 
     # unittest.TestResult APIS
-    def startTest(self, test):
-        pass
-    stopTest = startTest
+    def startTest(self, test, cycle, user, current_cycle):
+        self.push({'test_start': str(test),
+                   'cycle': cycle,
+                   'user': user,
+                   'current_cycle': current_cycle,
+                   'worker_id': self.wid})
 
-    def addFailure(self, test, failure):
+    def stopTest(self, test, cycle, user, current_cycle):
+        self.push({'test_stop': str(test),
+                   'cycle': cycle,
+                   'user': user,
+                   'current_cycle': current_cycle,
+                   'worker_id': self.wid})
+
+    def addFailure(self, test, failure, cycle, user, current_cycle):
         exc_info = self._result._exc_info_to_string(failure, test)
         self.failures.append((test, exc_info))
-        self.push({'failure': exc_info})
+        self.push({'failure': exc_info,
+                   'cycle': cycle,
+                   'user': user,
+                   'current_cycle': current_cycle,
+                   'worker_id': self.wid})
 
-    def addError(self, test, error):
+    def addError(self, test, error, cycle, user, current_cycle):
         exc_info = self._result._exc_info_to_string(error, test)
         self.errors.append((test, exc_info))
-        self.push({'error': exc_info})
+        self.push({'error': exc_info,
+                   'cycle': cycle,
+                   'user': user,
+                   'current_cycle': current_cycle,
+                   'worker_id': self.wid})
 
-    def addSuccess(self, test):
-        pass
+    def addSuccess(self, test, cycle, user, current_cycle):
+        self.push({'test_success': str(test),
+                   'cycle': cycle,
+                   'user': user,
+                   'current_cycle': current_cycle,
+                   'worker_id': self.wid})
 
     # ZMQ push
     def push(self, data):

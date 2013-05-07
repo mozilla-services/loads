@@ -61,10 +61,8 @@ class Runner(object):
 
     def _run(self, num, test, cycles, user):
         for cycle in cycles:
-            test.current_cycle = cycle
-            test.current_user = user
-            for x in range(cycle):
-                test(self.test_result)
+            for current_cycle in range(cycle):
+                test(self.test_result, cycle, user, current_cycle + 1)
                 gevent.sleep(0)
 
     def _compute(self):
@@ -94,7 +92,8 @@ class Runner(object):
             group.join()
 
         if self.stream == 'zmq':
-            self.test_result.push({'END': True})
+            self.test_result.push({'END': True,
+                                   'wid': self.args['worker_id']})
 
         return self.test_result
 
@@ -122,6 +121,12 @@ class DistributedRunner(Runner):
             self.ended += 1
             if self.ended == self.agents:
                 self.loop.stop()
+        elif 'test_start' in data:
+            pass
+        elif 'test_stop' in data:
+            pass
+        elif 'test_success' in data:
+            pass
         elif 'failure' in data:
             self.test_result.failures.append((None, data['failure']))
             self.test_result._mirrorOutput = True
@@ -129,10 +134,8 @@ class DistributedRunner(Runner):
             self.test_result.failures.append((None, data['error']))
             self.test_result._mirrorOutput = True
         else:
+            # XXX this is not the right total (hits vs tests) XXX
             self.hits += 1
-            if self.hits == self.total:
-                self.zstream.flush()
-                self.loop.stop()
             started = data['started']
             data['started'] = datetime.strptime(started,
                                                 '%Y-%m-%dT%H:%M:%S.%f')

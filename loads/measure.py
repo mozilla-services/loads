@@ -19,9 +19,6 @@ class Session(_Session):
         res = _Session.send(self, request, **kwargs)
         res.started = start
         res.method = request.method
-        if hasattr(self.test, 'current_cycle'):
-            res.current_cycle = self.test.current_cycle
-            res.current_user = self.test.current_user
         self._measure(res)
         return res
 
@@ -31,10 +28,6 @@ class Session(_Session):
                 'status': req.status_code,
                 'url': req.url,
                 'method': req.method}
-
-        if hasattr(req, 'current_cycle'):
-            data['cycle'] = req.current_cycle
-            data['user'] = req.current_user
 
         stream = get_global_stream()
 
