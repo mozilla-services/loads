@@ -31,7 +31,7 @@ class Runner(object):
     def __init__(self, args):
         self.args = args
         (self.total, self.cycles,
-         self.users, self.agents) = self._compute_arguments(args)
+         self.users, self.agents) = _compute_arguments(args)
         self.fqn = args['fqn']
         self.test = resolve_name(self.fqn)
         self.slave = 'slave' in args
@@ -74,25 +74,6 @@ class Runner(object):
             for current_cycle in range(cycle):
                 test(self.test_result, cycle, user, current_cycle + 1)
                 gevent.sleep(0)
-
-    def _compute_arguments(self, args):
-        """
-        Read the given :param args: and builds up the total number of runs, the
-        number of cycles, users and agents to use.
-
-        Returns a tuple of (total, cycles, users, agents).
-        """
-        users = args.get('users', '1')
-        cycles = args.get('cycles', '1')
-        users = [int(user) for user in users.split(':')]
-        cycles = [int(cycle) for cycle in cycles.split(':')]
-        agents = args.get('agents', 1)
-        total = 0
-        for user in users:
-            total += sum([cycle * user for cycle in cycles])
-        if agents is not None:
-            total *= agents
-        return total, cycles, users, agents
 
     def _execute(self):
         """Spawn as many greenlets as asked, each of them will call the :method
@@ -173,6 +154,26 @@ class DistributedRunner(Runner):
         client.run(self.args)
         self.loop.start()
         return self.test_result
+
+
+def _compute_arguments(args):
+    """
+    Read the given :param args: and builds up the total number of runs, the
+    number of cycles, users and agents to use.
+
+    Returns a tuple of (total, cycles, users, agents).
+    """
+    users = args.get('users', '1')
+    cycles = args.get('cycles', '1')
+    users = [int(user) for user in users.split(':')]
+    cycles = [int(cycle) for cycle in cycles.split(':')]
+    agents = args.get('agents', 1)
+    total = 0
+    for user in users:
+        total += sum([cycle * user for cycle in cycles])
+    if agents is not None:
+        total *= agents
+    return total, cycles, users, agents
 
 
 def run(args):
