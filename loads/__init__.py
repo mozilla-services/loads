@@ -6,6 +6,7 @@ from unittest.case import _ExpectedFailure, _UnexpectedSuccess
 
 from loads import _patch  # NOQA
 
+
 __version__ = '0.1'
 
 
@@ -14,6 +15,11 @@ class TestCase(unittest.TestCase):
         from loads.measure import Session
         unittest.TestCase.__init__(self, test_name)
         self.session = Session(self)
+        from ws4py.client.threadedclient import WebSocketClient
+        self.ws_klass = WebSocketClient
+
+    def create_ws(self, url, protocols=None, extensions=None):
+        return self.ws_klass(url, protocols, extensions)
 
     def run(self, result, cycle=-1, user=-1, current_cycle=-1):
         orig_result = result

@@ -27,11 +27,10 @@ class Host(object):
         stderr = stderr.read()
         if stderr != '':
             raise ValueError(stderr)
-        return  _prefix(self.host, stdout.read())
+        return _prefix(self.host, stdout.read())
 
     def close(self):
         self.client.close()
-
 
 
 def deploy(master, slaves, ssh):
@@ -71,4 +70,3 @@ if __name__ == '__main__':
     master = {'host': 'localhost'}
     slaves = [{}]
     deploy(master, slaves, ssh)
-

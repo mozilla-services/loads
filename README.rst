@@ -62,6 +62,28 @@ Now let's run a cycle of 10, 20 then 30 users, each one running 20 hits::
 That's 1200 hits total.
 
 
+Using Web sockets
+=================
+
+**Loads** provides web sockets API through the **ws4py** library. You can
+initialize a new socket connection using the **create_ws** method::
+
+
+    import unittest
+    from loads import TestCase
+
+    class TestWebSite(TestCase):
+
+        def test_something(self):
+            res = self.session.get('http://localhost:9200')
+            self.assertTrue('Search' in res.content)
+            ws = self.create_ws()
+
+
+
+
+
+
 Using the cluster
 =================
 
