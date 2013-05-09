@@ -114,7 +114,7 @@ class DistributedRunner(Runner):
         context = zmq.Context()
         self.pull = context.socket(zmq.PULL)
         self.pull.setsockopt(zmq.HWM, 8096 * 4)
-        self.pull.setsockopt(zmq.SWAP, 200*2**10)
+        self.pull.setsockopt(zmq.SWAP, 200 * 2 ** 10)
         self.pull.setsockopt(zmq.LINGER, 1000)
         self.pull.bind(self.args['stream_zmq_endpoint'])
 
@@ -174,6 +174,26 @@ def _compute_arguments(args):
     if agents is not None:
         total *= agents
     return total, cycles, users, agents
+
+
+def _proxy_call(method_name, nb_args=0):
+    """Returns a function that replaces the original one, but consumes any
+    extra arguments passed to it.
+    """
+    def wrapped(self, test, *args, **kwargs):
+        fun = getattr(super(TestResultAdapter, self), method_name)
+        return fun(test, *args[:nb_args])
+    return wrapped
+
+
+class TestResultAdapter(unittest.TestResult):
+    """An adapter for the default unittest.TestResult class"""
+
+    startTest = _proxy_call('startTest')
+    stopTest = _proxy_call('stopTest')
+    addSuccess = _proxy_call('addSuccess')
+    addFailure = _proxy_call('addFailure', 1)
+    addError = _proxy_call('addError', 1)
 
 
 def run(args):
