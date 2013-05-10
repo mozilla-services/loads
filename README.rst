@@ -66,7 +66,10 @@ Using Web sockets
 =================
 
 **Loads** provides web sockets API through the **ws4py** library. You can
-initialize a new socket connection using the **create_ws** method::
+initialize a new socket connection using the **create_ws** method.
+
+Run the echo_server.py file located in the examples directory, then
+write a test that uses a web socket::
 
 
     import unittest
@@ -75,13 +78,20 @@ initialize a new socket connection using the **create_ws** method::
     class TestWebSite(TestCase):
 
         def test_something(self):
-            res = self.session.get('http://localhost:9200')
-            self.assertTrue('Search' in res.content)
-            ws = self.create_ws()
+            def callback(m):
+                results.append(m.data)
 
+            ws = self.create_ws('ws://localhost:9000/ws',
+                                callback=callback)
+            ws.send('something')
+            ws.send('happened')
 
+            while len(results) < 2:
+                time.sleep(.1)
 
+            self.assertEqual(results, ['something', 'happened'])
 
+XXX
 
 
 Using the cluster

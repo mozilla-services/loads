@@ -15,14 +15,12 @@ class TestWebSite(TestCase):
 
         ws = self.create_ws('ws://localhost:9000/ws',
                             callback=callback)
-        ws.connect()
-        try:
-            ws.send('something')
-            ws.send('happened')
-        finally:
-            while len(results) < 2:
-                time.sleep(.1)
-            ws.close()
+        ws.send('something')
+        ws.send('happened')
+
+        while len(results) < 2:
+            time.sleep(.1)
+        ws.close()
 
         self.assertEqual(results, ['something', 'happened'])
 
