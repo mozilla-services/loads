@@ -19,6 +19,23 @@ from loads.transport.client import Client
 from loads.transport.util import DEFAULT_FRONTEND
 
 
+class TestResult(unittest.TestResult):
+    def startTest(self, test, *args, **kw):
+        unittest.TestResult.startTest(self, test)
+
+    def stopTest(self, test, *args, **kw):
+        unittest.TestResult.stopTest(self, test)
+
+    def addError(self, test, exc_info, *args, **kw):
+        unittest.TestResult.addError(self, test, exc_info)
+
+    def addFailure(self, test, exc_info, *args, **kw):
+        unittest.TestResult.addFailure(self, test, exc_info)
+
+    def addSuccess(self, test, *args, **kw):
+        unittest.TestResult.addSuccess(self, test)
+
+
 class Runner(object):
     """The tests runner.
 
@@ -48,7 +65,7 @@ class Runner(object):
             if self.stream == 'stdout':
                 args['stream_stdout_total'] = self.total
             set_global_stream(self.stream, args)
-            self.test_result = unittest.TestResult()
+            self.test_result = TestResult()
 
     def execute(self):
         result = self._execute()

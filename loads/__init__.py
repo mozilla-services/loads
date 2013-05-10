@@ -16,10 +16,21 @@ class TestCase(unittest.TestCase):
         unittest.TestCase.__init__(self, test_name)
         self.session = Session(self)
         from ws4py.client.threadedclient import WebSocketClient
-        self.ws_klass = WebSocketClient
 
-    def create_ws(self, url, protocols=None, extensions=None):
-        return self.ws_klass(url, protocols, extensions)
+        class WebSocketHook(WebSocketClient):
+            def __init__(self, url, protocols=None, extensions=None,
+                         heartbeat_freq=None, callback=None):
+                WebSocketClient.__init__(self, url, protocols, extensions,
+                                         heartbeat_freq)
+                self.callback = callback
+
+            def received_message(self, m):
+                self.callback(m)
+
+        self.ws_klass = WebSocketHook
+
+    def create_ws(self, url, callback, protocols=None, extensions=None):
+        return self.ws_klass(url, protocols, extensions, callback=callback)
 
     def run(self, result, cycle=-1, user=-1, current_cycle=-1):
         orig_result = result
