@@ -8,5 +8,8 @@ class NullStream(object):
     def __init__(self, args):
         pass
 
+    def flush(self):
+        pass
+
     def push(self, data):
         pass

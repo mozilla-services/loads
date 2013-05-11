@@ -64,6 +64,9 @@ class ZMQStream(object):
                    'current_cycle': current_cycle,
                    'worker_id': self.wid})
 
+    def flush(self):
+        pass
+
     # ZMQ push
     def push(self, data):
         self._push.send(self.encoder.encode(data), zmq.NOBLOCK)

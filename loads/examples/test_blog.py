@@ -1,4 +1,5 @@
 import time
+import os
 
 from loads import TestCase
 
@@ -13,16 +14,18 @@ class TestWebSite(TestCase):
         def callback(m):
             results.append(m.data)
 
-        ws = self.create_ws('ws://localhost:9000/ws',
-                            callback=callback)
-        ws.send('something')
-        ws.send('happened')
+        ws = self.create_ws('ws://localhost:9000/ws', callback=callback)
 
-        while len(results) < 2:
+        one = 'something' + os.urandom(10).encode('hex')
+        two = 'happened' + os.urandom(10).encode('hex')
+        ws.send(one)
+        ws.send(two)
+
+        start = time.time()
+        while one not in results and two not in results:
             time.sleep(.1)
-        ws.close()
-
-        self.assertEqual(results, ['something', 'happened'])
+            if time.time() - start > 1:
+                raise AssertionError('Too slow')
 
     def _test_will_fail(self):
         res = self.session.get('http://localhost:9200')

@@ -15,5 +15,9 @@ class FileStream(object):
     def push(self, data):
         self.fd.write(self.encoder.encode(data) + '\n')
 
+    # XXX replace by an atexit
     def __del__(self):
         self.fd.close()
+
+    def flush(self):
+        pass

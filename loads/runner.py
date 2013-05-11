@@ -4,8 +4,8 @@ import argparse
 import sys
 import json
 from datetime import datetime
+import logging
 
-from gevent.pool import Group
 import gevent
 
 import zmq.green as zmq
@@ -122,12 +122,12 @@ class Runner(object):
         klass = self.test.im_class
         ob = klass(self.test.__name__)
         for user in self.users:
-            group = Group()
-            for i in range(user):
-                group.spawn(self._run, i, ob, self.cycles, user)
-            group.join()
+            group = [gevent.spawn(self._run, i, ob, self.cycles, user)
+                     for i in range(user)]
 
-        gevent.sleep(.1)
+            gevent.joinall(group)
+
+        gevent.sleep(0)
         return self.test_result
 
 
@@ -236,6 +236,11 @@ def main():
 
     args = parser.parse_args()
 
+    wslogger = logging.getLogger('ws4py')
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    wslogger.addHandler(ch)
+
     if args.version:
         print(__version__)
         sys.exit(0)
@@ -245,7 +250,9 @@ def main():
         sys.exit(0)
 
     args = dict(args._get_kwargs())
-    return run(args)
+    res = run(args)
+    get_global_stream().flush()
+    return res
 
 
 if __name__ == '__main__':
