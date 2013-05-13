@@ -5,7 +5,8 @@ from tempfile import mkstemp
 import zmq
 import gevent
 
-from loads.util import resolve_name, set_logger, logger
+from loads import util
+from loads.util import resolve_name, set_logger, logger, dns_resolve
 from loads.transport.util import (register_ipc_file, _cleanup_ipc_files, send,
                                   TimeoutError, recv, decode_params,
                                   dump_stacks)
@@ -90,3 +91,18 @@ class TestUtil(unittest.TestCase):
         dump = dump_stacks()
         new_num = len([l for l in dump if l.strip() == 'Greenlet'])
         self.assertEqual(new_num - num, 3)
+
+    def test_dns_resolve(self):
+        old = util.gethostbyname
+
+        def _gethost(*args):
+            return '0.0.0.0'
+
+        util.gethostbyname = _gethost
+
+        try:
+            res = dns_resolve('http://example.com')
+        finally:
+            util.gethostbyname = old
+
+        self.assertEqual(res, ('http://0.0.0.0:80', 'example.com', '0.0.0.0'))
