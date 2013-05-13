@@ -24,7 +24,7 @@ system.
 Write a unittest like this one and save it in an **example.py** file::
 
     import unittest
-    from loads import TestCase
+    from loads.case import TestCase
 
     class TestWebSite(TestCase):
 
@@ -73,7 +73,7 @@ write a test that uses a web socket::
 
 
     import unittest
-    from loads import TestCase
+    from loads.case import TestCase
 
     class TestWebSite(TestCase):
 

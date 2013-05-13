@@ -5,14 +5,15 @@ from loads.util import dns_resolve
 
 
 class Session(_Session):
-    """Extend the Session object from requests adding some measures."""
+    """Extends Requests' Session object to add some measures.
+    """
 
     def __init__(self, test):
         _Session.__init__(self)
         self.test = test
 
     def send(self, request, **kwargs):
-        """Measure the time a request need to be accomplished"""
+        """Measures the time a request takes."""
         request.url, original, resolved = dns_resolve(request.url)
         request.headers['Host'] = original
 

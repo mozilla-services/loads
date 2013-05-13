@@ -1,5 +1,4 @@
 # runs a functional test or a load test
-import unittest
 import argparse
 import sys
 import json
@@ -17,23 +16,7 @@ from loads.stream import (set_global_stream, stream_list, StdStream,
 from loads import __version__
 from loads.transport.client import Client
 from loads.transport.util import DEFAULT_FRONTEND
-
-
-class TestResult(unittest.TestResult):
-    def startTest(self, test, *args, **kw):
-        unittest.TestResult.startTest(self, test)
-
-    def stopTest(self, test, *args, **kw):
-        unittest.TestResult.stopTest(self, test)
-
-    def addError(self, test, exc_info, *args, **kw):
-        unittest.TestResult.addError(self, test, exc_info)
-
-    def addFailure(self, test, exc_info, *args, **kw):
-        unittest.TestResult.addFailure(self, test, exc_info)
-
-    def addSuccess(self, test, *args, **kw):
-        unittest.TestResult.addSuccess(self, test)
+from loads.case import TestResult
 
 
 class Runner(object):

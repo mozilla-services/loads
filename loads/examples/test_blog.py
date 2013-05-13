@@ -1,7 +1,8 @@
 import time
 import os
 import gevent
-from loads import TestCase
+
+from loads.case import TestCase
 
 
 class TestWebSite(TestCase):
