@@ -23,7 +23,7 @@ class _Stream(object):
     name = 'test'
 
     def __init__(self, args):
-        self.stream =[]
+        self.stream = []
 
     def push(self, data):
         self.stream.append(data)
@@ -57,6 +57,6 @@ class TestMeasure(unittest.TestCase):
         set_global_stream('test', None)
         test = _FakeTest()
         session = Session(test)
-        r = session.get('http://impossible.place')
+        session.get('http://impossible.place')
         stream = get_global_stream()
         self.assertEqual(len(stream.stream), 1)

@@ -36,17 +36,14 @@ def register_ipc_file(file):
     _IPC_FILES.append(file)
 
 
-def send(socket, msg, more=False, max_retries=3, retry_sleep=0.1):
+def send(socket, msg, max_retries=3, retry_sleep=0.1):
     retries = 0
     while retries < max_retries:
         try:
             logger.debug('send')
-
-            if more:
-                socket.send(msg, zmq.SNDMORE | zmq.NOBLOCK)
-            else:
-                socket.send(msg, zmq.NOBLOCK)
+            socket.send(msg, zmq.NOBLOCK)
             return
+
         except zmq.ZMQError, e:
             logger.debug('Failed on send()')
             logger.debug(str(e))
