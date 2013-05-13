@@ -6,6 +6,7 @@ class StdStream(object):
     options = {'total': ('Total Number of items', int, None, False)}
 
     def __init__(self, args):
+        self.args = args
         self.current = 0
         self.total = args['stream_stdout_total']
         self.start = None

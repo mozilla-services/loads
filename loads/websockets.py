@@ -48,9 +48,12 @@ def cleanup(greenlet):
 
 
 def create_ws(url, callback, protocols=None, extensions=None):
-    greenlet = gevent.getcurrent()
-    greenlet.link(cleanup)
-    current_id = id(greenlet)
+    current = gevent.getcurrent()
+    # XXX
+    # sometimes I get greenlets objects, sometime Greenlets... ????
+    if hasattr(current, 'link'):
+        current.link(cleanup)
+    current_id = id(current)
     socket = WebSocketHook(url, protocols, extensions, callback=callback)
     socket.daemon = True
     socket.connect()

@@ -72,9 +72,7 @@ class TestCluster(unittest.TestCase):
 
     def test_success(self):
         client = self._get_cluster()
-        job = {'fqn': 'loads.tests.jobs.SomeTests.test_success',
-               'arg': 'xx'}
-
+        job = {'fqn': 'loads.tests.jobs2.SomeTests.test_one'}
         res = client.run(job)
         worker_id = res[0]
 

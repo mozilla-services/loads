@@ -118,3 +118,50 @@ class TestResult(unittest.TestResult):
 
     def addSuccess(self, test, *args, **kw):
         unittest.TestResult.addSuccess(self, test)
+
+
+# patching nose if present
+try:
+    from nose import core
+    core._oldTextTestResult = core.TextTestResult
+
+    class _TestResult(core._oldTextTestResult):
+        def startTest(self, test, *args, **kw):
+            super(_TestResult, self).startTest(test)
+
+        def stopTest(self, test, *args, **kw):
+            super(_TestResult, self).stopTest(test)
+
+        def addError(self, test, exc_info, *args, **kw):
+            super(_TestResult, self).addError(test, exc_info)
+
+        def addFailure(self, test, exc_info, *args, **kw):
+            super(_TestResult, self).addFailure(test, exc_info)
+
+        def addSuccess(self, test, *args, **kw):
+            super(_TestResult, self).addSuccess(test)
+
+    core.TextTestResult = _TestResult
+
+    from nose import proxy
+    proxy._ResultProxy = proxy.ResultProxy
+
+    class _ResultProxy(proxy._ResultProxy):
+        def startTest(self, test, *args, **kw):
+            super(_ResultProxy, self).startTest(test)
+
+        def stopTest(self, test, *args, **kw):
+            super(_ResultProxy, self).stopTest(test)
+
+        def addError(self, test, exc_info, *args, **kw):
+            super(_ResultProxy, self).addError(test, exc_info)
+
+        def addFailure(self, test, exc_info, *args, **kw):
+            super(_ResultProxy, self).addFailure(test, exc_info)
+
+        def addSuccess(self, test, *args, **kw):
+            super(_ResultProxy, self).addSuccess(test)
+
+    proxy.ResultProxy = _ResultProxy
+except ImportError:
+    pass

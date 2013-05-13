@@ -4,6 +4,7 @@ import sys
 import json
 from datetime import datetime
 import logging
+import traceback
 
 import gevent
 
@@ -102,8 +103,13 @@ class Runner(object):
         from gevent import monkey
         monkey.patch_all()
 
+        if not hasattr(self.test, 'im_class'):
+            raise ValueError(self.test)
+
+        # creating the test case instance
         klass = self.test.im_class
         ob = klass(self.test.__name__)
+
         for user in self.users:
             group = [gevent.spawn(self._run, i, ob, self.cycles, user)
                      for i in range(user)]
@@ -171,7 +177,11 @@ class DistributedRunner(Runner):
 
 def run(args):
     if args.get('agents') is None or args.get('slave'):
-        return Runner(args).execute()
+        try:
+            return Runner(args).execute()
+        except Exception:
+            print traceback.format_exc()
+            raise
     else:
         return DistributedRunner(args).execute()
 

@@ -5,7 +5,6 @@ import time
 import sys
 
 from loads.util import logger, set_logger
-from loads.case import TestCase
 
 
 set_logger(True, logfile='stdout')
@@ -41,13 +40,3 @@ def timeout_overflow(job):
         return str(job.data['age'])
     finally:
         _p('Ending loads.tests.jobs.timeout_overflow')
-
-
-class SomeTests(TestCase):
-
-    def test_success(self):
-        _p('Starting loads.tests.jobs.SomeTests.test_success')
-        try:
-            time.sleep(.1)
-        finally:
-            _p('Ending loads.tests.jobs.SomeTests.test_success')

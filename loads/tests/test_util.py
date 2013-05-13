@@ -31,17 +31,7 @@ class _BadSocket(object):
 class TestUtil(unittest.TestCase):
 
     def test_resolve(self):
-
         ob = resolve_name('loads.tests.test_util.TestUtil')
-        self.assertTrue(ob is TestUtil)
-
-        ob = resolve_name('loads.tests.test_util:TestUtil')
-        self.assertTrue(ob is TestUtil)
-
-        ob = resolve_name(u'loads.tests.test_util.TestUtil')
-        self.assertTrue(ob is TestUtil)
-
-        ob = resolve_name(u'loads.tests.test_util:TestUtil')
         self.assertTrue(ob is TestUtil)
 
     def test_set_logger(self):
@@ -102,7 +92,9 @@ class TestUtil(unittest.TestCase):
 
         try:
             res = dns_resolve('http://example.com')
+            res2 = dns_resolve('http://example.com')   # cache
         finally:
             util.gethostbyname = old
 
         self.assertEqual(res, ('http://0.0.0.0:80', 'example.com', '0.0.0.0'))
+        self.assertEqual(res, res2)

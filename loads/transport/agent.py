@@ -15,6 +15,7 @@ import threading
 import random
 import json
 import functools
+from multiprocessing import Process
 
 import zmq.green as zmq
 from zmq.green.eventloop import ioloop, zmqstream
@@ -32,6 +33,10 @@ from loads.transport.heartbeat import Stethoscope
 
 
 __ = json.dumps
+
+
+class ExecutionError(Exception):
+    pass
 
 
 class Agent(object):
@@ -92,11 +97,15 @@ class Agent(object):
                                               io_loop=self.loop)
 
     def _run(self, args):
-        from multiprocessing import Process
         args['slave'] = True
         args['worker_id'] = os.getpid()
-        p = Process(target=functools.partial(run, args))
-        p.start()
+        try:
+            p = Process(target=functools.partial(run, args))
+            p.start()
+        except Exception, e:
+            msg = 'Failed to start process ' + str(e)
+            raise ExecutionError(msg)
+
         self._processes[p.pid] = p
         return p.pid
 

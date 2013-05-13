@@ -45,7 +45,8 @@ class TestMeasure(unittest.TestCase):
         measure.dns_resolve = self.old_dns
         HTTPAdapter.send = self.old_send
         if self.old_stream is not None:
-            set_global_stream(self.old_stream.name, self.old_stream)
+            set_global_stream(self.old_stream.name,
+                              self.old_stream.args)
 
     def _send(self, *args, **kw):
         return _FakeResponse()
