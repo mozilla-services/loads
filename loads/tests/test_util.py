@@ -8,3 +8,12 @@ class TestUtil(unittest.TestCase):
 
         ob = resolve_name('loads.tests.test_util.TestUtil')
         self.assertTrue(ob is TestUtil)
+
+        ob = resolve_name('loads.tests.test_util:TestUtil')
+        self.assertTrue(ob is TestUtil)
+
+        ob = resolve_name(u'loads.tests.test_util.TestUtil')
+        self.assertTrue(ob is TestUtil)
+
+        ob = resolve_name(u'loads.tests.test_util:TestUtil')
+        self.assertTrue(ob is TestUtil)
