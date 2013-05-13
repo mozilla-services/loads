@@ -1,6 +1,6 @@
 import time
 import os
-
+import gevent
 from loads import TestCase
 
 
@@ -18,12 +18,13 @@ class TestWebSite(TestCase):
 
         one = 'something' + os.urandom(10).encode('hex')
         two = 'happened' + os.urandom(10).encode('hex')
+
         ws.send(one)
         ws.send(two)
 
         start = time.time()
         while one not in results and two not in results:
-            time.sleep(.1)
+            gevent.sleep(0)
             if time.time() - start > 1:
                 raise AssertionError('Too slow')
 
