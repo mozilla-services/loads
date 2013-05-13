@@ -5,7 +5,7 @@ import time
 import sys
 
 from loads.util import logger, set_logger
-from loads import TestCase
+from loads.case import TestCase
 
 
 set_logger(True, logfile='stdout')
