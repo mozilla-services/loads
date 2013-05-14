@@ -80,7 +80,7 @@ class TestUtil(unittest.TestCase):
 
         dump = dump_stacks()
         new_num = len([l for l in dump if l.strip() == 'Greenlet'])
-        self.assertEqual(new_num - num, 2)
+        self.assertTrue(new_num - num in (2, 3))
 
     def test_dns_resolve(self):
         old = util.gethostbyname

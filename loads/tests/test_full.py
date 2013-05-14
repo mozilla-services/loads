@@ -3,8 +3,10 @@ import os
 import gevent
 import subprocess
 import sys
+import StringIO
 
 from loads.case import TestCase
+from loads.tests import hush
 
 
 _SERVER = [sys.executable, '%s/echo_server.py' % os.path.dirname(__file__)]
@@ -20,6 +22,7 @@ class TestWebSite(TestCase):
         self._server.terminate()
         self._server.wait()
 
+    @hush
     def test_something(self):
         from gevent.monkey import patch_socket
         patch_socket()

@@ -6,9 +6,11 @@ import logging
 import os
 import tempfile
 import time
+import sys
+import StringIO
 
-from loads.transport import get_cluster
-from loads.transport import client
+from loads.transport import get_cluster, client
+from loads.tests import hush
 
 
 logger = logging.getLogger('loads')
@@ -54,7 +56,7 @@ class TestCluster(unittest.TestCase):
 
         cl = get_cluster(frontend=front, backend=back, heartbeat=hb,
                          register=reg,
-                         numprocesses=1, background=True, debug=True,
+                         numprocesses=1, background=True, debug=False,
                          timeout=client.DEFAULT_TIMEOUT_MOVF, **kw)
         cl.start()
         time.sleep(1.)  # stabilization
@@ -70,6 +72,7 @@ class TestCluster(unittest.TestCase):
             workers = cli.list()
         return cli
 
+    @hush
     def test_success(self):
         client = self._get_cluster()
         job = {'fqn': 'loads.tests.jobs2.SomeTests.test_one'}
