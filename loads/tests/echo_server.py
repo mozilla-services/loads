@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # flake8: noqa
 # taken from ws4py examples
-from gevent import monkey; monkey.patch_all()
 
 import argparse
 import random
@@ -141,6 +140,7 @@ return false;
 if __name__ == '__main__':
     from ws4py import configure_logger
     configure_logger()
+    from gevent import monkey; monkey.patch_all()
 
     parser = argparse.ArgumentParser(description='Echo gevent Server')
     parser.add_argument('--host', default='127.0.0.1')
