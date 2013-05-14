@@ -18,9 +18,11 @@ class TestWebSite(TestCase):
 
     def tearDown(self):
         self._server.terminate()
+        self._server.wait()
 
-    # XXX create_ws() locks the greenlets hub
-    def _test_something(self):
+    def test_something(self):
+        from gevent.monkey import patch_socket
+        patch_socket()
         res = self.session.get('http://localhost:9000')
         self.assertTrue('chatform' in res.content)
         results = []

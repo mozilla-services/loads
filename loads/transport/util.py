@@ -139,6 +139,8 @@ def dump_stacks():
                     for th in threading.enumerate()])
 
     for thread, frame in sys._current_frames().items():
+        if thread not in threads:
+            continue
         dump.append('Thread 0x%x (%s)\n' % (thread, threads[thread]))
         dump.append(''.join(traceback.format_stack(frame)))
         dump.append('\n')
