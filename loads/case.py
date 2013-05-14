@@ -5,7 +5,6 @@ from unittest import SkipTest
 from unittest.case import _ExpectedFailure, _UnexpectedSuccess
 
 from loads.measure import Session
-from loads.websockets import create_ws
 
 
 class TestCase(unittest.TestCase):
@@ -14,6 +13,7 @@ class TestCase(unittest.TestCase):
         self.session = Session(self)
 
     def create_ws(self, url, callback, protocols=None, extensions=None):
+        from loads.websockets import create_ws
         return create_ws(url, callback, protocols, extensions)
 
     def run(self, result, cycle=-1, user=-1, current_cycle=-1):
