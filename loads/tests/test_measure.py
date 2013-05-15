@@ -2,7 +2,8 @@ import unittest
 
 from loads.measure import Session
 from loads import measure
-from loads.stream import set_global_stream, get_global_stream, register_stream
+from loads.stream import (set_global_stream, get_global_stream,
+                          register_stream, _STREAMS)
 
 from requests.adapters import HTTPAdapter
 
@@ -29,9 +30,6 @@ class _Stream(object):
         self.stream.append(data)
 
 
-register_stream(_Stream)
-
-
 class TestMeasure(unittest.TestCase):
 
     def setUp(self):
@@ -39,14 +37,13 @@ class TestMeasure(unittest.TestCase):
         self.old_send = HTTPAdapter.send
         HTTPAdapter.send = self._send
         measure.dns_resolve = self._dns
-        self.old_stream = get_global_stream()
+        self.old_streams = dict(_STREAMS)
 
     def tearDown(self):
         measure.dns_resolve = self.old_dns
         HTTPAdapter.send = self.old_send
-        if self.old_stream is not None:
-            set_global_stream(self.old_stream.name,
-                              self.old_stream.args)
+        _STREAMS.clear()
+        _STREAMS.update(self.old_streams)
 
     def _send(self, *args, **kw):
         return _FakeResponse()
@@ -55,6 +52,7 @@ class TestMeasure(unittest.TestCase):
         return url, url, 'meh'
 
     def test_session(self):
+        register_stream(_Stream)
         set_global_stream('test', None)
         test = _FakeTest()
         session = Session(test)

@@ -1,9 +1,7 @@
 import gevent
 from collections import defaultdict
 
-#from ws4py.client.threadedclient import WebSocketClient
 from ws4py.client.geventclient import WebSocketClient
-
 from loads.stream import get_global_stream, set_global_stream
 
 
@@ -12,11 +10,9 @@ _SOCKETS = defaultdict(list)
 
 class WebSocketHook(WebSocketClient):
     def __init__(self, url, protocols=None, extensions=None,
-                 heartbeat_freq=None, callback=None):
+                 callback=None):
         super(WebSocketHook, self).__init__(url, protocols,
-                                            extensions,
-                                            #heartbeat_freq
-                                            )
+                                            extensions)
         self.callback = callback
         self._stream = get_global_stream()
 

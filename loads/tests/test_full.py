@@ -3,7 +3,6 @@ import os
 import gevent
 import subprocess
 import sys
-import StringIO
 
 from loads.case import TestCase
 from loads.tests import hush

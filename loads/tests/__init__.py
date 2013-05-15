@@ -1,4 +1,5 @@
 import sys
+import StringIO
 
 
 def hush(func):
@@ -10,6 +11,3 @@ def hush(func):
         finally:
             sys.stdout = old
     return _silent
-
-
-
