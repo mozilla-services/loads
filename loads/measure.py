@@ -12,6 +12,7 @@ class Session(_Session):
     def __init__(self, test):
         _Session.__init__(self)
         self.test = test
+        self.loads_status = None
 
     def send(self, request, **kwargs):
         """Do the actual request from within the session, doing some
@@ -25,15 +26,22 @@ class Session(_Session):
         res = _Session.send(self, request, **kwargs)
         res.started = start
         res.method = request.method
-        self._measure(res)
+        self._analyse_request(res)
         return res
 
-    def _measure(self, req):
+    def _analyse_request(self, req):
+        """Analyse some information about the request and send the information
+        to a stream.
+
+        :param req: the request to analyse.
+        """
+        loads_status = self.loads_status or (None, None, None)
         data = {'elapsed': req.elapsed,
                 'started': req.started,
                 'status': req.status_code,
                 'url': req.url,
-                'method': req.method}
+                'method': req.method,
+                'loads_status': list(loads_status)}
 
         stream = get_global_stream()
 

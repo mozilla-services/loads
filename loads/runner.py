@@ -125,6 +125,7 @@ class DistributedRunner(Runner):
 
     def _recv_result(self, msg):
         data = json.loads(msg[0])
+        data_type = data.pop('data_type')
         if 'test_start' in data:
             pass
         elif 'test_stop' in data:
@@ -143,7 +144,7 @@ class DistributedRunner(Runner):
             started = data['started']
             data['started'] = datetime.strptime(started,
                                                 '%Y-%m-%dT%H:%M:%S.%f')
-            self.echo.push(data)
+            self.echo.push(data_type, data)
 
         if self.ended == self.total:
             self.loop.stop()
