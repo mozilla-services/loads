@@ -26,7 +26,7 @@ class _Stream(object):
     def __init__(self, args):
         self.stream = []
 
-    def push(self, data):
+    def push(self, data_type, data):
         self.stream.append(data)
 
 

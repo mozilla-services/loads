@@ -11,5 +11,5 @@ class NullStream(object):
     def flush(self):
         pass
 
-    def push(self, data):
+    def push(self, data_type, data):
         pass

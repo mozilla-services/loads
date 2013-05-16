@@ -40,4 +40,4 @@ class Session(_Session):
         if stream is None:
             stream = set_global_stream('stdout', {'stream_stdout_total': 1})
 
-        stream.push(data)
+        stream.push('hit', data)

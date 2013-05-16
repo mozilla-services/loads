@@ -12,8 +12,8 @@ class FileStream(object):
         self.encoder = DateTimeJSONEncoder()
         self.fd = open(self.filename, 'a+')
 
-    def push(self, data):
-        self.fd.write(self.encoder.encode(data) + '\n')
+    def push(self, data_type, data):
+        self.fd.write(self.encoder.encode('%s %s' % (data_type, data)) + '\n')
 
     # XXX replace by an atexit
     def __del__(self):

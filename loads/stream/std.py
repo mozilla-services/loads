@@ -24,7 +24,7 @@ class StdStream(object):
                          self.data_received)
         sys.stdout.flush()
 
-    def push(self, data):
+    def push(self, data_type, data):
         if 'websocket' in data:
             # web socket event
             event = data['websocket']['event']

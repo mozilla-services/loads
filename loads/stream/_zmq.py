@@ -71,5 +71,6 @@ class ZMQStream(object):
         pass
 
     # ZMQ push
-    def push(self, data):
+    def push(self, data_type, data):
+        data.update({'data_type': data_type})
         self._push.send(self.encoder.encode(data), zmq.NOBLOCK)
