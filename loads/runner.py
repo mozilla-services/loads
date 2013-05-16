@@ -21,29 +21,31 @@ from loads.case import TestResult
 
 
 class Runner(object):
-    """The tests runner.
+    """The local tests runner.
 
-    Runs the given test suite. It has two modes:
+    It can be run in two different modes:
 
-    - "slave", where results are sent via a ZMQ endpoint
-    - "classical", where the results are sent to stdout.
+    - The "classical" mode, where the results are sent to stdout.
+    - The "slave" mode, where results are sent to a ZMQ endpoint, to be
+      collected on the other side (the Distributed runner implements the other
+      part of the pipe).
     """
     def __init__(self, args):
         self.args = args
-        (self.total, self.cycles,
-         self.users, self.agents) = _compute_arguments(args)
         self.fqn = args['fqn']
         self.test = resolve_name(self.fqn)
         self.slave = 'slave' in args
 
-        # slave mode, results sent via ZMQ
+        (self.total, self.cycles,
+         self.users, self.agents) = _compute_arguments(args)
+
+        # If we are in slave mode, send the results via the ZMQ stream.
         if self.slave:
             self.stream = self.args['stream'] = 'zmq'
-            set_global_stream('zmq', self.args)
-            # the test results are collected from ZMQ
-            self.test_result = get_global_stream()
+            stream = set_global_stream('zmq', self.args)
+            self.test_result = stream
 
-        # classical one-node mode
+        # The normal behavior is to collect the results locally.
         else:
             self.stream = args.get('stream', 'stdout')
             if self.stream == 'stdout':
@@ -102,8 +104,12 @@ class Runner(object):
 
 
 class DistributedRunner(Runner):
-    """ Runner that distributes the load on a cluster and collects results via
-    ZMQ.
+    """ Runner distributing the load on a cluster of agents, collecting the
+    results via ZMQ.
+
+    The runner need to have agents already running. It will send them commands
+    trought the zmq pipeline (stream) and get back their results, which will be
+    in turn sent to the local stream collector.
     """
     def __init__(self, args):
         super(DistributedRunner, self).__init__(args)
