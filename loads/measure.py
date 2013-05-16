@@ -5,7 +5,8 @@ from loads.util import dns_resolve
 
 
 class Session(_Session):
-    """Extends Requests' Session object to add some measures.
+    """Extends Requests' Session object in order to send information to the
+    streamer.
     """
 
     def __init__(self, test):
@@ -13,11 +14,13 @@ class Session(_Session):
         self.test = test
 
     def send(self, request, **kwargs):
-        """Measures the time a request takes."""
+        """Do the actual request from within the session, doing some
+        measures at the same time about the request (duration, status, etc).
+        """
         request.url, original, resolved = dns_resolve(request.url)
         request.headers['Host'] = original
 
-        # started
+        # attach some information to the request object for later use.
         start = datetime.datetime.utcnow()
         res = _Session.send(self, request, **kwargs)
         res.started = start
