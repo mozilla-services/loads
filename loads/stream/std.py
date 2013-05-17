@@ -8,7 +8,7 @@ class StdStream(object):
     def __init__(self, args):
         self.args = args
         self.current = 0
-        self.total = args['stream_stdout_total']
+        self.total = args['total']
         self.start = None
         self.end = None
         self.sockets = 0
