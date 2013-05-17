@@ -12,12 +12,11 @@ import zmq.green as zmq
 from zmq.green.eventloop import ioloop, zmqstream
 
 from loads.util import resolve_name
-from loads.stream import (set_global_stream, stream_list, StdStream,
+from loads.stream import (set_global_stream, stream_list, StreamCollector,
                           get_global_stream)
 from loads import __version__
 from loads.transport.client import Client
 from loads.transport.util import DEFAULT_FRONTEND
-from loads.case import TestResult
 
 
 class Runner(object):
@@ -49,9 +48,9 @@ class Runner(object):
         else:
             self.stream = args.get('stream', 'stdout')
             if self.stream == 'stdout':
-                args['stream_stdout_total'] = self.total
-            set_global_stream(self.stream, args)
-            self.test_result = TestResult()
+                args['total'] = self.total
+            stream = set_global_stream(self.stream, args)
+            self.test_result = stream
 
     def execute(self):
         result = self._execute()
@@ -116,7 +115,7 @@ class DistributedRunner(Runner):
         self.ended = self.hits = 0
         self.loop = None
         # local echo
-        self.echo = StdStream({'stream_stdout_total': self.total})
+        self.echo = StreamCollector({'total': self.total})
         context = zmq.Context()
         self.pull = context.socket(zmq.PULL)
         self.pull.setsockopt(zmq.HWM, 8096 * 4)
