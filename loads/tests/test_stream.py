@@ -14,11 +14,11 @@ class TestStdStream(unittest.TestCase):
         sys.stdout = StringIO.StringIO()
 
         try:
-            std = StdStream({'stream_stdout_total': 10})
+            std = StdStream({'total': 10})
 
             for i in range(10):
                 data = {'started': datetime.datetime.now()}
-                std.push(data)
+                std.push('hit', data)
 
             std.flush()
         finally:
@@ -32,7 +32,7 @@ class TestStdStream(unittest.TestCase):
     def test_global(self):
         self.assertRaises(NotImplementedError, set_global_stream, 'xxx', None)
 
-        wanted = ['zmq', 'null', 'file', 'stdout']
+        wanted = ['zmq', 'null', 'file', 'stdout', 'collector']
         wanted.sort()
         got = [st.name for st in stream_list()]
         got.sort()

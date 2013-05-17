@@ -21,20 +21,20 @@ class WebSocketHook(WebSocketClient):
                                              {'stream_stdout_total': 1})
 
     def received_message(self, m):
-        data = {'websocket': {'event': 'message', 'size': len(m.data)}}
-        self._stream.push(data)
+        data = {'event': 'message', 'size': len(m.data)}
+        self._stream.push('websocket', data)
         self.callback(m)
 
     def opened(self):
-        data = {'websocket': {'event': 'opened'}}
-        self._stream.push(data)
+        data = {'event': 'opened'}
+        self._stream.push('websocket', data)
         super(WebSocketHook, self).opened()
 
     def closed(self, code, reason):
-        data = {'websocket': {'event': 'closed',
-                              'code': code,
-                              'reason': reason}}
-        self._stream.push(data)
+        data = {'event': 'closed',
+                'code': code,
+                'reason': reason}
+        self._stream.push('websocket', data)
         super(WebSocketHook, self).closed(code, reason)
 
 
