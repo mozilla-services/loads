@@ -33,7 +33,7 @@ setup(name='loads',
       author_email='services-dev@mozilla.org',
       url='https://github.com/mozilla/loads',
       tests_require=['nose'],
-      test_suite = 'nose.collector',
+      test_suite='nose.collector',
       entry_points="""
       [console_scripts]
       loads-broker = loads.transport.broker:main
