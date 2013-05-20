@@ -2,7 +2,7 @@
 
 - maintains a connection to a master
 - gets load testing orders & performs them
-- sends back the results in RT
+- sends back the results in real time.
 """
 import os
 import errno
@@ -48,19 +48,19 @@ class Agent(object):
     - **backend**: The ZMQ socket to connect to the broker.
     - **heartbeat**: The ZMQ socket to perform PINGs on the broker to make
       sure it's still alive.
-    - **register** : the ZMQ socket to register workers
+    - **register** : the ZMQ socket to register agents
     - **ping_delay**: the delay in seconds betweem two pings.
     - **ping_retries**: the number of attempts to ping the broker before
       quitting.
-    - **params** a dict containing the params to set for this worker.
+    - **params** a dict containing the params to set for this agent.
     - **timeout** the maximum time allowed before the thread stacks is dump
       and the message result not sent back.
-    - **max_age**: maximum age for a worker in seconds. After that delay,
-      the worker will simply quit. When set to -1, never quits.
+    - **max_age**: maximum age for a agent in seconds. After that delay,
+      the agent will simply quit. When set to -1, never quits.
       Defaults to -1.
     - **max_age_delta**: maximum value in seconds added to max age.
-      The Worker will quit after *max_age + random(0, max_age_delta)*
-      This is done to avoid having all workers quit at the same instant.
+      The agent will quit after *max_age + random(0, max_age_delta)*
+      This is done to avoid having all agents quit at the same instant.
       Defaults to 0. The value must be an integer.
     """
     def __init__(self, backend=DEFAULT_BACKEND,
@@ -68,7 +68,7 @@ class Agent(object):
                  ping_delay=10., ping_retries=3,
                  params=None, timeout=DEFAULT_TIMEOUT_MOVF,
                  max_age=DEFAULT_MAX_AGE, max_age_delta=DEFAULT_MAX_AGE_DELTA):
-        logger.debug('Initializing the worker.')
+        logger.debug('Initializing the agent.')
         self.ctx = zmq.Context()
         self.backend = backend
         self._reg = self.ctx.socket(zmq.PUSH)
@@ -181,13 +181,13 @@ class Agent(object):
             logging.error("Could not send back the result", exc_info=True)
 
     def lost(self):
-        logger.info('Master lost ! Quitting..')
+        logger.info('Broker lost ! Quitting..')
         self.running = False
         self.loop.stop()
         return True
 
     def stop(self):
-        """Stops the worker.
+        """Stops the agent.
         """
         if not self.running:
             return
@@ -206,7 +206,7 @@ class Agent(object):
         self.graceful_delay.start()
 
     def _stop(self):
-        logger.debug('Stopping the worker')
+        logger.debug('Stopping the agent')
         self.running = False
         try:
             self._backstream.flush()
@@ -217,13 +217,13 @@ class Agent(object):
         self._check.stop()
         time.sleep(.1)
         self.ctx.destroy(0)
-        logger.debug('Worker is stopped')
+        logger.debug('Agent is stopped')
 
     def start(self):
-        """Starts the worker
+        """Starts the agent
         """
         util.PARAMS = self.params
-        logger.debug('Starting the worker loop')
+        logger.debug('Starting the agent loop')
 
         # running the pinger
         self.ping.start()
@@ -263,11 +263,11 @@ class Agent(object):
             else:
                 break
 
-        logger.debug('Worker loop over')
+        logger.debug('Agent loop over')
 
 
 def main(args=sys.argv):
-    parser = argparse.ArgumentParser(description='Run some watchers.')
+    parser = argparse.ArgumentParser(description='Run an agent.')
 
     parser.add_argument('--backend', dest='backend',
                         default=DEFAULT_BACKEND,
@@ -288,7 +288,7 @@ def main(args=sys.argv):
                         help="ZMQ socket for the heartbeat.")
 
     parser.add_argument('--params', dest='params', default=None,
-                        help='The parameters to be used in the worker.')
+                        help='The parameters to be used by the agent.')
 
     parser.add_argument('--timeout', dest='timeout', type=float,
                         default=DEFAULT_TIMEOUT_MOVF,
