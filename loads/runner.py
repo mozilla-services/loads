@@ -12,6 +12,7 @@ import zmq.green as zmq
 from zmq.green.eventloop import ioloop, zmqstream
 
 from loads.util import resolve_name
+from loads.case import TestResult
 from loads.stream import (set_global_stream, stream_list, StreamCollector,
                           get_global_stream)
 from loads import __version__
@@ -50,7 +51,7 @@ class Runner(object):
             if self.stream == 'stdout':
                 args['total'] = self.total
             stream = set_global_stream(self.stream, args)
-            self.test_result = stream
+            self.test_result = TestResult()
 
     def execute(self):
         result = self._execute()
@@ -180,26 +181,6 @@ def _compute_arguments(args):
     if agents is not None:
         total *= agents
     return total, cycles, users, agents
-
-
-def _proxy_call(method_name, nb_args=0):
-    """Returns a function that replaces the original one, but consumes any
-    extra arguments passed to it.
-    """
-    def wrapped(self, test, *args, **kwargs):
-        fun = getattr(super(TestResultAdapter, self), method_name)
-        return fun(test, *args[:nb_args])
-    return wrapped
-
-
-class TestResultAdapter(unittest.TestResult):
-    """An adapter for the default unittest.TestResult class"""
-
-    startTest = _proxy_call('startTest')
-    stopTest = _proxy_call('stopTest')
-    addSuccess = _proxy_call('addSuccess')
-    addFailure = _proxy_call('addFailure', 1)
-    addError = _proxy_call('addError', 1)
 
 
 def run(args):
