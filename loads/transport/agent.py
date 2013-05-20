@@ -15,6 +15,7 @@ import threading
 import random
 import json
 import functools
+import subprocess
 from multiprocessing import Process
 
 import zmq.green as zmq
@@ -99,9 +100,15 @@ class Agent(object):
     def _run(self, args):
         args['slave'] = True
         args['worker_id'] = os.getpid()
+
         try:
-            p = Process(target=functools.partial(run, args))
-            p.start()
+            if getattr(args, 'worker_path', None) is not None:
+                built_args = ['--%s %s' % (key, value)
+                              for (key, value) in args.items()]
+                p = subprocess.call([args['worker_path']] + built_args)
+            else:
+                p = Process(target=functools.partial(run, args))
+                p.start()
         except Exception, e:
             msg = 'Failed to start process ' + str(e)
             raise ExecutionError(msg)
