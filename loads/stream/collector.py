@@ -15,6 +15,7 @@ class StreamCollector(object):
     """
 
     name = 'collector'
+    options = {}
 
     def __init__(self, config=None):
         self.config = config
