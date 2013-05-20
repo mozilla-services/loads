@@ -29,43 +29,48 @@ class ZMQStream(object):
 
     # unittest.TestResult APIS
     def startTest(self, test, cycle, user, current_cycle):
-        self.push({'test_start': str(test),
-                   'cycle': cycle,
-                   'user': user,
-                   'current_cycle': current_cycle,
-                   'worker_id': self.wid})
+        self.push('test', {
+            'test_start': str(test),
+            'cycle': cycle,
+            'user': user,
+            'current_cycle': current_cycle,
+            'worker_id': self.wid})
 
     def stopTest(self, test, cycle, user, current_cycle):
-        self.push({'test_stop': str(test),
-                   'cycle': cycle,
-                   'user': user,
-                   'current_cycle': current_cycle,
-                   'worker_id': self.wid})
+        self.push('test', {
+            'test_stop': str(test),
+            'cycle': cycle,
+            'user': user,
+            'current_cycle': current_cycle,
+            'worker_id': self.wid})
 
     def addFailure(self, test, failure, cycle, user, current_cycle):
         exc_info = self._result._exc_info_to_string(failure, test)
         self.failures.append((test, exc_info))
-        self.push({'failure': exc_info,
-                   'cycle': cycle,
-                   'user': user,
-                   'current_cycle': current_cycle,
-                   'worker_id': self.wid})
+        self.push('test', {
+            'failure': exc_info,
+            'cycle': cycle,
+            'user': user,
+            'current_cycle': current_cycle,
+            'worker_id': self.wid})
 
     def addError(self, test, error, cycle, user, current_cycle):
         exc_info = self._result._exc_info_to_string(error, test)
         self.errors.append((test, exc_info))
-        self.push({'error': exc_info,
-                   'cycle': cycle,
-                   'user': user,
-                   'current_cycle': current_cycle,
-                   'worker_id': self.wid})
+        self.push('test', {
+            'error': exc_info,
+            'cycle': cycle,
+            'user': user,
+            'current_cycle': current_cycle,
+            'worker_id': self.wid})
 
     def addSuccess(self, test, cycle, user, current_cycle):
-        self.push({'test_success': str(test),
-                   'cycle': cycle,
-                   'user': user,
-                   'current_cycle': current_cycle,
-                   'worker_id': self.wid})
+        self.push('test', {
+            'test_success': str(test),
+            'cycle': cycle,
+            'user': user,
+            'current_cycle': current_cycle,
+            'worker_id': self.wid})
 
     def flush(self):
         pass
