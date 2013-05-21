@@ -128,6 +128,51 @@ class TestStreamCollector(TestCase):
         collector.stop_time = TIME2
         self.assertTrue(0.16 < collector.tests_per_second() < 0.17)
 
+    def test_unknown_datatype_raises(self):
+        collector = StreamCollector()
+        self.assertRaises(KeyError, collector.push, 'unknown', {})
+
+    def test_get_tests_filters_cycles(self):
+        collector = StreamCollector()
+
+        collector.tests['bacon', 1] = Test(name='bacon', cycle=1)
+        collector.tests['egg', 1] = Test(name='egg', cycle=1)
+        collector.tests['spam', 2] = Test(name='spam', cycle=2)
+
+        self.assertEquals(len(collector._get_tests(cycle=1)), 2)
+
+    def test_get_tests_filters_names(self):
+        collector = StreamCollector()
+
+        collector.tests['bacon', 1] = Test(name='bacon', cycle=1)
+        collector.tests['bacon', 2] = Test(name='bacon', cycle=2)
+        collector.tests['spam', 2] = Test(name='spam', cycle=2)
+
+        self.assertEquals(len(collector._get_tests(name='bacon')), 2)
+
+    def test_get_tests_filters_by_both_fields(self):
+        collector = StreamCollector()
+
+        collector.tests['bacon', 1] = Test(name='bacon', cycle=1)
+        collector.tests['bacon', 2] = Test(name='bacon', cycle=2)
+        collector.tests['spam', 2] = Test(name='spam', cycle=2)
+
+        self.assertEquals(len(collector._get_tests(name='bacon', cycle=2)), 1)
+
+    def test_test_success_rate_is_none(self):
+        # it should be none if no tests had been collected yet.
+        collector = StreamCollector()
+        self.assertEquals(None, collector.test_success_rate())
+
+    def test_test_success_rate_is_correct(self):
+        collector = StreamCollector()
+
+        collector.startTest('bacon', 1, 1, 1)
+        collector.addSuccess('bacon', 1, 1, 1)
+        collector.addFailure('bacon', 'A failure', 1, 1, 1)
+
+        self.assertEquals(0.5, collector.test_success_rate())
+
 
 class TestHits(TestCase):
 

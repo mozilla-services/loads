@@ -187,13 +187,16 @@ class Hit(object):
 class Test(object):
     """Represent a test that had been run."""
 
-    def __init__(self, start=None):
+    def __init__(self, start=None, **kwargs):
         self.start = start or datetime.utcnow()
         self.end = None
         self.name = None
+        self.cycle = None
         self.failures = []
         self.errors = []
         self.success = 0
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
     @property
     def duration(self):
