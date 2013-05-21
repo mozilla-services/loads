@@ -3,18 +3,18 @@ import datetime
 import sys
 import StringIO
 
-from loads.stream.std import StdStream
-from loads.stream import create_stream, stream_list
+from loads.output.std import StdOutput
+from loads.output import create_output, output_list
 
 
-class TestStdStream(unittest.TestCase):
+class TestStdOutput(unittest.TestCase):
 
     def test_std(self):
         old = sys.stdout
         sys.stdout = StringIO.StringIO()
 
         try:
-            std = StdStream({'total': 10})
+            std = StdOutput({'total': 10})
 
             for i in range(10):
                 data = {'started': datetime.datetime.now()}
@@ -30,10 +30,11 @@ class TestStdStream(unittest.TestCase):
         self.assertTrue('100%' in output)
 
     def test_global(self):
-        self.assertRaises(NotImplementedError, create_stream, 'xxx', None)
+        self.assertRaises(NotImplementedError, create_output, 'xxx', None)
 
-        wanted = ['zmq', 'null', 'file', 'stdout', 'collector']
+        #  XXX We should mock that out in the tests.
+        wanted = ['null', 'file', 'stdout', ]
         wanted.sort()
-        got = [st.name for st in stream_list()]
+        got = [st.name for st in output_list()]
         got.sort()
         self.assertEqual(got, wanted)

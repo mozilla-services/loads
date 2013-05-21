@@ -40,9 +40,9 @@ class TestApp(_TestApp):
     """A subclass of webtest.TestApp which uses the requests backend per
     default.
     """
-    def __init__(self, app, session, stream, *args, **kwargs):
+    def __init__(self, app, session, collector, *args, **kwargs):
         self.session = session
-        self.stream = stream
+        self.collector = collector
 
         client = RequestsClient(session=self.session)
         app = HostProxy(app, client=client)
@@ -55,13 +55,13 @@ class TestApp(_TestApp):
 
 class Session(_Session):
     """Extends Requests' Session object in order to send information to the
-    streamer.
+    collector.
     """
 
-    def __init__(self, test, stream):
+    def __init__(self, test, collector):
         _Session.__init__(self)
         self.test = test
-        self.stream = stream
+        self.collector = collector
         self.loads_status = None
 
     def send(self, request, **kwargs):
@@ -81,16 +81,16 @@ class Session(_Session):
 
     def _analyse_request(self, req):
         """Analyse some information about the request and send the information
-        to a stream.
+        to the collector.
 
         :param req: the request to analyse.
         """
         loads_status = self.loads_status or (None, None, None)
-        data = {'elapsed': req.elapsed,
-                'started': req.started,
-                'status': req.status_code,
-                'url': req.url,
-                'method': req.method,
-                'loads_status': list(loads_status)}
 
-        self.stream.push('hit', data)
+        self.collector.add_hit(
+                elapsed=req.elapsed,
+                started=req.started,
+                status=req.status_code,
+                url=req.url,
+                method=req.method,
+                loads_status=list(loads_status))

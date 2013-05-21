@@ -1,7 +1,5 @@
-class NullStream(object):
-    """A streamer that's just consuming whatever you sent to it, but does
-    nohting with it.
-    """
+class NullOutput(object):
+    """A very useless output, silenting everything."""
     name = 'null'
     options = {}
 

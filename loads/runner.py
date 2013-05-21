@@ -2,7 +2,6 @@
 import argparse
 import sys
 import json
-from datetime import datetime
 import logging
 import traceback
 
@@ -14,7 +13,9 @@ from zmq.green.eventloop import ioloop, zmqstream
 from loads.util import resolve_name
 from loads.case import TestResult
 from loads.collector import Collector
-from loads.stream import stream_list, create_stream
+from loads.relay import ZMQRelay
+from loads.output import output_list, create_output
+
 from loads import __version__
 from loads.transport.client import Client
 from loads.transport.util import DEFAULT_FRONTEND
@@ -25,33 +26,38 @@ class Runner(object):
 
     It can be run in two different modes:
 
-    - The "classical" mode, where the results are sent to stdout.
+    - The "classical" mode, where the results are collected locally
     - The "slave" mode, where results are sent to a ZMQ endpoint, to be
-      collected on the other side (the Distributed runner implements the other
-      part of the pipe).
+      collected on the other side of the pipe (the Distributed runner
+      implements the other part of the pipe).
     """
     def __init__(self, args):
         self.args = args
         self.fqn = args['fqn']
         self.test = resolve_name(self.fqn)
         self.slave = 'slave' in args
+        self.outputs = []
 
         (self.total, self.cycles,
          self.users, self.agents) = _compute_arguments(args)
 
-        # If we are in slave mode, send the results via the ZMQ stream.
+        args['total'] = self.total
+
+        # If we are in slave mode, set the collector to a 0mq relay
         if self.slave:
-            stream = self.args['stream'] = 'zmq'
-            self.stream = create_stream('zmq', self.args)
-            self.test_result = stream
+            self.collector = ZMQRelay(self.args)
+            self.test_result = self.collector
+            # XXX Maybe we don't really need two different things for the test
+            # result and for the collector (and they could be only one same
+            # thing)
 
         # The normal behavior is to collect the results locally.
         else:
-            stream = args.get('stream', 'stdout')
-            if stream == 'stdout':
-                args['total'] = self.total
-            self.stream = create_stream(stream, args)
+            self.collector = Collector()
             self.test_result = TestResult()
+
+        output = args.get('output', 'stdout')
+        self.outputs.append(create_output(output, args))
 
     def execute(self):
         result = self._execute()
@@ -94,7 +100,7 @@ class Runner(object):
 
         # creating the test case instance
         klass = self.test.im_class
-        ob = klass(self.test.__name__, self.stream)
+        ob = klass(self.test.__name__, self.collector)
 
         for user in self.users:
             group = [gevent.spawn(self._run, i, ob, self.cycles, user)
@@ -106,9 +112,10 @@ class Runner(object):
         return self.test_result
 
     def __del__(self):
-        # be sure we flush the stream if we need it.
-        if hasattr(self.stream, 'flush'):
-            self.stream.flush()
+        # be sure we flush the outputs if we need it.
+        for output in self.outputs:
+            if hasattr(output, 'flush'):
+                output.flush()
 
 
 class DistributedRunner(Runner):
@@ -116,15 +123,15 @@ class DistributedRunner(Runner):
     results via ZMQ.
 
     The runner need to have agents already running. It will send them commands
-    trought the zmq pipeline (stream) and get back their results, which will be
-    in turn sent to the local stream collector.
+    trought the zmq pipeline and get back their results, which will be
+    in turn sent to the local collector.
     """
     def __init__(self, args):
         super(DistributedRunner, self).__init__(args)
         self.ended = self.hits = 0
         self.loop = None
-        # local echo
-        self.echo = Collector({'total': self.total})
+        self.collector = Collector()
+
         context = zmq.Context()
         self.pull = context.socket(zmq.PULL)
         self.pull.setsockopt(zmq.HWM, 8096 * 4)
@@ -137,31 +144,22 @@ class DistributedRunner(Runner):
         self.zstream = zmqstream.ZMQStream(self.pull, self.loop)
         self.zstream.on_recv(self._recv_result)
 
+        # XXX Add the output as observers to the collector
+        self.outputs = []
+
     def _recv_result(self, msg):
+        """When we receive some data from zeromq, send it to the collector for
+           later use."""
         data = json.loads(msg[0])
         data_type = data.pop('data_type')
-        if 'test_start' in data:
-            pass
-        elif 'test_stop' in data:
-            self.ended += 1
-        elif 'test_success' in data:
-            pass
-        elif 'failure' in data:
-            self.test_result.failures.append((None, data['failure']))
-            self.test_result._mirrorOutput = True
-        elif 'error' in data:
-            self.test_result.failures.append((None, data['error']))
-            self.test_result._mirrorOutput = True
-        else:
-            # XXX this is not the right total (hits vs tests) XXX
-            self.hits += 1
-            started = data['started']
-            data['started'] = datetime.strptime(started,
-                                                '%Y-%m-%dT%H:%M:%S.%f')
-            self.echo.push(data_type, data)
 
-        if self.ended == self.total:
-            self.loop.stop()
+        method = getattr(self.collector, data_type)
+        method(**data)
+
+        # XXX Ask the collector if everything is finished
+        # The previous version was like that:
+        # if self.ended == self.total:
+        #     self.loop.stop()
 
     def _execute(self):
         # calling the clients now
@@ -226,16 +224,16 @@ def main():
                         help='The path to binary to use as the test runner. ' +
                              'The default is this runner')
 
-    streams = [st.name for st in stream_list()]
-    streams.sort()
+    outputs = [st.name for st in output_list()]
+    outputs.sort()
 
-    parser.add_argument('--stream', default='stdout',
-                        help='The stream that receives the results',
-                        choices=streams)
+    parser.add_argument('--output', default='stdout',
+                        help='The output used to display the results',
+                        choices=outputs)
 
-    # per-stream options
-    for stream in stream_list():
-        for option, value in stream.options.items():
+    # per-output options
+    for output in output_list():
+        for option, value in output.options.items():
             help, type_, default, cli = value
             if not cli:
                 continue
@@ -244,7 +242,7 @@ def main():
             if default is not None:
                 kw['default'] = default
 
-            parser.add_argument('--stream-%s-%s' % (stream.name, option),
+            parser.add_argument('--output-%s-%s' % (output.name, option),
                                 **kw)
 
     args = parser.parse_args()

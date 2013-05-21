@@ -21,18 +21,8 @@ class Collector(object):
         self.start_time = None
         self.stop_time = None
 
-    def push(self, data_type, data):
-        """Stores the data passed for later use and computation.
-
-        :param data_type: The type of data sent.
-        :param data: A dict containing different keys, depending the cases.
-        """
-        # This can be called by different callers. The protocol isn't fixed in
-        # stone and thus can evolve.
-        if data_type == 'hit':
-            self.hits.append(Hit(**data))
-        else:
-            raise KeyError('Unknown data type "%s"' % data_type)
+    def add_hit(self, **data):
+        self.hits.append(Hit(**data))
 
     @property
     def nb_hits(self):

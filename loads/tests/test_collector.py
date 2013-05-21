@@ -20,36 +20,36 @@ class TestCollector(TestCase):
                 'method': method,
                 'loads_status': loads_status}
 
-    def test_push_hits(self):
+    def test_add_hits(self):
         collector = Collector()
-        collector.push('hit', self._get_data())
+        collector.add_hit(**self._get_data())
         self.assertEquals(len(collector.hits), 1)
 
     def test_nb_hits(self):
         collector = Collector()
-        collector.push('hit', self._get_data())
-        collector.push('hit', self._get_data())
-        collector.push('hit', self._get_data())
+        collector.add_hit(**self._get_data())
+        collector.add_hit(**self._get_data())
+        collector.add_hit(**self._get_data())
         self.assertEquals(collector.nb_hits, 3)
         self.assertEquals(len(collector.hits), 3)
 
     def test_average_request_time_without_filter(self):
         collector = Collector()
-        collector.push('hit', self._get_data(elapsed=1))
-        collector.push('hit', self._get_data(elapsed=3))
-        collector.push('hit', self._get_data(elapsed=2))
-        collector.push('hit', self._get_data(url='http://another-one',
-                                                 elapsed=3))
+        collector.add_hit(**self._get_data(elapsed=1))
+        collector.add_hit(**self._get_data(elapsed=3))
+        collector.add_hit(**self._get_data(elapsed=2))
+        collector.add_hit(**self._get_data(url='http://another-one',
+                                           elapsed=3))
         self.assertEquals(collector.average_request_time(), 2.25)
 
     def test_average_request_time_with_url_filtering(self):
 
         collector = Collector()
-        collector.push('hit', self._get_data(elapsed=1))
-        collector.push('hit', self._get_data(elapsed=3))
-        collector.push('hit', self._get_data(elapsed=2))
-        collector.push('hit', self._get_data(url='http://another-one',
-                                                 elapsed=3))
+        collector.add_hit(**self._get_data(elapsed=1))
+        collector.add_hit(**self._get_data(elapsed=3))
+        collector.add_hit(**self._get_data(elapsed=2))
+        collector.add_hit(**self._get_data(url='http://another-one',
+                                           elapsed=3))
         # We want to filter out some URLs
         avg = collector.average_request_time('http://notmyidea.org')
         self.assertEquals(avg, 2.0)
@@ -59,19 +59,19 @@ class TestCollector(TestCase):
 
     def test_average_request_time_with_cycle_filtering(self):
         collector = Collector()
-        collector.push('hit', self._get_data(elapsed=1, cycle=1))
-        collector.push('hit', self._get_data(elapsed=3, cycle=2))
-        collector.push('hit', self._get_data(elapsed=2, cycle=3))
-        collector.push('hit', self._get_data(elapsed=3, cycle=3))
+        collector.add_hit(**self._get_data(elapsed=1, cycle=1))
+        collector.add_hit(**self._get_data(elapsed=3, cycle=2))
+        collector.add_hit(**self._get_data(elapsed=2, cycle=3))
+        collector.add_hit(**self._get_data(elapsed=3, cycle=3))
 
         avg = collector.average_request_time(cycle=3)
         self.assertEquals(avg, 2.5)
 
         # try adding another filter on the URL
-        collector.push('hit', self._get_data(elapsed=3, cycle=3,
-                                             url='http://another-one'))
+        collector.add_hit(**self._get_data(elapsed=3, cycle=3,
+                                           url='http://another-one'))
         avg = collector.average_request_time(cycle=3,
-                                                 url='http://notmyidea.org')
+                                             url='http://notmyidea.org')
         self.assertEquals(avg, 2.5)
 
         self.assertEquals(collector.average_request_time(cycle=3),
@@ -83,19 +83,17 @@ class TestCollector(TestCase):
 
     def test_urls(self):
         collector = Collector()
-        collector.push('hit', self._get_data())
-        collector.push('hit', self._get_data(url='http://another-one'))
+        collector.add_hit(**self._get_data())
+        collector.add_hit(**self._get_data(url='http://another-one'))
 
         urls = set(['http://notmyidea.org', 'http://another-one'])
         self.assertEquals(collector.urls, urls)
 
     def test_hits_success_rate(self):
         collector = Collector()
-        collector.push('hit', self._get_data(status=200))
-        collector.push('hit', self._get_data(status=200))
-        collector.push('hit', self._get_data(status=200))
-        collector.push('hit', self._get_data(status=200))
-        collector.push('hit', self._get_data(status=400, cycle=2))
+        for x in range(4):
+            collector.add_hit(**self._get_data(status=200))
+        collector.add_hit(**self._get_data(status=400, cycle=2))
 
         self.assertEquals(collector.hits_success_rate(), 0.8)
         self.assertEquals(collector.hits_success_rate(cycle=1), 1)
@@ -103,7 +101,7 @@ class TestCollector(TestCase):
     def test_requests_per_second(self):
         collector = Collector()
         for x in range(20):
-            collector.push('hit', self._get_data(status=200))
+            collector.add_hit(**self._get_data(status=200))
 
         collector.start_time = TIME1
         collector.stop_time = TIME2
@@ -127,10 +125,6 @@ class TestCollector(TestCase):
         collector.start_time = TIME1
         collector.stop_time = TIME2
         self.assertTrue(0.16 < collector.tests_per_second() < 0.17)
-
-    def test_unknown_datatype_raises(self):
-        collector = Collector()
-        self.assertRaises(KeyError, collector.push, 'unknown', {})
 
     def test_get_tests_filters_cycles(self):
         collector = Collector()

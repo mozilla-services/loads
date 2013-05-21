@@ -1,7 +1,7 @@
 import sys
 
 
-class StdStream(object):
+class StdOutput(object):
     name = 'stdout'
     options = {'total': ('Total Number of items', int, None, False)}
 

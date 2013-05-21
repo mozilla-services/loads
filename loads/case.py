@@ -9,18 +9,19 @@ from loads.websockets import create_ws
 
 
 class TestCase(unittest.TestCase):
-    def __init__(self, test_name, stream):
+    def __init__(self, test_name, collector):
         super(TestCase, self).__init__(test_name)
-        self._loads_stream = stream
+        self._loads_collector = collector
 
-        self.session = Session(test=self, stream=self._loads_stream)
-        self.app = TestApp(self.server_url, self.session, self._loads_stream)
+        self.session = Session(test=self, collector=self._loads_collector)
+        self.app = TestApp(self.server_url, self.session,
+                           self._loads_collector)
 
     def create_ws(self, url, callback, protocols=None, extensions=None):
-        return create_ws(url, self._loads_stream, callback, protocols,
+        return create_ws(url, self._loads_collector, callback, protocols,
                          extensions)
 
-    def run(self, stream, result, cycle=-1, user=-1, current_cycle=-1):
+    def run(self, result, cycle=-1, user=-1, current_cycle=-1):
         # pass the information about the cycles to the session so we're able to
         # track which cycle the information sent belongs to.
         self.session.loads_status = (cycle, user, current_cycle)

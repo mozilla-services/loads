@@ -1,8 +1,8 @@
 import unittest
+import functools
 
 from loads.measure import Session
 from loads import measure
-from loads.stream import create_stream, register_stream, _STREAMS
 
 from requests.adapters import HTTPAdapter
 
@@ -19,14 +19,20 @@ class _FakeResponse(object):
     url = 'http://impossible.place'
 
 
-class _Stream(object):
-    name = 'test'
+class _Collector(object):
 
-    def __init__(self, args):
-        self.stream = []
+    def __init__(self):
+        self.data = []
 
-    def push(self, data_type, data):
-        self.stream.append(data)
+    def __getattr__(self, name):
+        # Relay all the methods to the self.push method if they are part of the
+        # protocol.
+        if name in ('startTest', 'stopTest', 'addFailure', 'addError',
+                    'addSuccess', 'add_hit'):  # XXX change to camel_case
+            return functools.partial(self.push, data_type=name)
+
+    def push(self, data_type, **data):
+        self.data.append(data)
 
 
 class TestMeasure(unittest.TestCase):
@@ -36,13 +42,10 @@ class TestMeasure(unittest.TestCase):
         self.old_send = HTTPAdapter.send
         HTTPAdapter.send = self._send
         measure.dns_resolve = self._dns
-        self.old_streams = dict(_STREAMS)
 
     def tearDown(self):
         measure.dns_resolve = self.old_dns
         HTTPAdapter.send = self.old_send
-        _STREAMS.clear()
-        _STREAMS.update(self.old_streams)
 
     def _send(self, *args, **kw):
         return _FakeResponse()
@@ -51,9 +54,8 @@ class TestMeasure(unittest.TestCase):
         return url, url, 'meh'
 
     def test_session(self):
-        register_stream(_Stream)
-        stream = create_stream('test', None)
         test = _FakeTest()
-        session = Session(test, stream)
+        collector = _Collector()
+        session = Session(test, collector)
         session.get('http://impossible.place')
-        self.assertEqual(len(stream.stream), 1)
+        self.assertEqual(len(collector.data), 1)
