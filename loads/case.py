@@ -4,13 +4,14 @@ import warnings
 from unittest import SkipTest
 from unittest.case import _ExpectedFailure, _UnexpectedSuccess
 
-from loads.measure import Session
+from loads.measure import Session, TestApp
 
 
 class TestCase(unittest.TestCase):
     def __init__(self, test_name):
         super(TestCase, self).__init__(test_name)
         self.session = Session(self)
+        self.app = TestApp(self.server_url, self.session)
 
     def create_ws(self, url, callback, protocols=None, extensions=None):
         from loads.websockets import create_ws

@@ -14,7 +14,8 @@ with open(os.path.join(here, 'CHANGES.rst')) as f:
     CHANGES = f.read()
 
 
-requires = ['pyzmq', 'psutil', 'gevent', 'requests', 'ws4py']
+requires = ['pyzmq', 'psutil', 'gevent', 'requests', 'ws4py', 'webtest',
+            'WSGIProxy2']
 
 
 setup(name='loads',
