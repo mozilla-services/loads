@@ -21,7 +21,6 @@ from null import NullStream
 from _file import FileStream
 from _zmq import ZMQStream
 from std import StdStream
-from collector import StreamCollector
 
-for stream in (NullStream, FileStream, ZMQStream, StdStream, StreamCollector):
+for stream in (NullStream, FileStream, ZMQStream, StdStream):
     register_stream(stream)

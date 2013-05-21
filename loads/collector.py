@@ -2,20 +2,17 @@ from datetime import datetime
 from collections import defaultdict
 
 
-class StreamCollector(object):
-    """Stream Collector.
+class Collector(object):
+    """Data Collector.
 
-    This is the class called when information about the tests had
-    been retrieved.
+    This is the class receiving all the information about the tests and the
+    requests.
 
     Consumes the data passed to it via :method push: and provide convenient
     APIs to read this data back. This can be useful if you want to transform
-    this data to create reports, but it doesn't assume any format for the
-    output.
+    this data to create reports, but it doesn't assume any representation for
+    the output.
     """
-
-    name = 'collector'
-    options = {}
 
     def __init__(self, config=None):
         self.config = config

@@ -13,7 +13,8 @@ from zmq.green.eventloop import ioloop, zmqstream
 
 from loads.util import resolve_name
 from loads.case import TestResult
-from loads.stream import stream_list, StreamCollector, create_stream
+from loads.collector import Collector
+from loads.stream import stream_list, create_stream
 from loads import __version__
 from loads.transport.client import Client
 from loads.transport.util import DEFAULT_FRONTEND
@@ -123,7 +124,7 @@ class DistributedRunner(Runner):
         self.ended = self.hits = 0
         self.loop = None
         # local echo
-        self.echo = StreamCollector({'total': self.total})
+        self.echo = Collector({'total': self.total})
         context = zmq.Context()
         self.pull = context.socket(zmq.PULL)
         self.pull.setsockopt(zmq.HWM, 8096 * 4)

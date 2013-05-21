@@ -1,4 +1,4 @@
-from loads.stream.collector import StreamCollector, Hit, Test
+from loads.collector import Collector, Hit, Test
 from unittest import TestCase
 import datetime
 
@@ -6,7 +6,7 @@ TIME1 = datetime.datetime(2013, 5, 14, 0, 51, 8)
 TIME2 = datetime.datetime(2013, 5, 14, 0, 53, 8)
 
 
-class TestStreamCollector(TestCase):
+class TestCollector(TestCase):
 
     def _get_data(self, url='http://notmyidea.org', method='GET',
                   status=200, started=None, elapsed=None, cycle=1, user=1,
@@ -21,12 +21,12 @@ class TestStreamCollector(TestCase):
                 'loads_status': loads_status}
 
     def test_push_hits(self):
-        collector = StreamCollector()
+        collector = Collector()
         collector.push('hit', self._get_data())
         self.assertEquals(len(collector.hits), 1)
 
     def test_nb_hits(self):
-        collector = StreamCollector()
+        collector = Collector()
         collector.push('hit', self._get_data())
         collector.push('hit', self._get_data())
         collector.push('hit', self._get_data())
@@ -34,7 +34,7 @@ class TestStreamCollector(TestCase):
         self.assertEquals(len(collector.hits), 3)
 
     def test_average_request_time_without_filter(self):
-        collector = StreamCollector()
+        collector = Collector()
         collector.push('hit', self._get_data(elapsed=1))
         collector.push('hit', self._get_data(elapsed=3))
         collector.push('hit', self._get_data(elapsed=2))
@@ -44,7 +44,7 @@ class TestStreamCollector(TestCase):
 
     def test_average_request_time_with_url_filtering(self):
 
-        collector = StreamCollector()
+        collector = Collector()
         collector.push('hit', self._get_data(elapsed=1))
         collector.push('hit', self._get_data(elapsed=3))
         collector.push('hit', self._get_data(elapsed=2))
@@ -58,7 +58,7 @@ class TestStreamCollector(TestCase):
         self.assertEquals(avg, 3.0)
 
     def test_average_request_time_with_cycle_filtering(self):
-        collector = StreamCollector()
+        collector = Collector()
         collector.push('hit', self._get_data(elapsed=1, cycle=1))
         collector.push('hit', self._get_data(elapsed=3, cycle=2))
         collector.push('hit', self._get_data(elapsed=2, cycle=3))
@@ -78,11 +78,11 @@ class TestStreamCollector(TestCase):
                           2.6666666666666665)
 
     def test_average_request_time_when_no_data(self):
-        collector = StreamCollector()
+        collector = Collector()
         self.assertEquals(collector.average_request_time(), None)
 
     def test_urls(self):
-        collector = StreamCollector()
+        collector = Collector()
         collector.push('hit', self._get_data())
         collector.push('hit', self._get_data(url='http://another-one'))
 
@@ -90,7 +90,7 @@ class TestStreamCollector(TestCase):
         self.assertEquals(collector.urls, urls)
 
     def test_hits_success_rate(self):
-        collector = StreamCollector()
+        collector = Collector()
         collector.push('hit', self._get_data(status=200))
         collector.push('hit', self._get_data(status=200))
         collector.push('hit', self._get_data(status=200))
@@ -101,7 +101,7 @@ class TestStreamCollector(TestCase):
         self.assertEquals(collector.hits_success_rate(cycle=1), 1)
 
     def test_requests_per_second(self):
-        collector = StreamCollector()
+        collector = Collector()
         for x in range(20):
             collector.push('hit', self._get_data(status=200))
 
@@ -113,14 +113,14 @@ class TestStreamCollector(TestCase):
         t = Test(TIME1)
         t.end = TIME2
 
-        collector = StreamCollector()
+        collector = Collector()
         collector.tests['toto', 1] = t
         collector.tests['tutu', 1] = t
 
         self.assertEquals(collector.average_test_duration(), 120)
 
     def test_tests_per_second(self):
-        collector = StreamCollector()
+        collector = Collector()
         for x in range(20):
             collector.startTest('rainbow', x, 1, 1)
 
@@ -129,11 +129,11 @@ class TestStreamCollector(TestCase):
         self.assertTrue(0.16 < collector.tests_per_second() < 0.17)
 
     def test_unknown_datatype_raises(self):
-        collector = StreamCollector()
+        collector = Collector()
         self.assertRaises(KeyError, collector.push, 'unknown', {})
 
     def test_get_tests_filters_cycles(self):
-        collector = StreamCollector()
+        collector = Collector()
 
         collector.tests['bacon', 1] = Test(name='bacon', cycle=1)
         collector.tests['egg', 1] = Test(name='egg', cycle=1)
@@ -142,7 +142,7 @@ class TestStreamCollector(TestCase):
         self.assertEquals(len(collector._get_tests(cycle=1)), 2)
 
     def test_get_tests_filters_names(self):
-        collector = StreamCollector()
+        collector = Collector()
 
         collector.tests['bacon', 1] = Test(name='bacon', cycle=1)
         collector.tests['bacon', 2] = Test(name='bacon', cycle=2)
@@ -151,7 +151,7 @@ class TestStreamCollector(TestCase):
         self.assertEquals(len(collector._get_tests(name='bacon')), 2)
 
     def test_get_tests_filters_by_both_fields(self):
-        collector = StreamCollector()
+        collector = Collector()
 
         collector.tests['bacon', 1] = Test(name='bacon', cycle=1)
         collector.tests['bacon', 2] = Test(name='bacon', cycle=2)
@@ -161,11 +161,11 @@ class TestStreamCollector(TestCase):
 
     def test_test_success_rate_is_none(self):
         # it should be none if no tests had been collected yet.
-        collector = StreamCollector()
+        collector = Collector()
         self.assertEquals(None, collector.test_success_rate())
 
     def test_test_success_rate_is_correct(self):
-        collector = StreamCollector()
+        collector = Collector()
 
         collector.startTest('bacon', 1, 1, 1)
         collector.addSuccess('bacon', 1, 1, 1)
