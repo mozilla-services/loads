@@ -4,7 +4,6 @@ from webtest.app import TestApp as _TestApp
 from wsgiproxy import HostProxy
 from wsgiproxy.requests_client import HttpClient
 
-from loads.stream import get_global_stream, set_global_stream
 from loads.util import dns_resolve
 
 
@@ -41,8 +40,10 @@ class TestApp(_TestApp):
     """A subclass of webtest.TestApp which uses the requests backend per
     default.
     """
-    def __init__(self, app, session, *args, **kwargs):
+    def __init__(self, app, session, stream, *args, **kwargs):
         self.session = session
+        self.stream = stream
+
         client = RequestsClient(session=self.session)
         app = HostProxy(app, client=client)
 
@@ -57,9 +58,10 @@ class Session(_Session):
     streamer.
     """
 
-    def __init__(self, test):
+    def __init__(self, test, stream):
         _Session.__init__(self)
         self.test = test
+        self.stream = stream
         self.loads_status = None
 
     def send(self, request, **kwargs):
@@ -91,9 +93,4 @@ class Session(_Session):
                 'method': req.method,
                 'loads_status': list(loads_status)}
 
-        stream = get_global_stream()
-
-        if stream is None:
-            stream = set_global_stream('stdout', {'total': 1})
-
-        stream.push('hit', data)
+        self.stream.push('hit', data)

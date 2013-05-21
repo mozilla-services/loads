@@ -4,7 +4,7 @@ import sys
 import StringIO
 
 from loads.stream.std import StdStream
-from loads.stream import set_global_stream, stream_list
+from loads.stream import create_stream, stream_list
 
 
 class TestStdStream(unittest.TestCase):
@@ -30,7 +30,7 @@ class TestStdStream(unittest.TestCase):
         self.assertTrue('100%' in output)
 
     def test_global(self):
-        self.assertRaises(NotImplementedError, set_global_stream, 'xxx', None)
+        self.assertRaises(NotImplementedError, create_stream, 'xxx', None)
 
         wanted = ['zmq', 'null', 'file', 'stdout', 'collector']
         wanted.sort()

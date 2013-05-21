@@ -13,8 +13,7 @@ from zmq.green.eventloop import ioloop, zmqstream
 
 from loads.util import resolve_name
 from loads.case import TestResult
-from loads.stream import (set_global_stream, stream_list, StreamCollector,
-                          get_global_stream)
+from loads.stream import stream_list, StreamCollector, create_stream
 from loads import __version__
 from loads.transport.client import Client
 from loads.transport.util import DEFAULT_FRONTEND
@@ -41,16 +40,16 @@ class Runner(object):
 
         # If we are in slave mode, send the results via the ZMQ stream.
         if self.slave:
-            self.stream = self.args['stream'] = 'zmq'
-            stream = set_global_stream('zmq', self.args)
+            stream = self.args['stream'] = 'zmq'
+            self.stream = create_stream('zmq', self.args)
             self.test_result = stream
 
         # The normal behavior is to collect the results locally.
         else:
-            self.stream = args.get('stream', 'stdout')
-            if self.stream == 'stdout':
+            stream = args.get('stream', 'stdout')
+            if stream == 'stdout':
                 args['total'] = self.total
-            stream = set_global_stream(self.stream, args)
+            self.stream = create_stream(stream, args)
             self.test_result = TestResult()
 
     def execute(self):
@@ -74,7 +73,10 @@ class Runner(object):
     def _run(self, num, test, cycles, user):
         for cycle in cycles:
             for current_cycle in range(cycle):
-                test(self.test_result, cycle, user, current_cycle + 1)
+                test(result=self.test_result,
+                     cycle=cycle,
+                     user=user,
+                     current_cycle=current_cycle + 1)
                 gevent.sleep(0)
 
     def _execute(self):
@@ -91,7 +93,7 @@ class Runner(object):
 
         # creating the test case instance
         klass = self.test.im_class
-        ob = klass(self.test.__name__)
+        ob = klass(self.test.__name__, self.stream)
 
         for user in self.users:
             group = [gevent.spawn(self._run, i, ob, self.cycles, user)
@@ -101,6 +103,11 @@ class Runner(object):
 
         gevent.sleep(0)
         return self.test_result
+
+    def __del__(self):
+        # be sure we flush the stream if we need it.
+        if hasattr(self.stream, 'flush'):
+            self.stream.flush()
 
 
 class DistributedRunner(Runner):
@@ -256,7 +263,6 @@ def main():
 
     args = dict(args._get_kwargs())
     res = run(args)
-    get_global_stream().flush()
     return res
 
 

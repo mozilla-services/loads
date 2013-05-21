@@ -2,8 +2,7 @@ import unittest
 
 from loads.measure import Session
 from loads import measure
-from loads.stream import (set_global_stream, get_global_stream,
-                          register_stream, _STREAMS)
+from loads.stream import create_stream, register_stream, _STREAMS
 
 from requests.adapters import HTTPAdapter
 
@@ -53,9 +52,8 @@ class TestMeasure(unittest.TestCase):
 
     def test_session(self):
         register_stream(_Stream)
-        set_global_stream('test', None)
+        stream = create_stream('test', None)
         test = _FakeTest()
-        session = Session(test)
+        session = Session(test, stream)
         session.get('http://impossible.place')
-        stream = get_global_stream()
         self.assertEqual(len(stream.stream), 1)

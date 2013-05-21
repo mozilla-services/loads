@@ -1,20 +1,11 @@
-
-
-_STREAM = None
 _STREAMS = {}
 
 
-def get_global_stream():
-    return _STREAM
-
-
-def set_global_stream(kind, args):
-    global _STREAM
+def create_stream(kind, args):
     if kind not in _STREAMS:
         raise NotImplementedError(kind)
 
-    _STREAM = _STREAMS[kind](args)
-    return _STREAM
+    return _STREAMS[kind](args)
 
 
 def register_stream(klass):
