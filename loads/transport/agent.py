@@ -102,10 +102,12 @@ class Agent(object):
         args['worker_id'] = os.getpid()
 
         try:
-            if getattr(args, 'worker_path', None) is not None:
-                built_args = ['--%s %s' % (key, value)
-                              for (key, value) in args.items()]
-                p = subprocess.call([args['worker_path']] + built_args)
+            if args.get('test_runner', None) is not None:
+                built_args = ' '.join(
+                        ['--%s %s' % (key, value)
+                         for (key, value) in args.items()]).split()
+                test_runner_args = map(str, [args['test_runner']] + built_args)
+                p = subprocess.call(test_runner_args)
             else:
                 p = Process(target=functools.partial(run, args))
                 p.start()

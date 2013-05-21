@@ -214,8 +214,8 @@ def main():
     parser.add_argument('-b', '--broker', help='Broker endpoint',
                         default=DEFAULT_FRONTEND)
 
-    parser.add_argument('-w', '--worker-path', default=None,
-                        help='The path to the worker running the tests. ' +
+    parser.add_argument('--test-runner', default=None,
+                        help='The path to binary to use as the test runner. ' +
                              'The default is this runner')
 
     streams = [st.name for st in stream_list()]
