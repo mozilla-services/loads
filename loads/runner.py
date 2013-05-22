@@ -11,7 +11,6 @@ import zmq.green as zmq
 from zmq.green.eventloop import ioloop, zmqstream
 
 from loads.util import resolve_name
-from loads.case import TestResult
 from loads.collector import Collector
 from loads.relay import ZMQRelay
 from loads.output import output_list, create_output
@@ -46,42 +45,24 @@ class Runner(object):
         # If we are in slave mode, set the collector to a 0mq relay
         if self.slave:
             self.collector = ZMQRelay(self.args)
-            self.test_result = self.collector
-            # XXX Maybe we don't really need two different things for the test
-            # result and for the collector (and they could be only one same
-            # thing)
 
         # The normal behavior is to collect the results locally.
         else:
             self.collector = Collector()
-            self.test_result = TestResult()
 
         output = args.get('output', 'stdout')
         self.outputs.append(create_output(output, args))
 
     def execute(self):
-        result = self._execute()
-
-        # XXX Don't remove the other errors here?
-        if len(result.errors) > 0:
-            error = result.errors[0]
-        elif len(result.failures) > 0:
-            error = result.failures[0]
-        else:
-            error = None
-
-        if error is not None:
-            tb = error[-1]
-            print tb
+        self._execute()
+        if self.collector.has_errors_or_failures:
             return 1
-        else:
-            return 0
+        return 0
 
     def _run(self, num, test, cycles, user):
         for cycle in cycles:
             for current_cycle in range(cycle):
-                test(result=self.test_result,
-                     cycle=cycle,
+                test(cycle=cycle,
                      user=user,
                      current_cycle=current_cycle + 1)
                 gevent.sleep(0)
@@ -109,7 +90,6 @@ class Runner(object):
             gevent.joinall(group)
 
         gevent.sleep(0)
-        return self.test_result
 
     def __del__(self):
         # be sure we flush the outputs if we need it.
@@ -137,7 +117,7 @@ class DistributedRunner(Runner):
         self.pull.setsockopt(zmq.HWM, 8096 * 4)
         self.pull.setsockopt(zmq.SWAP, 200 * 2 ** 10)
         self.pull.setsockopt(zmq.LINGER, 1000)
-        self.pull.bind(self.args['stream_zmq_endpoint'])
+        self.pull.bind(self.args['zmq_endpoint'])
 
         # io loop
         self.loop = ioloop.IOLoop()
@@ -223,6 +203,9 @@ def main():
     parser.add_argument('--test-runner', default=None,
                         help='The path to binary to use as the test runner. ' +
                              'The default is this runner')
+
+    parser.add_argument('--zmq-endpoint', default='tcp://127.0.0.1:5558',
+                        help='Socket to send the results to')
 
     outputs = [st.name for st in output_list()]
     outputs.sort()
