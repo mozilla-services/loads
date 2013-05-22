@@ -21,10 +21,11 @@ class TestCase(unittest.TestCase):
         return create_ws(url, self._loads_collector, callback, protocols,
                          extensions)
 
-    def run(self, result, cycle=-1, user=-1, current_cycle=-1):
+    def run(self, cycle=-1, user=-1, current_cycle=-1):
         # pass the information about the cycles to the session so we're able to
         # track which cycle the information sent belongs to.
         self.session.loads_status = (cycle, user, current_cycle)
+        result = self._loads_collector
         orig_result = result
         if result is None:
             result = self.defaultTestResult()
@@ -61,7 +62,8 @@ class TestCase(unittest.TestCase):
                 try:
                     testMethod()
                 except self.failureException:
-                    result.addFailure(self, sys.exc_info())
+                    result.addFailure(self, sys.exc_info(), cycle, user,
+                                      current_cycle)
                 except _ExpectedFailure as e:
                     addExpectedFailure = getattr(result,
                                                  'addExpectedFailure',
