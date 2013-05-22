@@ -33,6 +33,14 @@ class Collector(object):
         end = self.stop_time or datetime.utcnow()
         return (end - self.start_time).seconds
 
+    @property
+    def has_errors_or_failures(self):
+        tests = self._get_tests()
+        errors = 0
+        for fail in ('errors', 'failures'):
+            errors += sum([len(getattr(t, fail)) for t in tests])
+        return errors
+
     def _get_hits(self, url=None, cycle=None):
         """Filters the hits with the given parameters.
 
