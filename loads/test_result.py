@@ -171,10 +171,8 @@ class TestResult(object):
         self.socket_data_received += size
 
     def __getattribute__(self, name):
-        # That's to manage the observers. Each time one of the methods used to
-        # add data in the test_result is called, the obeserver's same method will
-        # be called as well, so it can update its state if it wants.
-
+        # call the observer's "push" method after calling the method of the
+        # test_result itself.
         attr = object.__getattribute__(self, name)
         if name in ('startTestRun', 'stopTestRun', 'startTest', 'stopTest',
                     'addError', 'addFailure', 'addSuccess', 'add_hit',

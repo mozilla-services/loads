@@ -12,7 +12,8 @@ class StdOutput(object):
     def flush(self):
         sys.stdout.write("\nHits: %d" % self.test_result.nb_hits)
         sys.stdout.write("\nStarted: %s" % self.test_result.start_time)
-        sys.stdout.write("\nDuration: %.2f seconds" % self.test_result.duration)
+        sys.stdout.write("\nDuration: %.2f seconds"
+                         % self.test_result.duration)
         sys.stdout.write("\nApproximate Average RPS: %d"
                          % self.test_result.average_request_time)
         sys.stdout.write("\nOpened web sockets: %d" % self.test_result.sockets)

@@ -151,7 +151,8 @@ class TestTestResult(TestCase):
         test_result.tests['bacon', 2] = Test(name='bacon', cycle=2)
         test_result.tests['spam', 2] = Test(name='spam', cycle=2)
 
-        self.assertEquals(len(test_result._get_tests(name='bacon', cycle=2)), 1)
+        self.assertEquals(len(test_result._get_tests(name='bacon', cycle=2)),
+                          1)
 
     def test_test_success_rate_is_none(self):
         # it should be none if no tests had been collected yet.

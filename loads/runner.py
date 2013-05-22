@@ -97,7 +97,7 @@ class Runner(object):
         gevent.sleep(0)
 
     def __del__(self):
-        # be sure we flush the outputs if we need it.
+        # be sure we flush the outputs that need it.
         for output in self.outputs:
             if hasattr(output, 'flush'):
                 output.flush()
@@ -133,8 +133,8 @@ class DistributedRunner(Runner):
         self.outputs = []
 
     def _recv_result(self, msg):
-        """When we receive some data from zeromq, send it to the test_result for
-           later use."""
+        """When we receive some data from zeromq, send it to the test_result
+           for later use."""
         data = json.loads(msg[0])
         data_type = data.pop('data_type')
 
