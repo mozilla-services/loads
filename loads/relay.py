@@ -1,5 +1,3 @@
-import functools
-
 import zmq.green as zmq
 
 from loads.util import DateTimeJSONEncoder
@@ -12,6 +10,7 @@ class ZMQRelay(object):
                             str, 'tcp://127.0.0.1:5558', True)}
 
     def __init__(self, args):
+        self.args = args
         self.context = zmq.Context()
         self._push = self.context.socket(zmq.PUSH)
         self._push.setsockopt(zmq.HWM, 8096 * 4)
@@ -22,12 +21,45 @@ class ZMQRelay(object):
         self.encoder = DateTimeJSONEncoder()
         self.wid = self.args['worker_id']
 
-    def __getattr__(self, name):
-        # Relay all the methods to the self.push method if they are part of the
-        # protocol.
-        if name in ('startTest', 'stopTest', 'addFailure', 'addError',
-                    'addSuccess', 'add_hit'):  # XXX change to camel_case
-            return functools.partial(self.push, data_type=name)
+    def startTest(self, test, cycle, user, current_cycle):
+        self.push('startTest',
+                  test=test.__name__,
+                  cycle=cycle,
+                  user=user,
+                  current_cycle=current_cycle)
+
+    def stopTest(self, test, cycle, user, current_cycle):
+        self.push('stopTest',
+                  test=test.__name__,
+                  cycle=cycle,
+                  user=user,
+                  current_cycle=current_cycle)
+
+    def addFailure(self, test, exc, cycle, user, current_cycle):
+        self.push('addFailure',
+                  test=test.__name__,
+                  exc=exc,
+                  cycle=cycle,
+                  user=user,
+                  current_cycle=current_cycle)
+
+    def addError(self, test, exc, cycle, user, current_cycle):
+        self.push('addError',
+                  test=test.__name__,
+                  exc=exc,
+                  cycle=cycle,
+                  user=user,
+                  current_cycle=current_cycle)
+
+    def addSuccess(self, test, cycle, user, current_cycle):
+        self.push('addSuccess',
+                  test=test.__name__,
+                  cycle=cycle,
+                  user=user,
+                  current_cycle=current_cycle)
+
+    def add_hit(self, **data):
+        self.push('add_hit', **data)
 
     def push(self, data_type, **data):
         data.update({'data_type': data_type, 'worker_id': self.wid})
