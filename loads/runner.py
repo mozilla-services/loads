@@ -11,7 +11,7 @@ import zmq.green as zmq
 from zmq.green.eventloop import ioloop, zmqstream
 
 from loads.util import resolve_name
-from loads.collector import Collector
+from loads.test_result import TestResult
 from loads.relay import ZMQRelay
 from loads.output import output_list, create_output
 
@@ -42,25 +42,25 @@ class Runner(object):
 
         args['total'] = self.total
 
-        # If we are in slave mode, set the collector to a 0mq relay
+        # If we are in slave mode, set the test_result to a 0mq relay
         if self.slave:
-            self.collector = ZMQRelay(self.args)
+            self.test_result = ZMQRelay(self.args)
 
         # The normal behavior is to collect the results locally.
         else:
-            self.collector = Collector()
+            self.test_result = TestResult()
 
         output = args.get('output', 'stdout')
         self.register_output(output, args)
 
     def register_output(self, output_name, args):
-        output = create_output(output_name, self.collector, args)
+        output = create_output(output_name, self.test_result, args)
         self.outputs.append(output)
-        self.collector.add_observer(output)
+        self.test_result.add_observer(output)
 
     def execute(self):
         self._execute()
-        if self.collector.has_errors_or_failures:
+        if self.test_result.has_errors_or_failures:
             return 1
         return 0
 
@@ -86,7 +86,7 @@ class Runner(object):
 
         # creating the test case instance
         klass = self.test.im_class
-        ob = klass(self.test.__name__, self.collector)
+        ob = klass(self.test.__name__, self.test_result)
 
         for user in self.users:
             group = [gevent.spawn(self._run, i, ob, self.cycles, user)
@@ -109,13 +109,13 @@ class DistributedRunner(Runner):
 
     The runner need to have agents already running. It will send them commands
     trought the zmq pipeline and get back their results, which will be
-    in turn sent to the local collector.
+    in turn sent to the local test_result.
     """
     def __init__(self, args):
         super(DistributedRunner, self).__init__(args)
         self.ended = self.hits = 0
         self.loop = None
-        self.collector = Collector()
+        self.test_result = TestResult()
 
         context = zmq.Context()
         self.pull = context.socket(zmq.PULL)
@@ -129,19 +129,19 @@ class DistributedRunner(Runner):
         self.zstream = zmqstream.ZMQStream(self.pull, self.loop)
         self.zstream.on_recv(self._recv_result)
 
-        # XXX Add the output as observers to the collector
+        # XXX Add the output as observers to the test_result
         self.outputs = []
 
     def _recv_result(self, msg):
-        """When we receive some data from zeromq, send it to the collector for
+        """When we receive some data from zeromq, send it to the test_result for
            later use."""
         data = json.loads(msg[0])
         data_type = data.pop('data_type')
 
-        method = getattr(self.collector, data_type)
+        method = getattr(self.test_result, data_type)
         method(**data)
 
-        # XXX Ask the collector if everything is finished
+        # XXX Ask the test_result if everything is finished
         # The previous version was like that:
         # if self.ended == self.total:
         #     self.loop.stop()

@@ -19,7 +19,7 @@ class _FakeResponse(object):
     url = 'http://impossible.place'
 
 
-class _Collector(object):
+class _TestResult(object):
 
     def __init__(self):
         self.data = []
@@ -55,7 +55,7 @@ class TestMeasure(unittest.TestCase):
 
     def test_session(self):
         test = _FakeTest()
-        collector = _Collector()
-        session = Session(test, collector)
+        test_result = _TestResult()
+        session = Session(test, test_result)
         session.get('http://impossible.place')
-        self.assertEqual(len(collector.data), 1)
+        self.assertEqual(len(test_result.data), 1)

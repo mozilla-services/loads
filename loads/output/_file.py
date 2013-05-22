@@ -6,8 +6,8 @@ class FileOutput(object):
     name = 'file'
     options = {'filename': ('Filename', str, None, True)}
 
-    def __init__(self, collector, args):
-        self.collector = collector
+    def __init__(self, test_result, args):
+        self.test_result = test_result
         self.current = 0
         self.filename = args['output_file_filename']
         self.encoder = DateTimeJSONEncoder()
@@ -21,5 +21,5 @@ class FileOutput(object):
         self.fd.close()
 
     def flush(self):
-        # XXX Read what's in the collector and build a report with it.
+        # XXX Read what's in the test_result and build a report with it.
         raise NotImplemented()

@@ -8,24 +8,24 @@ _SOCKETS = defaultdict(list)
 
 
 class WebSocketHook(WebSocketClient):
-    def __init__(self, url, collector, protocols=None, extensions=None,
+    def __init__(self, url, test_result, protocols=None, extensions=None,
                  callback=None):
         super(WebSocketHook, self).__init__(url, protocols,
                                             extensions)
         self.callback = callback
-        self._collector = collector
+        self._test_result = test_result
 
     def received_message(self, m):
         data = {'size': len(m.data)}
-        self._collector.push('websocket-message', data)
+        self._test_result.push('websocket-message', data)
         self.callback(m)
 
     def opened(self):
-        self._collector.push('websocket-opened')
+        self._test_result.push('websocket-opened')
         super(WebSocketHook, self).opened()
 
     def closed(self, code, reason):
-        self._collector.push('websocket-closed', code=code, reason=reason)
+        self._test_result.push('websocket-closed', code=code, reason=reason)
         super(WebSocketHook, self).closed(code, reason)
 
 

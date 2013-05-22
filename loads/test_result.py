@@ -2,8 +2,8 @@ from datetime import datetime
 from collections import defaultdict
 
 
-class Collector(object):
-    """Data Collector.
+class TestResult(object):
+    """Data TestResult.
 
     This is the class receiving all the information about the tests and the
     requests.
@@ -172,7 +172,7 @@ class Collector(object):
 
     def __getattribute__(self, name):
         # That's to manage the observers. Each time one of the methods used to
-        # add data in the collector is called, the obeserver's same method will
+        # add data in the test_result is called, the obeserver's same method will
         # be called as well, so it can update its state if it wants.
 
         attr = object.__getattribute__(self, name)

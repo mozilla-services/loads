@@ -1,11 +1,11 @@
 _OUTPUTS = {}
 
 
-def create_output(kind, collector, args):
+def create_output(kind, test_result, args):
     if kind not in _OUTPUTS:
         raise NotImplementedError(kind)
 
-    return _OUTPUTS[kind](collector, args)
+    return _OUTPUTS[kind](test_result, args)
 
 
 def register_output(klass):

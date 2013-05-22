@@ -9,23 +9,24 @@ from loads.websockets import create_ws
 
 
 class TestCase(unittest.TestCase):
-    def __init__(self, test_name, collector):
+    def __init__(self, test_name, test_result=None):
         super(TestCase, self).__init__(test_name)
-        self._loads_collector = collector
+        if test_result is None:
+            test_result = TestResult()
 
-        self.session = Session(test=self, collector=self._loads_collector)
-        self.app = TestApp(self.server_url, self.session,
-                           self._loads_collector)
+        self._test_result = test_result
+        self.session = Session(test=self, test_result=test_result)
+        self.app = TestApp(self.server_url, self.session, test_result)
 
     def create_ws(self, url, callback, protocols=None, extensions=None):
-        return create_ws(url, self._loads_collector, callback, protocols,
+        return create_ws(url, self._loads_test_result, callback, protocols,
                          extensions)
 
     def run(self, cycle=-1, user=-1, current_cycle=-1):
         # pass the information about the cycles to the session so we're able to
         # track which cycle the information sent belongs to.
         self.session.loads_status = (cycle, user, current_cycle)
-        result = self._loads_collector
+        result = self._test_result
         orig_result = result
         if result is None:
             result = self.defaultTestResult()

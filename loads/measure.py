@@ -40,9 +40,9 @@ class TestApp(_TestApp):
     """A subclass of webtest.TestApp which uses the requests backend per
     default.
     """
-    def __init__(self, app, session, collector, *args, **kwargs):
+    def __init__(self, app, session, test_result, *args, **kwargs):
         self.session = session
-        self.collector = collector
+        self.test_result = test_result
 
         client = RequestsClient(session=self.session)
         app = HostProxy(app, client=client)
@@ -50,18 +50,18 @@ class TestApp(_TestApp):
         super(TestApp, self).__init__(app, *args, **kwargs)
 
     # XXX redefine here the _do_request, check_status and check_errors methods.
-    # so we can actually use them to send information to the collector
+    # so we can actually use them to send information to the test_result
 
 
 class Session(_Session):
     """Extends Requests' Session object in order to send information to the
-    collector.
+    test_result.
     """
 
-    def __init__(self, test, collector):
+    def __init__(self, test, test_result):
         _Session.__init__(self)
         self.test = test
-        self.collector = collector
+        self.test_result = test_result
         self.loads_status = None
 
     def send(self, request, **kwargs):
@@ -81,13 +81,13 @@ class Session(_Session):
 
     def _analyse_request(self, req):
         """Analyse some information about the request and send the information
-        to the collector.
+        to the test_result.
 
         :param req: the request to analyse.
         """
         loads_status = self.loads_status or (None, None, None)
 
-        self.collector.add_hit(
+        self.test_result.add_hit(
                 elapsed=req.elapsed,
                 started=req.started,
                 status=req.status_code,
