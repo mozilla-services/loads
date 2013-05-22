@@ -18,11 +18,11 @@ class Collector(object):
         self.config = config
         self.hits = []
         self.tests = defaultdict(Test)
+        self.sockets = 0
+        self.socket_data_received = 0
         self.start_time = None
         self.stop_time = None
-
-    def add_hit(self, **data):
-        self.hits.append(Hit(**data))
+        self.observers = []
 
     @property
     def nb_hits(self):
@@ -40,6 +40,15 @@ class Collector(object):
         for fail in ('errors', 'failures'):
             errors += sum([len(getattr(t, fail)) for t in tests])
         return errors
+
+    @property
+    def urls(self):
+        """Returns the URLs that had been called."""
+        return set([h.url for h in self.hits])
+
+    @property
+    def nb_tests(self):
+        return len(self.tests)
 
     def _get_hits(self, url=None, cycle=None):
         """Filters the hits with the given parameters.
@@ -81,11 +90,6 @@ class Collector(object):
 
         return filter(_filter, self.tests.values())
 
-    @property
-    def urls(self):
-        """Returns the URLs that had been called."""
-        return set([h.url for h in self.hits])
-
     def average_request_time(self, url=None, cycle=None):
         """Computes the average time a request takes.
 
@@ -113,10 +117,6 @@ class Collector(object):
         success = [h for h in hits if 200 <= h.status < 400]
 
         return float(len(success)) / len(hits)
-
-    @property
-    def nb_tests(self):
-        return len(self.tests)
 
     def tests_per_second(self):
         return (self.nb_tests /
@@ -160,6 +160,36 @@ class Collector(object):
 
     def addSuccess(self, test, cycle, user, current_cycle):
         self.tests[test, cycle].success += 1
+
+    def add_hit(self, **data):
+        self.hits.append(Hit(**data))
+
+    def socket_open(self):
+        self.sockets += 1
+
+    def socket_message(self, size):
+        self.socket_data_received += size
+
+    def __getattribute__(self, name):
+        # That's to manage the observers. Each time one of the methods used to
+        # add data in the collector is called, the obeserver's same method will
+        # be called as well, so it can update its state if it wants.
+
+        attr = object.__getattribute__(self, name)
+        if name in ('startTestRun', 'stopTestRun', 'startTest', 'stopTest',
+                    'addError', 'addFailure', 'addSuccess', 'add_hit',
+                    'socket_open', 'socket_message'):
+
+            def wrapper(*args, **kwargs):
+                ret = attr(*args, **kwargs)
+                for obs in self.observers:
+                    obs.push(name, *args, **kwargs)
+                return ret
+            return wrapper
+        return attr
+
+    def add_observer(self, observer):
+        self.observers.append(observer)
 
 
 class Hit(object):

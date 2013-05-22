@@ -61,6 +61,15 @@ class ZMQRelay(object):
     def add_hit(self, **data):
         self.push('add_hit', **data)
 
+    def socket_open(self):
+        self.push('socket_open')
+
+    def socket_message(self, size):
+        self.push('socket_message', size=size)
+
     def push(self, data_type, **data):
         data.update({'data_type': data_type, 'worker_id': self.wid})
         self._push.send(self.encoder.encode(data), zmq.NOBLOCK)
+
+    def add_observer(self, *args, **kwargs):
+        pass  # NOOP

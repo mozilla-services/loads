@@ -51,7 +51,12 @@ class Runner(object):
             self.collector = Collector()
 
         output = args.get('output', 'stdout')
-        self.outputs.append(create_output(output, args))
+        self.register_output(output, args)
+
+    def register_output(self, output_name, args):
+        output = create_output(output_name, self.collector, args)
+        self.outputs.append(output)
+        self.collector.add_observer(output)
 
     def execute(self):
         self._execute()
