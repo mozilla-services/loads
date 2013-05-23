@@ -27,12 +27,12 @@ class TestCase(unittest.TestCase):
         # track which cycle the information sent belongs to.
         self.session.loads_status = (cycle, user, current_cycle)
         result = self._test_result
-        orig_result = result
         if result is None:
             result = self.defaultTestResult()
-            startTestRun = getattr(result, 'startTestRun', None)
-            if startTestRun is not None:
-                startTestRun()
+
+        startTestRun = getattr(result, 'startTestRun', None)
+        if startTestRun is not None:
+            startTestRun()
 
         self._resultForDoCleanups = result
         result.startTest(self, cycle, user, current_cycle)
@@ -108,10 +108,9 @@ class TestCase(unittest.TestCase):
                 result.addSuccess(self, cycle, user, current_cycle)
         finally:
             result.stopTest(self, cycle, user, current_cycle)
-            if orig_result is None:
-                stopTestRun = getattr(result, 'stopTestRun', None)
-                if stopTestRun is not None:
-                    stopTestRun()
+            stopTestRun = getattr(result, 'stopTestRun', None)
+            if stopTestRun is not None:
+                stopTestRun()
 
 
 class TestResult(unittest.TestResult):
