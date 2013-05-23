@@ -96,11 +96,11 @@ class Runner(object):
 
         gevent.sleep(0)
 
-    def __del__(self):
         # be sure we flush the outputs that need it.
         for output in self.outputs:
             if hasattr(output, 'flush'):
                 output.flush()
+
 
 
 class DistributedRunner(Runner):
