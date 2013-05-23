@@ -14,6 +14,8 @@ class TestResult(object):
     the output.
     """
 
+    __test__ = False  # This is not something to run as a test.
+
     def __init__(self, config=None):
         self.config = config
         self.hits = []
@@ -100,7 +102,8 @@ class TestResult(object):
             You can filter by the cycle, to only know the average request time
             during a particular cycle.
         """
-        elapsed = [h.elapsed.microseconds for h in self._get_hits(url, cycle)]
+        elapsed = [h.elapsed.total_seconds()
+                   for h in self._get_hits(url, cycle)]
 
         if elapsed:
             return float(sum(elapsed)) / len(elapsed)

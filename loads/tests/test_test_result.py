@@ -1,9 +1,12 @@
 from loads.test_result import TestResult, Hit, Test
 from unittest import TestCase
-import datetime
+from datetime import datetime, timedelta
 
-TIME1 = datetime.datetime(2013, 5, 14, 0, 51, 8)
-TIME2 = datetime.datetime(2013, 5, 14, 0, 53, 8)
+TIME1 = datetime(2013, 5, 14, 0, 51, 8)
+TIME2 = datetime(2013, 5, 14, 0, 53, 8)
+_1 = timedelta(seconds=1)
+_2 = timedelta(seconds=2)
+_3 = timedelta(seconds=3)
 
 
 class TestTestResult(TestCase):
@@ -35,21 +38,21 @@ class TestTestResult(TestCase):
 
     def test_average_request_time_without_filter(self):
         test_result = TestResult()
-        test_result.add_hit(**self._get_data(elapsed=1))
-        test_result.add_hit(**self._get_data(elapsed=3))
-        test_result.add_hit(**self._get_data(elapsed=2))
+        test_result.add_hit(**self._get_data(elapsed=_1))
+        test_result.add_hit(**self._get_data(elapsed=_3))
+        test_result.add_hit(**self._get_data(elapsed=_2))
         test_result.add_hit(**self._get_data(url='http://another-one',
-                                           elapsed=3))
+                                             elapsed=_3))
         self.assertEquals(test_result.average_request_time(), 2.25)
 
     def test_average_request_time_with_url_filtering(self):
 
         test_result = TestResult()
-        test_result.add_hit(**self._get_data(elapsed=1))
-        test_result.add_hit(**self._get_data(elapsed=3))
-        test_result.add_hit(**self._get_data(elapsed=2))
+        test_result.add_hit(**self._get_data(elapsed=_1))
+        test_result.add_hit(**self._get_data(elapsed=_3))
+        test_result.add_hit(**self._get_data(elapsed=_2))
         test_result.add_hit(**self._get_data(url='http://another-one',
-                                           elapsed=3))
+                                             elapsed=_3))
         # We want to filter out some URLs
         avg = test_result.average_request_time('http://notmyidea.org')
         self.assertEquals(avg, 2.0)
@@ -59,19 +62,19 @@ class TestTestResult(TestCase):
 
     def test_average_request_time_with_cycle_filtering(self):
         test_result = TestResult()
-        test_result.add_hit(**self._get_data(elapsed=1, cycle=1))
-        test_result.add_hit(**self._get_data(elapsed=3, cycle=2))
-        test_result.add_hit(**self._get_data(elapsed=2, cycle=3))
-        test_result.add_hit(**self._get_data(elapsed=3, cycle=3))
+        test_result.add_hit(**self._get_data(elapsed=_1, cycle=1))
+        test_result.add_hit(**self._get_data(elapsed=_3, cycle=2))
+        test_result.add_hit(**self._get_data(elapsed=_2, cycle=3))
+        test_result.add_hit(**self._get_data(elapsed=_3, cycle=3))
 
         avg = test_result.average_request_time(cycle=3)
         self.assertEquals(avg, 2.5)
 
         # try adding another filter on the URL
-        test_result.add_hit(**self._get_data(elapsed=3, cycle=3,
+        test_result.add_hit(**self._get_data(elapsed=_3, cycle=3,
                                            url='http://another-one'))
         avg = test_result.average_request_time(cycle=3,
-                                             url='http://notmyidea.org')
+                                               url='http://notmyidea.org')
         self.assertEquals(avg, 2.5)
 
         self.assertEquals(test_result.average_request_time(cycle=3),

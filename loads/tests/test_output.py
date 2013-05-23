@@ -12,7 +12,7 @@ class FakeTestResult(object):
         self.nb_hits = 10
         self.start_time = datetime.datetime.now()
         self.duration = 0
-        self.average_request_time = 0
+        self.average_request_time = lambda: 0
         self.sockets = 0
         self.socket_data_received = 0
 
