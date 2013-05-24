@@ -16,16 +16,15 @@ class WebSocketHook(WebSocketClient):
         self._test_result = test_result
 
     def received_message(self, m):
-        data = {'size': len(m.data)}
-        self._test_result.push('websocket-message', data)
+        self._test_result.socket_message(len(m.data))
         self.callback(m)
 
     def opened(self):
-        self._test_result.push('websocket-opened')
+        self._test_result.socket_open()
         super(WebSocketHook, self).opened()
 
     def closed(self, code, reason):
-        self._test_result.push('websocket-closed', code=code, reason=reason)
+        self._test_result.socket_close()
         super(WebSocketHook, self).closed(code, reason)
 
 

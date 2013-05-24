@@ -27,21 +27,26 @@ class StdOutput(object):
         write("\n\n")
 
         if self.results.nb_errors:
-            exc_class, exc, tb = self.results.errors.next()[0]
-            sys.stderr.write(str(exc))
-            sys.stderr.write("\n Traceback: \n")
-
-            traceback.print_tb(tb, sys.stderr)
+            self._print_tb(self.results.errors)
 
         if self.results.nb_failures:
-            write(self.results.failures.next())
+            self._print_tb(self.results.failures)
 
         sys.stdout.flush()
         sys.stderr.flush()
 
-    def push(self, method, *args, **data):
-        if method == 'add_hit':
-            percent = int(float(data['current'])
+    def _print_tb(self, data):
+        exc_class, exc, tb = data.next()[0]
+        sys.stderr.write("\n %s: %s" % (exc_class.__name__, exc))
+        sys.stderr.write("\n Traceback: \n")
+
+        traceback.print_tb(tb, sys.stderr)
+
+    def push(self, method_called, *args, **data):
+        """Collect data in real time and make make the progress bar progress"""
+        if method_called == 'add_hit':
+            cycle, user, current_cycle = data['loads_status']
+            percent = int(float(current_cycle)
                           / float(self.args['total']) * 100.)
             bar = '[' + '=' * percent + ' ' * (100 - percent) + ']'
             sys.stdout.write("\r%s %d%%" % (bar, percent))

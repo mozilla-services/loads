@@ -10,10 +10,9 @@ class TestResult(object):
     This is the class receiving all the information about the tests and the
     requests.
 
-    Consumes the data passed to it via :method push: and provide convenient
-    APIs to read this data back. This can be useful if you want to transform
-    this data to create reports, but it doesn't assume any representation for
-    the output.
+    Consumes the data passed to it and provide convenient APIs to read this
+    data back. This can be useful if you want to transform this data to create
+    reports, but it doesn't assume any representation for the output.
     """
 
     __test__ = False  # This is not something to run as a test.
@@ -188,6 +187,9 @@ class TestResult(object):
 
     def socket_open(self):
         self.sockets += 1
+
+    def socket_close(self):
+        self.sockets -= 1
 
     def socket_message(self, size):
         self.socket_data_received += size
