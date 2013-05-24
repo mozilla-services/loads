@@ -1,4 +1,5 @@
 import sys
+import traceback
 
 
 class StdOutput(object):
@@ -22,7 +23,21 @@ class StdOutput(object):
         write("\nSuccess: %d" % self.results.nb_success)
         write("\nErrors: %d" % self.results.nb_errors)
         write("\nFailures: %d" % self.results.nb_failures)
+
+        write("\n\n")
+
+        if self.results.nb_errors:
+            exc_class, exc, tb = self.results.errors.next()[0]
+            sys.stderr.write(str(exc))
+            sys.stderr.write("\n Traceback: \n")
+
+            traceback.print_tb(tb, sys.stderr)
+
+        if self.results.nb_failures:
+            write(self.results.failures.next())
+
         sys.stdout.flush()
+        sys.stderr.flush()
 
     def push(self, method, *args, **data):
         if method == 'add_hit':

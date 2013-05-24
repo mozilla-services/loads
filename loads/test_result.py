@@ -1,5 +1,7 @@
-from datetime import datetime
+import itertools
+
 from collections import defaultdict
+from datetime import datetime
 
 
 class TestResult(object):
@@ -36,14 +38,6 @@ class TestResult(object):
         return (end - self.start_time).seconds
 
     @property
-    def has_errors(self):
-        """Return if some errors or failures had been detected in the run."""
-        errors = 0
-        for fail in ('errors', 'failures'):
-            errors += getattr(self, 'nb_%s' % fail)
-        return errors
-
-    @property
     def nb_failures(self):
         return sum([len(t.failures) for t in self._get_tests()])
 
@@ -54,6 +48,14 @@ class TestResult(object):
     @property
     def nb_success(self):
         return sum([t.success for t in self._get_tests()])
+
+    @property
+    def errors(self):
+        return itertools.chain((t.errors for t in (self._get_tests())))
+
+    @property
+    def failures(self):
+        return itertools.chain((t.failures for t in (self._get_tests())))
 
     @property
     def urls(self):
@@ -258,3 +260,17 @@ class Test(object):
         return ('<Test %s. errors: %s, failures: %s, success: %s'
                  % (self.name, len(self.errors), len(self.failures),
                     self.success))
+
+    def get_error(self):
+        """Returns the first encountered error"""
+        if not self.errors:
+            return
+
+        return self.errors[0]
+
+    def get_failure(self):
+        """Returns the first encountered failure"""
+        if not self.failures:
+            return
+
+        return self.failures[0]
