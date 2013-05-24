@@ -8,6 +8,15 @@ from loads.measure import Session, TestApp
 from loads.websockets import create_ws
 
 
+class FakeTestApp(object):
+
+    def __getattr__(self, arg):
+        def wrapper(*args, **kwargs):
+            raise ValueError(('If you want to use the webtest.TestApp client, '
+                              'you need to add a "server_url" property to '
+                              'your TestCase'))
+
+
 class TestCase(unittest.TestCase):
     def __init__(self, test_name, test_result=None):
         super(TestCase, self).__init__(test_name)
@@ -16,7 +25,10 @@ class TestCase(unittest.TestCase):
 
         self._test_result = test_result
         self.session = Session(test=self, test_result=test_result)
-        self.app = TestApp(self.server_url, self.session, test_result)
+        if hasattr(self, 'server_url'):
+            self.app = TestApp(self.server_url, self.session, test_result)
+        else:
+            self.app = FakeTestApp()
 
     def create_ws(self, url, callback, protocols=None, extensions=None):
         return create_ws(url, self._loads_test_result, callback, protocols,

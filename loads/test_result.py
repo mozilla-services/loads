@@ -36,12 +36,24 @@ class TestResult(object):
         return (end - self.start_time).seconds
 
     @property
-    def has_errors_or_failures(self):
-        tests = self._get_tests()
+    def has_errors(self):
+        """Return if some errors or failures had been detected in the run."""
         errors = 0
         for fail in ('errors', 'failures'):
-            errors += sum([len(getattr(t, fail)) for t in tests])
+            errors += getattr(self, 'nb_%s' % fail)
         return errors
+
+    @property
+    def nb_failures(self):
+        return sum([len(t.failures) for t in self._get_tests()])
+
+    @property
+    def nb_errors(self):
+        return sum([len(t.errors) for t in self._get_tests()])
+
+    @property
+    def nb_success(self):
+        return sum([t.success for t in self._get_tests()])
 
     @property
     def urls(self):
@@ -107,6 +119,8 @@ class TestResult(object):
 
         if elapsed:
             return float(sum(elapsed)) / len(elapsed)
+        else:
+            return 0
 
     def hits_success_rate(self, url=None, cycle=None):
         """Returns the success rate for the filtered hits.
@@ -119,7 +133,10 @@ class TestResult(object):
         hits = list(self._get_hits(url, cycle))
         success = [h for h in hits if 200 <= h.status < 400]
 
-        return float(len(success)) / len(hits)
+        if hits:
+            return float(len(success)) / len(hits)
+        else:
+            return 0
 
     def tests_per_second(self):
         return (self.nb_tests /
@@ -236,3 +253,8 @@ class Test(object):
         total = self.success + len(self.failures) + len(self.errors)
         if total != 0:
             return float(self.success) / total
+
+    def __repr__(self):
+        return ('<Test %s. errors: %s, failures: %s, success: %s'
+                 % (self.name, len(self.errors), len(self.failures),
+                    self.success))

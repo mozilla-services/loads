@@ -60,7 +60,7 @@ class Runner(object):
 
     def execute(self):
         self._execute()
-        if self.test_result.has_errors_or_failures:
+        if self.test_result.has_errors:
             return 1
         return 0
 

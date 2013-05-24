@@ -6,19 +6,22 @@ class StdOutput(object):
     options = {'total': ('Total Number of items', int, None, False)}
 
     def __init__(self, test_result, args):
-        self.test_result = test_result
+        self.results = test_result
         self.args = args
 
     def flush(self):
-        sys.stdout.write("\nHits: %d" % self.test_result.nb_hits)
-        sys.stdout.write("\nStarted: %s" % self.test_result.start_time)
-        sys.stdout.write("\nDuration: %.2f seconds"
-                         % self.test_result.duration)
-        sys.stdout.write("\nApproximate Average RPS: %d"
-                         % self.test_result.average_request_time())
-        sys.stdout.write("\nOpened web sockets: %d" % self.test_result.sockets)
-        sys.stdout.write("\nBytes received via web sockets : %d\n" %
-                         self.test_result.socket_data_received)
+        write = sys.stdout.write
+        write("\nHits: %d" % self.results.nb_hits)
+        write("\nStarted: %s" % self.results.start_time)
+        write("\nDuration: %.2f seconds" % self.results.duration)
+        write("\nApproximate Average RPS: %d" %
+                self.results.average_request_time())
+        write("\nOpened web sockets: %d" % self.results.sockets)
+        write("\nBytes received via web sockets : %d\n" %
+                         self.results.socket_data_received)
+        write("\nSuccess: %d" % self.results.nb_success)
+        write("\nErrors: %d" % self.results.nb_errors)
+        write("\nFailures: %d" % self.results.nb_failures)
         sys.stdout.flush()
 
     def push(self, method, *args, **data):
