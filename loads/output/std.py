@@ -44,9 +44,8 @@ class StdOutput(object):
 
     def push(self, method_called, *args, **data):
         """Collect data in real time and make make the progress bar progress"""
-        if method_called == 'add_hit':
-            cycle, user, current_cycle = data['loads_status']
-            percent = int(float(current_cycle)
+        if method_called == 'stopTest':
+            percent = int(float(self.results.nb_finished_tests)
                           / float(self.args['total']) * 100.)
             bar = '[' + '=' * percent + ' ' * (100 - percent) + ']'
             sys.stdout.write("\r%s %d%%" % (bar, percent))

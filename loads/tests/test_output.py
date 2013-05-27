@@ -15,6 +15,8 @@ class FakeTestResult(object):
         self.average_request_time = lambda: 0
         self.sockets = 0
         self.socket_data_received = 0
+        self.nb_success = self.nb_errors = self.nb_failures = 0
+        self.nb_finished_tests = 0
 
 
 class TestStdOutput(unittest.TestCase):
@@ -27,7 +29,8 @@ class TestStdOutput(unittest.TestCase):
         try:
             std = StdOutput(test_result, {'total': 10})
             for i in range(11):
-                std.push('add_hit', current=i)
+                test_result.nb_finished_tests += 1
+                std.push('stopTest')
             std.flush()
         finally:
             sys.stdout.seek(0)
