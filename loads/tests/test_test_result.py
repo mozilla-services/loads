@@ -16,7 +16,7 @@ class TestTestResult(TestCase):
                   current_cycle=1):
         started = started or TIME1
         loads_status = (cycle, user, current_cycle)
-        return {'elapsed': elapsed or 2.0,
+        return {'elapsed': elapsed or (0, 2000),
                 'started': started,
                 'status': status,
                 'url': url,
@@ -175,12 +175,12 @@ class TestTestResult(TestCase):
 class TestHits(TestCase):
 
     def test_loads_status_default_to_None(self):
-        elapsed = started = None
+        started = None
         h = Hit(url='http://notmyidea.org',
                 method='GET',
                 status=200,
                 started=started,
-                elapsed=elapsed,
+                elapsed=(0, 0),
                 loads_status=None)
         self.assertEquals(h.cycle, None)
         self.assertEquals(h.user, None)
@@ -192,7 +192,7 @@ class TestHits(TestCase):
                 method='GET',
                 status=200,
                 started=started,
-                elapsed=elapsed,
+                elapsed=(0, 0),
                 loads_status=(1, 2, 3))
 
         self.assertEquals(h.cycle, 1)
