@@ -20,9 +20,6 @@ class FakeTestApp(object):
 class TestCase(unittest.TestCase):
     def __init__(self, test_name, test_result=None):
         super(TestCase, self).__init__(test_name)
-        if test_result is None:
-            test_result = TestResult()
-
         self._test_result = test_result
         self.session = Session(test=self, test_result=test_result)
         if hasattr(self, 'server_url'):
@@ -30,21 +27,32 @@ class TestCase(unittest.TestCase):
         else:
             self.app = FakeTestApp()
 
+    def defaultTestResult(self):
+        return TestResult()
+
     def create_ws(self, url, callback, protocols=None, extensions=None):
         return create_ws(url, callback, self._test_result, protocols,
                          extensions)
 
-    def run(self, cycle=-1, user=-1, current_cycle=-1):
+    def run(self, result=None, cycle=-1, user=-1, current_cycle=-1):
         # pass the information about the cycles to the session so we're able to
-        # track which cycle the information sent belongs to.
+        # track which cycle the information sent belongs to, if there is any.
         self.session.loads_status = (cycle, user, current_cycle)
-        result = self._test_result
+
+        # We want to be compatible with the unittest / nose APIs, so we need to
+        # be sure to get back the TestResult object is the good one
+        # If nothing is passed to the method, it means we should get the info
+        # from the class, and that we are in the context of a loads run
+        if result is None:
+            result = self._test_result
+
+        orig_result = result
+
         if result is None:
             result = self.defaultTestResult()
-
-        startTestRun = getattr(result, 'startTestRun', None)
-        if startTestRun is not None:
-            startTestRun()
+            startTestRun = getattr(result, 'startTestRun', None)
+            if startTestRun is not None:
+                startTestRun()
 
         self._resultForDoCleanups = result
         result.startTest(self, cycle, user, current_cycle)
@@ -120,9 +128,11 @@ class TestCase(unittest.TestCase):
                 result.addSuccess(self, cycle, user, current_cycle)
         finally:
             result.stopTest(self, cycle, user, current_cycle)
-            stopTestRun = getattr(result, 'stopTestRun', None)
-            if stopTestRun is not None:
-                stopTestRun()
+
+            if orig_result is None:
+                stopTestRun = getattr(result, 'stopTestRun', None)
+                if stopTestRun is not None:
+                    stopTestRun()
 
 
 class TestResult(unittest.TestResult):
@@ -140,7 +150,6 @@ class TestResult(unittest.TestResult):
 
     def addSuccess(self, test, *args, **kw):
         unittest.TestResult.addSuccess(self, test)
-
 
 # patching nose if present
 try:
@@ -185,5 +194,12 @@ try:
             super(_ResultProxy, self).addSuccess(test)
 
     proxy.ResultProxy = _ResultProxy
+except ImportError:
+    pass
+
+# patch unittest TestResult object
+try:
+    import unittest2.runner
+    unittest2.runner.TextTestResult = TestResult
 except ImportError:
     pass

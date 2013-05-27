@@ -68,9 +68,11 @@ class Runner(object):
     def _run(self, num, test, cycles, user):
         for cycle in cycles:
             for current_cycle in range(cycle):
+                self.test_result.startTestRun()
                 test(cycle=cycle,
                      user=user,
                      current_cycle=current_cycle + 1)
+                self.test_result.stopTestRun()
                 gevent.sleep(0)
 
     def _execute(self):

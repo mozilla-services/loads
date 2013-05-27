@@ -17,15 +17,18 @@ class WebSocketHook(WebSocketClient):
 
     def received_message(self, m):
         self.callback(m)
-        self._test_result.socket_message(len(m.data))
+        if self._test_result is not None:
+            self._test_result.socket_message(len(m.data))
         super(WebSocketHook, self).received_message(m)
 
     def opened(self):
-        self._test_result.socket_open()
+        if self._test_result is not None:
+            self._test_result.socket_open()
         super(WebSocketHook, self).opened()
 
     def closed(self, code, reason):
-        self._test_result.socket_close()
+        if self._test_result is not None:
+            self._test_result.socket_close()
         super(WebSocketHook, self).closed(code, reason)
 
 

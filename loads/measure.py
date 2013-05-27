@@ -86,11 +86,11 @@ class Session(_Session):
         :param req: the request to analyse.
         """
         loads_status = self.loads_status or (None, None, None)
-
-        self.test_result.add_hit(
-                elapsed=req.elapsed,
-                started=req.started,
-                status=req.status_code,
-                url=req.url,
-                method=req.method,
-                loads_status=list(loads_status))
+        if self.test_result is not None:
+            self.test_result.add_hit(
+                    elapsed=req.elapsed,
+                    started=req.started,
+                    status=req.status_code,
+                    url=req.url,
+                    method=req.method,
+                    loads_status=list(loads_status))
