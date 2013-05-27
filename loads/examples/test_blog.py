@@ -15,13 +15,17 @@ class TestWebSite(TestCase):
         def callback(m):
             results.append(m.data)
 
-        ws = self.create_ws('ws://localhost:9000/ws', callback=callback)
+        ws = self.create_ws('ws://localhost:9000/ws',
+                            protocols=['chat', 'http-only'],
+                            callback=callback)
 
         one = 'something' + os.urandom(10).encode('hex')
         two = 'happened' + os.urandom(10).encode('hex')
 
         ws.send(one)
+        ws.receive()
         ws.send(two)
+        ws.receive()
 
         start = time.time()
         while one not in results and two not in results:

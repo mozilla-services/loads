@@ -31,7 +31,7 @@ class TestCase(unittest.TestCase):
             self.app = FakeTestApp()
 
     def create_ws(self, url, callback, protocols=None, extensions=None):
-        return create_ws(url, self._test_result, callback, protocols,
+        return create_ws(url, callback, self._test_result, protocols,
                          extensions)
 
     def run(self, cycle=-1, user=-1, current_cycle=-1):

@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-# flake8: noqa
-# taken from ws4py examples
 from gevent import monkey; monkey.patch_all()
 
 import argparse
@@ -50,9 +48,9 @@ class EchoWebSocketApplication(object):
 
     def __call__(self, environ, start_response):
         """
-Good ol' WSGI application. This is a simple demo
-so I tried to stay away from dependencies.
-"""
+        Good ol' WSGI application. This is a simple demo
+        so I tried to stay away from dependencies.
+        """
         if environ['PATH_INFO'] == '/favicon.ico':
             return self.favicon(environ, start_response)
 
@@ -64,8 +62,8 @@ so I tried to stay away from dependencies.
 
     def favicon(self, environ, start_response):
         """
-Don't care about favicon, let's send nothing.
-"""
+        Don't care about favicon, let's send nothing.
+        """
         status = '200 OK'
         headers = [('Content-type', 'text/plain')]
         start_response(status, headers)
@@ -73,68 +71,68 @@ Don't care about favicon, let's send nothing.
 
     def webapp(self, environ, start_response):
         """
-Our main webapp that'll display the chat form
-"""
+        Our main webapp that'll display the chat form
+        """
         status = '200 OK'
         headers = [('Content-type', 'text/html')]
 
         start_response(status, headers)
 
         return """<html>
-<head>
-<script type='application/javascript' src='https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js'></script>
-<script type='application/javascript'>
-$(document).ready(function() {
+        <head>
+        <script type='application/javascript' src='https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js'></script>
+          <script type='application/javascript'>
+            $(document).ready(function() {
 
-websocket = 'ws://%(host)s:%(port)s/ws';
-if (window.WebSocket) {
-ws = new WebSocket(websocket);
-}
-else if (window.MozWebSocket) {
-ws = MozWebSocket(websocket);
-}
-else {
-console.log('WebSocket Not Supported');
-return;
-}
+              websocket = 'ws://%(host)s:%(port)s/ws';
+              if (window.WebSocket) {
+                ws = new WebSocket(websocket);
+              }
+              else if (window.MozWebSocket) {
+                ws = MozWebSocket(websocket);
+              }
+              else {
+                console.log('WebSocket Not Supported');
+                return;
+              }
 
-window.onbeforeunload = function(e) {
-$('#chat').val($('#chat').val() + 'Bye bye...\\n');
-ws.close(1000, '%(username)s left the room');
+              window.onbeforeunload = function(e) {
+                 $('#chat').val($('#chat').val() + 'Bye bye...\\n');
+                 ws.close(1000, '%(username)s left the room');
 
-if(!e) e = window.event;
-e.stopPropagation();
-e.preventDefault();
-};
-ws.onmessage = function (evt) {
-$('#chat').val($('#chat').val() + evt.data + '\\n');
-};
-ws.onopen = function() {
-ws.send("%(username)s entered the room");
-};
-ws.onclose = function(evt) {
-$('#chat').val($('#chat').val() + 'Connection closed by server: ' + evt.code + ' \"' + evt.reason + '\"\\n');
-};
+                 if(!e) e = window.event;
+                 e.stopPropagation();
+                 e.preventDefault();
+              };
+              ws.onmessage = function (evt) {
+                 $('#chat').val($('#chat').val() + evt.data + '\\n');
+              };
+              ws.onopen = function() {
+                 ws.send("%(username)s entered the room");
+              };
+              ws.onclose = function(evt) {
+                 $('#chat').val($('#chat').val() + 'Connection closed by server: ' + evt.code + ' \"' + evt.reason + '\"\\n');
+              };
 
-$('#send').click(function() {
-console.log($('#message').val());
-ws.send('%(username)s: ' + $('#message').val());
-$('#message').val("");
-return false;
-});
-});
-</script>
-</head>
-<body>
-<form action='#' id='chatform' method='get'>
-<textarea id='chat' cols='35' rows='10'></textarea>
-<br />
-<label for='message'>%(username)s: </label><input type='text' id='message' />
-<input id='send' type='submit' value='Send' />
-</form>
-</body>
-</html>
-""" % {'username': "User%d" % random.randint(0, 100),
+              $('#send').click(function() {
+                 console.log($('#message').val());
+                 ws.send('%(username)s: ' + $('#message').val());
+                 $('#message').val("");
+                 return false;
+              });
+            });
+          </script>
+        </head>
+        <body>
+        <form action='#' id='chatform' method='get'>
+          <textarea id='chat' cols='35' rows='10'></textarea>
+          <br />
+          <label for='message'>%(username)s: </label><input type='text' id='message' />
+          <input id='send' type='submit' value='Send' />
+          </form>
+        </body>
+        </html>
+        """ % {'username': "User%d" % random.randint(0, 100),
                'host': self.host,
                'port': self.port}
 
@@ -149,4 +147,3 @@ if __name__ == '__main__':
 
     server = WSGIServer((args.host, args.port), EchoWebSocketApplication(args.host, args.port))
     server.serve_forever()
-

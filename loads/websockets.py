@@ -16,8 +16,9 @@ class WebSocketHook(WebSocketClient):
         self._test_result = test_result
 
     def received_message(self, m):
-        self._test_result.socket_message(len(m.data))
         self.callback(m)
+        self._test_result.socket_message(len(m.data))
+        super(WebSocketHook, self).received_message(m)
 
     def opened(self):
         self._test_result.socket_open()
@@ -33,15 +34,19 @@ def cleanup(greenlet):
         sock.close()
 
 
-def create_ws(url, stream, callback, protocols=None, extensions=None):
+def create_ws(url, callback, test_result, protocols=None, extensions=None):
     current = gevent.getcurrent()
     # XXX
     # sometimes I get greenlets objects, sometime Greenlets... ????
     if hasattr(current, 'link'):
         current.link(cleanup)
     current_id = id(current)
-    socket = WebSocketHook(url, stream, protocols, extensions,
+    socket = WebSocketHook(url=url,
+                           test_result=test_result,
+                           protocols=protocols,
+                           extensions=extensions,
                            callback=callback)
+
     socket.daemon = True
     socket.connect()
     _SOCKETS[current_id].append(socket)
