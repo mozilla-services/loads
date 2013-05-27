@@ -60,7 +60,8 @@ class Runner(object):
 
     def execute(self):
         self._execute()
-        if self.test_result.nb_errors + self.test_result.nb_failures:
+        if (not self.slave and
+                self.test_result.nb_errors + self.test_result.nb_failures):
             return 1
         return 0
 
@@ -97,10 +98,11 @@ class Runner(object):
         gevent.sleep(0)
 
         # be sure we flush the outputs that need it.
-        for output in self.outputs:
-            if hasattr(output, 'flush'):
-                output.flush()
-
+        # but do it only if we are in "normal" mode
+        if not self.slave:
+            for output in self.outputs:
+                if hasattr(output, 'flush'):
+                    output.flush()
 
 
 class DistributedRunner(Runner):
@@ -137,14 +139,15 @@ class DistributedRunner(Runner):
            for later use."""
         data = json.loads(msg[0])
         data_type = data.pop('data_type')
+        wid = data.pop('worker_id')
+
+        # XXX Do something with the WID we get back here.
 
         method = getattr(self.test_result, data_type)
         method(**data)
 
-        # XXX Ask the test_result if everything is finished
-        # The previous version was like that:
-        # if self.ended == self.total:
-        #     self.loop.stop()
+        if self.test_result.nb_finished_tests == self.total:
+            self.loop.stop()
 
     def _execute(self):
         # calling the clients now
