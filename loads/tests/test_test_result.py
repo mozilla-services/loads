@@ -82,7 +82,7 @@ class TestTestResult(TestCase):
 
     def test_average_request_time_when_no_data(self):
         test_result = TestResult()
-        self.assertEquals(test_result.average_request_time(), None)
+        self.assertEquals(test_result.average_request_time(), 0)
 
     def test_urls(self):
         test_result = TestResult()

@@ -28,6 +28,10 @@ class TestResult(object):
         self.observers = []
 
     @property
+    def nb_finished_tests(self):
+        return len(self._get_tests(finished=True))
+
+    @property
     def nb_hits(self):
         return len(self.hits)
 
@@ -87,7 +91,7 @@ class TestResult(object):
 
         return filter(_filter, self.hits)
 
-    def _get_tests(self, name=None, cycle=None):
+    def _get_tests(self, name=None, cycle=None, finished=None):
         """Filters the tests with the given parameters.
 
         :param name:
@@ -100,6 +104,8 @@ class TestResult(object):
             if name is not None and test.name != name:
                 return False
             if cycle is not None and test.cycle != cycle:
+                return False
+            if finished is not None and test.finished != finished:
                 return False
             return True
 
@@ -244,6 +250,10 @@ class Test(object):
         self.success = 0
         for key, value in kwargs.items():
             setattr(self, key, value)
+
+    @property
+    def finished(self):
+        return bool(self.start and self.end)
 
     @property
     def duration(self):
