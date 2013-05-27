@@ -1,7 +1,7 @@
 import itertools
 
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 class TestResult(object):
@@ -230,6 +230,9 @@ class Hit(object):
         self.method = method
         self.status = status
         self.started = started
+        if not isinstance(elapsed, timedelta):
+            elapsed = timedelta(*elapsed)
+
         self.elapsed = elapsed
         if loads_status is not None:
             self.cycle, self.user, self.current_cycle = loads_status

@@ -100,9 +100,12 @@ class Runner(object):
         # be sure we flush the outputs that need it.
         # but do it only if we are in "normal" mode
         if not self.slave:
-            for output in self.outputs:
-                if hasattr(output, 'flush'):
-                    output.flush()
+            self.flush()
+
+    def flush(self):
+        for output in self.outputs:
+            if hasattr(output, 'flush'):
+                output.flush()
 
 
 class DistributedRunner(Runner):
@@ -131,8 +134,10 @@ class DistributedRunner(Runner):
         self.zstream = zmqstream.ZMQStream(self.pull, self.loop)
         self.zstream.on_recv(self._recv_result)
 
-        # XXX Add the output as observers to the test_result
         self.outputs = []
+
+        output = args.get('output', 'stdout')
+        self.register_output(output, args)
 
     def _recv_result(self, msg):
         """When we receive some data from zeromq, send it to the test_result
@@ -154,7 +159,7 @@ class DistributedRunner(Runner):
         client = Client(self.args['broker'])
         client.run(self.args)
         self.loop.start()
-        return self.test_result
+        self.flush()
 
 
 def _compute_arguments(args):
@@ -209,8 +214,9 @@ def main():
                         default=DEFAULT_FRONTEND)
 
     parser.add_argument('--test-runner', default=None,
-                        help='The path to binary to use as the test runner. ' +
-                             'The default is this runner')
+                        help='The path to binary to use as the test runner '
+                             'when in distributed mode. The default is '
+                             'this runner')
 
     parser.add_argument('--zmq-endpoint', default='tcp://127.0.0.1:5558',
                         help='Socket to send the results to')

@@ -1,3 +1,6 @@
+from cStringIO import StringIO
+import traceback
+
 import zmq.green as zmq
 
 from loads.util import DateTimeJSONEncoder
@@ -23,37 +26,52 @@ class ZMQRelay(object):
 
     def startTest(self, test, cycle, user, current_cycle):
         self.push('startTest',
-                  test=test.__name__,
+                  test=str(test),
                   cycle=cycle,
                   user=user,
                   current_cycle=current_cycle)
+
+    def startTestRun(self):
+        self.push('startTestRun')
+
+    def stopTestRun(self):
+        self.push('stopTestRun')
 
     def stopTest(self, test, cycle, user, current_cycle):
         self.push('stopTest',
-                  test=test.__name__,
+                  test=str(test),
                   cycle=cycle,
                   user=user,
                   current_cycle=current_cycle)
 
+    def _transform_exc_info(self, exc):
+        string = StringIO()
+        exc, exc_class, tb = exc
+        tb = traceback.print_tb(tb, string)
+        return str(exc), str(exc_class), tb
+
     def addFailure(self, test, exc, cycle, user, current_cycle):
+        # Because the information to trace the exception is a python object, it
+        # may not be JSON-serialisable, so we just pass its string
+        # representation.
         self.push('addFailure',
-                  test=test.__name__,
-                  exc=exc,
+                  test=str(test),
+                  exc_info=self._transform_exc_info(exc),
                   cycle=cycle,
                   user=user,
                   current_cycle=current_cycle)
 
     def addError(self, test, exc, cycle, user, current_cycle):
         self.push('addError',
-                  test=test.__name__,
-                  exc=exc,
+                  test=str(test),
+                  exc_info=self._transform_exc_info(exc),
                   cycle=cycle,
                   user=user,
                   current_cycle=current_cycle)
 
     def addSuccess(self, test, cycle, user, current_cycle):
         self.push('addSuccess',
-                  test=test.__name__,
+                  test=str(test),
                   cycle=cycle,
                   user=user,
                   current_cycle=current_cycle)
