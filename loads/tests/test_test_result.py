@@ -187,7 +187,7 @@ class TestHits(TestCase):
         self.assertEquals(h.current_cycle, None)
 
     def test_loads_status_extract_values(self):
-        elapsed = started = None
+        started = None
         h = Hit(url='http://notmyidea.org',
                 method='GET',
                 status=200,
