@@ -3,7 +3,7 @@ Loads
 
 .. warning::
 
-   This is an untested, fast moving prototype
+   This is an untested, fast moving prototype. Use it at your own risk.
 
 
 **Loads** is a framework for load testing an HTTP service.
@@ -16,7 +16,8 @@ Installation::
 Using Loads
 ===========
 
-**Loads** uses **Requests** and Python unitest to perform load tests.
+**Loads** uses **Requests** and **WebTest**, in addition to Python unitest to
+perform load tests.
 
 Let's say you want to load test the Elastic Search root page on your
 system.
@@ -28,14 +29,19 @@ Write a unittest like this one and save it in an **example.py** file::
 
     class TestWebSite(TestCase):
 
+        server_url = 'http://localhost:9200'
+
         def test_something(self):
-            res = self.session.get('http://localhost:9200')
-            self.assertTrue('Search' in res.content)
+            self.assertTrue('Search' in self.app.get())
+
+Another way to do it is to use the **Requests** *session* object, like this::
+
+    def test_something(self):
+        self.session.get('http://localhost:9200')
 
 
 The *TestCase* class provided by loads sets a *session* object you can use
 to interact with an HTTP server. It's a **Session** instance from Requests.
-
 
 Now run **loads-runner** against it::
 
@@ -84,14 +90,17 @@ write a test that uses a web socket::
             ws = self.create_ws('ws://localhost:9000/ws',
                                 callback=callback)
             ws.send('something')
+            ws.receive()
             ws.send('happened')
+            ws.receive()
 
             while len(results) < 2:
                 time.sleep(.1)
 
             self.assertEqual(results, ['something', 'happened'])
 
-XXX
+XXX I'm actually unsure about the API we expose to test websockets. We should
+have a look at how others do it
 
 
 Using the cluster
@@ -105,7 +114,28 @@ And run it against **loads.ini**::
 
     $ bin/circusd --daemon loads.ini
 
-What happened ? You have just started a Loads broker with 5 agents.
+Here is the content of the `loads.ini` file::
+
+    [circus]
+    check_delay = 5
+    endpoint = tcp://127.0.0.1:5555
+    pubsub_endpoint = tcp://127.0.0.1:5556
+    stats_endpoint = tcp://127.0.0.1:5557
+    httpd = 0
+    debug = 0
+
+    [watcher:broker]
+    cmd = bin/loads-broker
+    warmup_delay = 0
+    numprocesses = 1
+
+    [watcher:agents]
+    cmd = bin/loads-agent
+    warmup_delay = 0
+    numprocesses = 5
+    copy_env = 1
+
+What happened? You have just started a Loads broker with 5 agents.
 
 Let's use them now, with the **agents** option::
 
@@ -128,3 +158,13 @@ Deploying the cluster on several slaves
 
 XXX
 
+Using the nose testrunner
+=========================
+
+Loads supports the nose test runner, so you can run your tests easily, using
+the test runner you want. That could be handy if you would like to use one of
+the many nose plugins out there.
+
+Just run your tests as normal::
+
+    $ nosetests loads.examples.test_blog
