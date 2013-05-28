@@ -21,14 +21,14 @@ from loads.transport.util import DEFAULT_FRONTEND
 
 
 class Runner(object):
-    """The local tests runner.
+    """Local tests runner.
+
+    Runs in parallel a number of tests and pass the results to the outputs.
 
     It can be run in two different modes:
 
-    - The "classical" mode, where the results are collected locally
-    - The "slave" mode, where results are sent to a ZMQ endpoint, to be
-      collected on the other side of the pipe (the Distributed runner
-      implements the other part of the pipe).
+    - "Classical" mode: Results are collected and passed to the outputs.
+    - "Slave" mode: Results are sent to a ZMQ endpoint and no output is called.
     """
     def __init__(self, args):
         self.args = args
@@ -76,10 +76,7 @@ class Runner(object):
                 gevent.sleep(0)
 
     def _execute(self):
-        """Spawn as many greenlets as asked, each of them will call the :method
-        _run:
-
-        Wait for all of them to be done and finish.
+        """Spawn all the tests needed and wait for them to finish.
         """
         from gevent import monkey
         monkey.patch_all()
@@ -89,7 +86,9 @@ class Runner(object):
 
         # creating the test case instance
         klass = self.test.im_class
-        ob = klass(self.test.__name__, self.test_result)
+        ob = klass(test_name=self.test.__name__,
+                   test_result=self.test_result,
+                   server_url=self.args['server_url'])
 
         for user in self.users:
             group = [gevent.spawn(self._run, i, ob, self.cycles, user)
@@ -111,12 +110,12 @@ class Runner(object):
 
 
 class DistributedRunner(Runner):
-    """ Runner distributing the load on a cluster of agents, collecting the
-    results via ZMQ.
+    """Test runner distributing the load on a cluster of agents, collecting the
+    results via a ZMQ stream.
 
-    The runner need to have agents already running. It will send them commands
-    trought the zmq pipeline and get back their results, which will be
-    in turn sent to the local test_result.
+    The runner need to have agents already up and running. It will send them
+    commands trough the ZMQ pipeline and get back their results, which will be
+    in turn sent to the local test_result object.
     """
     def __init__(self, args):
         super(DistributedRunner, self).__init__(args)
@@ -219,6 +218,11 @@ def main():
                         help='The path to binary to use as the test runner '
                              'when in distributed mode. The default is '
                              'this runner')
+
+    parser.add_argument('--server-url', default=None,
+                        help='The URL of the server you want to test. It '
+                             'will override any value your provided in '
+                             'the tests for the WebTest client.')
 
     parser.add_argument('--zmq-endpoint', default='tcp://127.0.0.1:5558',
                         help='Socket to send the results to')

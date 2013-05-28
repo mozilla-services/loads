@@ -29,8 +29,6 @@ Write a unittest like this one and save it in an **example.py** file::
 
     class TestWebSite(TestCase):
 
-        server_url = 'http://localhost:9200'
-
         def test_something(self):
             self.assertTrue('Search' in self.app.get())
 
@@ -45,9 +43,19 @@ to interact with an HTTP server. It's a **Session** instance from Requests.
 
 Now run **loads-runner** against it::
 
-    $ bin/loads-runner example.TestWebSite.test_something
+    $ bin/loads-runner example.TestWebSite.test_something --server_url http://localhost:9200
     [======================================================================]  100%
-    <unittest.result.TestResult run=1 errors=0 failures=0>
+
+    Hits: 1
+    Started: 2013-05-28 08:13:17.802290
+    Duration: 0.00 seconds
+    Approximate Average RPS: 0
+    Opened web sockets: 0
+    Bytes received via web sockets : 0
+
+    Success: 1
+    Errors: 0
+    Failures: 0
 
 This will execute your test just once - so you can control it works well.
 

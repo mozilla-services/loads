@@ -14,15 +14,19 @@ class FakeTestApp(object):
         def wrapper(*args, **kwargs):
             raise ValueError(('If you want to use the webtest.TestApp client, '
                               'you need to add a "server_url" property to '
-                              'your TestCase'))
+                              'your TestCase or call loads with the '
+                              '--server-url option'))
+        return wrapper
 
 
 class TestCase(unittest.TestCase):
-    def __init__(self, test_name, test_result=None):
+    def __init__(self, test_name, test_result=None, server_url=None):
         super(TestCase, self).__init__(test_name)
+        self.server_url = server_url or getattr(self, 'server_url', None)
         self._test_result = test_result
+
         self.session = Session(test=self, test_result=test_result)
-        if hasattr(self, 'server_url'):
+        if self.server_url is not None:
             self.app = TestApp(self.server_url, self.session, test_result)
         else:
             self.app = FakeTestApp()
