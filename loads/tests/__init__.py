@@ -3,6 +3,7 @@ import StringIO
 
 
 def hush(func):
+    """Make the passed function silent."""
     def _silent(*args, **kw):
         old = sys.stdout
         sys.stdout = StringIO.StringIO()
