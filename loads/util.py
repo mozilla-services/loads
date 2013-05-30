@@ -35,7 +35,7 @@ class DateTimeJSONEncoder(json.JSONEncoder):
         if isinstance(obj, datetime.datetime):
             return obj.isoformat()
         elif isinstance(obj, datetime.timedelta):
-            return obj.seconds, obj.microseconds
+            return obj.total_seconds()
         else:
             return super(DateTimeJSONEncoder, self).default(obj)
 
