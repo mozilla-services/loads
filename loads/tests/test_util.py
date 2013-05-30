@@ -1,12 +1,14 @@
-import unittest
-import os
 from tempfile import mkstemp
+import datetime
+import os
+import unittest
 
 import zmq
 import gevent
 
 from loads import util
-from loads.util import resolve_name, set_logger, logger, dns_resolve
+from loads.util import (resolve_name, set_logger, logger, dns_resolve,
+                        DateTimeJSONEncoder)
 from loads.transport.util import (register_ipc_file, _cleanup_ipc_files, send,
                                   TimeoutError, recv, decode_params,
                                   dump_stacks)
@@ -98,3 +100,10 @@ class TestUtil(unittest.TestCase):
 
         self.assertEqual(res, ('http://0.0.0.0:80', 'example.com', '0.0.0.0'))
         self.assertEqual(res, res2)
+
+    def test_datetime_json_encoder(self):
+        encoder = DateTimeJSONEncoder()
+        date = datetime.datetime(2013, 5, 30, 18, 35, 11, 550482)
+        delta = datetime.timedelta(0, 12, 126509)
+        self.assertEquals(encoder.encode(date), '"2013-05-30T18:35:11.550482"')
+        self.assertEquals(encoder.encode(delta), '12.126509')
