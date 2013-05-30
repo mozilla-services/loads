@@ -33,7 +33,7 @@ setup(name='loads',
       author='Mozilla Services',
       author_email='services-dev@mozilla.org',
       url='https://github.com/mozilla/loads',
-      tests_require=['nose'],
+      tests_require=['nose', 'mock'],
       test_suite='nose.collector',
       entry_points="""
       [console_scripts]

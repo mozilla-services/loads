@@ -22,7 +22,7 @@ clean:
 	rm -rf $(BUILD_DIRS)
 
 test: build
-	$(BIN)/pip install nose coverage circus
+	$(BIN)/pip install nose coverage circus mock
 	- $(BIN)/nosetests -s -d -v --with-coverage --cover-package loads loads/tests
 	$(BIN)/coverage html -d html --omit='loads/_patch.py,lib/*,loads/tests/*'
 
