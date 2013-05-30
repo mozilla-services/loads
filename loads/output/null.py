@@ -3,11 +3,11 @@ class NullOutput(object):
     name = 'null'
     options = {}
 
-    def __init__(self, args):
+    def __init__(self, test_result, args):
         pass
 
     def flush(self):
         pass
 
-    def push(self, data_type, data):
+    def push(self, method_called, *args, **data):
         pass
