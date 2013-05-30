@@ -4,8 +4,8 @@ import mock
 import sys
 import unittest
 
-from loads.output.std import StdOutput
-from loads.output import create_output, output_list, register_output
+from loads.output import (create_output, output_list, register_output,
+                          StdOutput, NullOutput)
 
 
 class FakeTestResult(object):
@@ -49,6 +49,14 @@ class TestStdOutput(unittest.TestCase):
 
         self.assertTrue('Hits: 10' in output)
         self.assertTrue('100%' in output)
+
+
+class TestNullOutput(unittest.TestCase):
+
+    def test_api_works(self):
+        output = NullOutput(mock.sentinel.test_result, mock.sentinel.args)
+        output.push('something')
+        output.flush()
 
 
 class TestOutputPlugins(unittest.TestCase):
