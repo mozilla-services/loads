@@ -7,8 +7,22 @@ from loads import measure
 from requests.adapters import HTTPAdapter
 
 
+# XXX replace my Mock
 class _FakeTest(object):
     pass
+
+
+class _Headers(object):
+    def getheaders(self, name):
+        return {}
+
+
+class _Original(object):
+    msg = _Headers()
+
+
+class _Response(object):
+    _original_response = _Original()
 
 
 class _FakeResponse(object):
@@ -17,6 +31,7 @@ class _FakeResponse(object):
     headers = {}
     status_code = 200
     url = 'http://impossible.place'
+    raw = _Response()
 
 
 class _TestResult(object):
