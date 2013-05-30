@@ -234,7 +234,7 @@ class Hit(object):
         self.status = status
         self.started = started
         if not isinstance(elapsed, timedelta):
-            elapsed = timedelta(*elapsed)
+            elapsed = timedelta(elapsed)
 
         self.elapsed = elapsed
         if loads_status is not None:
