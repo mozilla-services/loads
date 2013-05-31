@@ -9,7 +9,7 @@ from loads.util import logger
 from loads.transport.util import DEFAULT_HEARTBEAT
 
 
-class Stethoscope(threading.Thread):
+class Stethoscope(object):   #threading.Thread):
     """Implements a ZMQ heartbeat client.
 
     Listens to a given ZMQ endpoint and expect to find there a beat.
@@ -31,7 +31,7 @@ class Stethoscope(threading.Thread):
     def __init__(self, endpoint=DEFAULT_HEARTBEAT, warmup_delay=.5, delay=10.,
                  retries=3,
                  onbeatlost=None, onbeat=None, io_loop=None, ctx=None):
-        threading.Thread.__init__(self)
+        #threading.Thread.__init__(self)
         self.loop = io_loop or ioloop.IOLoop.instance()
         self._stop_loop = io_loop is None
         self.daemon = True
@@ -74,7 +74,7 @@ class Stethoscope(threading.Thread):
             self.onbeat()
         logger.debug(msg[0])
 
-    def run(self):
+    def start(self):
         """Starts the loop"""
         logger.debug('Starting the loop')
         if self.running:
@@ -83,23 +83,6 @@ class Stethoscope(threading.Thread):
         self._initialize()
         time.sleep(self.warmup_delay)
         self._timer.start()
-        self.running = True
-        while self.running:
-            try:
-                self.loop.start()
-            except zmq.ZMQError as e:
-                logger.debug(str(e))
-
-                if e.errno == errno.EINTR:
-                    continue
-                elif e.errno == zmq.ETERM:
-                    break
-                else:
-                    logger.debug("got an unexpected error %s (%s)", str(e),
-                                 e.errno)
-                    raise
-            else:
-                break
 
     def stop(self):
         """Stops the Pinger"""
@@ -109,13 +92,8 @@ class Stethoscope(threading.Thread):
             self._stream.flush()
         except zmq.ZMQError:
             pass
-        if self._stop_loop:
-            self.loop.stop()
-        if self.isAlive():
-            try:
-                self.join()
-            except RuntimeError:
-                pass
+
+        self._timer.stop()
 
 
 class Heartbeat(object):

@@ -82,7 +82,7 @@ class Agent(object):
         self._backstream.on_recv(self._handle_recv_back)
         self.ping = Stethoscope(heartbeat, onbeatlost=self.lost,
                                 delay=ping_delay, retries=ping_retries,
-                                ctx=self.ctx)
+                                ctx=self.ctx, io_loop=loop)
         self.debug = logger.isEnabledFor(logging.DEBUG)
         self.params = params
         self.pid = os.getpid()
