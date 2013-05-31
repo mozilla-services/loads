@@ -81,6 +81,9 @@ class ZMQRelay(object):
     def socket_open(self):
         self.push('socket_open')
 
+    def socket_close(self):
+        self.push('socket_close')
+
     def socket_message(self, size):
         self.push('socket_message', size=size)
 
