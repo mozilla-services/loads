@@ -72,7 +72,7 @@ class TestTestResult(TestCase):
 
         # try adding another filter on the URL
         test_result.add_hit(**self._get_data(elapsed=_3, cycle=3,
-                                           url='http://another-one'))
+                                             url='http://another-one'))
         avg = test_result.average_request_time(cycle=3,
                                                url='http://notmyidea.org')
         self.assertEquals(avg, 2.5)

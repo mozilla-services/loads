@@ -1,5 +1,3 @@
-import threading
-import errno
 import time
 
 import zmq.green as zmq
@@ -9,7 +7,7 @@ from loads.util import logger
 from loads.transport.util import DEFAULT_HEARTBEAT
 
 
-class Stethoscope(object):   #threading.Thread):
+class Stethoscope(object):
     """Implements a ZMQ heartbeat client.
 
     Listens to a given ZMQ endpoint and expect to find there a beat.
@@ -31,7 +29,6 @@ class Stethoscope(object):   #threading.Thread):
     def __init__(self, endpoint=DEFAULT_HEARTBEAT, warmup_delay=.5, delay=10.,
                  retries=3,
                  onbeatlost=None, onbeat=None, io_loop=None, ctx=None):
-        #threading.Thread.__init__(self)
         self.loop = io_loop or ioloop.IOLoop.instance()
         self._stop_loop = io_loop is None
         self.daemon = True

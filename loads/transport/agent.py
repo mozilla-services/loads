@@ -82,7 +82,7 @@ class Agent(object):
         self._backstream.on_recv(self._handle_recv_back)
         self.ping = Stethoscope(heartbeat, onbeatlost=self.lost,
                                 delay=ping_delay, retries=ping_retries,
-                                ctx=self.ctx, io_loop=loop)
+                                ctx=self.ctx, io_loop=self.loop)
         self.debug = logger.isEnabledFor(logging.DEBUG)
         self.params = params
         self.pid = os.getpid()
@@ -103,9 +103,9 @@ class Agent(object):
 
         try:
             if args.get('test_runner', None) is not None:
-                built_args = ' '.join(
-                        ['--%s %s' % (key, value)
-                         for (key, value) in args.items()]).split()
+                built_args = ' '.join(['--%s %s' % (key, value)
+                                      for (key, value)
+                                      in args.items()]).split()
                 test_runner_args = map(str, [args['test_runner']] + built_args)
                 p = subprocess.call(test_runner_args)
             else:

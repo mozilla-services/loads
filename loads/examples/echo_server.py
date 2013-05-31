@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# -*- flake8: noqa -*-
 from gevent import monkey; monkey.patch_all()
 
 import argparse

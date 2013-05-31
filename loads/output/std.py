@@ -16,14 +16,13 @@ class StdOutput(object):
         write("\nStarted: %s" % self.results.start_time)
         write("\nDuration: %.2f seconds" % self.results.duration)
         write("\nApproximate Average RPS: %d" %
-                self.results.average_request_time())
+              self.results.average_request_time())
         write("\nOpened web sockets: %d" % self.results.sockets)
         write("\nBytes received via web sockets : %d\n" %
-                         self.results.socket_data_received)
+              self.results.socket_data_received)
         write("\nSuccess: %d" % self.results.nb_success)
         write("\nErrors: %d" % self.results.nb_errors)
         write("\nFailures: %d" % self.results.nb_failures)
-
         write("\n\n")
 
         if self.results.nb_errors:

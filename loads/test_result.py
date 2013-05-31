@@ -273,8 +273,8 @@ class Test(object):
 
     def __repr__(self):
         return ('<Test %s. errors: %s, failures: %s, success: %s'
-                 % (self.name, len(self.errors), len(self.failures),
-                    self.success))
+                % (self.name, len(self.errors), len(self.failures),
+                   self.success))
 
     def get_error(self):
         """Returns the first encountered error"""
