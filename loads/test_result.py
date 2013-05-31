@@ -164,40 +164,42 @@ class TestResult(object):
         return float(len(self.hits)) / self.duration
 
     # These are to comply with the APIs of unittest.
-    def startTestRun(self):
+    def startTestRun(self, worker_id=None):
         self.start_time = datetime.utcnow()
 
-    def stopTestRun(self):
+    def stopTestRun(self, worker_id=None):
         self.stop_time = datetime.utcnow()
 
-    def startTest(self, test, cycle, user, current_cycle):
+    def startTest(self, test, cycle, user, current_cycle, worker_id=None):
         ob = self.tests[test, cycle]
         ob.name = test
         ob.cycle = cycle
         ob.user = user
 
-    def stopTest(self, test, cycle, user, current_cycle):
+    def stopTest(self, test, cycle, user, current_cycle, worker_id=None):
         self.tests[test, cycle].end = datetime.utcnow()
 
-    def addError(self, test, exc_info, cycle, user, current_cycle):
+    def addError(self, test, exc_info, cycle, user, current_cycle,
+                 worker_id=None):
         self.tests[test, cycle].errors.append(exc_info)
 
-    def addFailure(self, test, exc_info, cycle, user, current_cycle):
+    def addFailure(self, test, exc_info, cycle, user, current_cycle,
+                   worker_id=None):
         self.tests[test, cycle].failures.append(exc_info)
 
-    def addSuccess(self, test, cycle, user, current_cycle):
+    def addSuccess(self, test, cycle, user, current_cycle, worker_id=None):
         self.tests[test, cycle].success += 1
 
     def add_hit(self, **data):
         self.hits.append(Hit(**data))
 
-    def socket_open(self):
+    def socket_open(self, worker_id=None):
         self.sockets += 1
 
-    def socket_close(self):
+    def socket_close(self, worker_id=None):
         self.sockets -= 1
 
-    def socket_message(self, size):
+    def socket_message(self, size, worker_id=None):
         self.socket_data_received += size
 
     def __getattribute__(self, name):
@@ -225,7 +227,8 @@ class Hit(object):
 
     Used for later computation.
     """
-    def __init__(self, url, method, status, started, elapsed, loads_status):
+    def __init__(self, url, method, status, started, elapsed, loads_status,
+                 worker_id=None):
         self.url = url
         self.method = method
         self.status = status
@@ -238,6 +241,8 @@ class Hit(object):
             self.cycle, self.user, self.current_cycle = loads_status
         else:
             self.cycle, self.user, self.current_cycle = None, None, None
+
+        self.worker_id = worker_id
 
 
 class Test(object):
