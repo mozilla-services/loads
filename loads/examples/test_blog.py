@@ -7,6 +7,9 @@ from loads.case import TestCase
 
 class TestWebSite(TestCase):
 
+    def test_es(self):
+        res = self.session.get('http://localhost:9200')
+
     def test_something(self):
         res = self.session.get('http://localhost:9000')
         self.assertTrue('chatform' in res.content)
