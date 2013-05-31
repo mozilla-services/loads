@@ -125,7 +125,7 @@ class DistributedRunner(Runner):
 
         context = zmq.Context()
         self.pull = context.socket(zmq.PULL)
-        self.pull.setsockopt(zmq.RCVHWM, 8096 * 4)
+        self.pull.setsockopt(zmq.HWM, 8096 * 4)
         self.pull.setsockopt(zmq.LINGER, 1000)
         self.pull.bind(self.args['zmq_endpoint'])
 
