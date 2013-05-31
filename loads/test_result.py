@@ -81,7 +81,7 @@ class TestResult(object):
         """
 
         def _filter(hit):
-            if cycle is not None and hit.cycle != cycle:
+            if cycle is not None and hit.current_cycle != cycle:
                 return False
 
             if url is not None and hit.url != url:
@@ -103,7 +103,7 @@ class TestResult(object):
         def _filter(test):
             if name is not None and test.name != name:
                 return False
-            if cycle is not None and test.cycle != cycle:
+            if cycle is not None and test.current_cycle != cycle:
                 return False
             if finished is not None and test.finished != finished:
                 return False
@@ -171,24 +171,24 @@ class TestResult(object):
         self.stop_time = datetime.utcnow()
 
     def startTest(self, test, cycle, user, current_cycle, worker_id=None):
-        ob = self.tests[test, cycle]
+        ob = self.tests[test, current_cycle, worker_id]
         ob.name = test
-        ob.cycle = cycle
+        ob.current_cycle = current_cycle
         ob.user = user
 
     def stopTest(self, test, cycle, user, current_cycle, worker_id=None):
-        self.tests[test, cycle].end = datetime.utcnow()
+        self.tests[test, current_cycle, worker_id].end = datetime.utcnow()
 
     def addError(self, test, exc_info, cycle, user, current_cycle,
                  worker_id=None):
-        self.tests[test, cycle].errors.append(exc_info)
+        self.tests[test, current_cycle, worker_id].errors.append(exc_info)
 
     def addFailure(self, test, exc_info, cycle, user, current_cycle,
                    worker_id=None):
-        self.tests[test, cycle].failures.append(exc_info)
+        self.tests[test, current_cycle, worker_id].failures.append(exc_info)
 
     def addSuccess(self, test, cycle, user, current_cycle, worker_id=None):
-        self.tests[test, cycle].success += 1
+        self.tests[test, current_cycle, worker_id].success += 1
 
     def add_hit(self, **data):
         self.hits.append(Hit(**data))
@@ -253,6 +253,7 @@ class Test(object):
         self.end = None
         self.name = None
         self.cycle = None
+        self.current_cycle = None
         self.failures = []
         self.errors = []
         self.success = 0
