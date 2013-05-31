@@ -52,7 +52,6 @@ class TestHeartbeat(unittest.TestCase):
 
         self.assertEqual(len(lost),  0, len(lost))
         self.assertTrue(len(beats) > 2, len(beats))
-        self.assertTrue(len(beats) > 5, len(beats))
 
     def test_lost(self):
         beats = []
