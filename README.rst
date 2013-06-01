@@ -30,7 +30,7 @@ Write a unittest like this one and save it in an **example.py** file::
     class TestWebSite(TestCase):
 
         def test_something(self):
-            self.assertTrue('Search' in self.app.get())
+            self.assertTrue('Search' in self.app.get('/'))
 
 Another way to do it is to use the **Requests** *session* object, like this::
 
