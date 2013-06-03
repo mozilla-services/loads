@@ -244,10 +244,10 @@ class Hit(object):
             elapsed = timedelta(elapsed)
 
         self.elapsed = elapsed
-        if loads_status is not None:
-            self.cycle, self.user, self.current_cycle = loads_status
-        else:
-            self.cycle, self.user, self.current_cycle = None, None, None
+
+        loads_status = loads_status or (None, None, None, None)
+        (self.cycle, self.user, self.current_cycle,
+         self.current_user) = loads_status
 
         self.worker_id = worker_id
 
