@@ -16,7 +16,7 @@ class ZMQRelay(object):
         self.args = args
         self.context = zmq.Context()
         self._push = self.context.socket(zmq.PUSH)
-        self._push.setsockopt(zmq.HWM, 8096 * 4)
+        self._push.set_hwm(8096 * 4)
         self._push.setsockopt(zmq.LINGER, 1000)
         self._push.connect(args.get('stream_zmq_endpoint',
                                     'tcp://127.0.0.1:5558'))
