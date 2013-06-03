@@ -33,7 +33,7 @@ class Session(_Session):
         _Session.__init__(self)
         self.test = test
         self.test_result = test_result
-        self.loads_status = None
+        self.loads_status = None, None, None, None
 
     def send(self, request, **kwargs):
         """Do the actual request from within the session, doing some
@@ -56,11 +56,10 @@ class Session(_Session):
 
         :param req: the request to analyse.
         """
-        loads_status = self.loads_status or (None, None, None)
         if self.test_result is not None:
             self.test_result.add_hit(elapsed=req.elapsed,
                                      started=req.started,
                                      status=req.status_code,
                                      url=req.url,
                                      method=req.method,
-                                     loads_status=list(loads_status))
+                                     loads_status=self.loads_status)
