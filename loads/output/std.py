@@ -16,6 +16,8 @@ class StdOutput(object):
         write("\nStarted: %s" % self.results.start_time)
         write("\nDuration: %.2f seconds" % self.results.duration)
         write("\nApproximate Average RPS: %d" %
+              self.results.requests_per_second())
+        write("\nAverage request time: %.2fs" %
               self.results.average_request_time())
         write("\nOpened web sockets: %d" % self.results.sockets)
         write("\nBytes received via web sockets : %d\n" %

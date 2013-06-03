@@ -38,7 +38,7 @@ class TestResult(object):
     @property
     def duration(self):
         end = self.stop_time or datetime.utcnow()
-        return (end - self.start_time).seconds
+        return (end - self.start_time).total_seconds()
 
     @property
     def nb_failures(self):
@@ -147,7 +147,7 @@ class TestResult(object):
 
     def tests_per_second(self):
         return (self.nb_tests /
-                float((self.stop_time - self.start_time).seconds))
+                (self.stop_time - self.start_time).total_seconds())
 
     def average_test_duration(self, test=None, cycle=None):
         durations = [t.duration for t in self._get_tests(test, cycle)
@@ -165,10 +165,13 @@ class TestResult(object):
 
     # These are to comply with the APIs of unittest.
     def startTestRun(self, worker_id=None):
-        self.start_time = datetime.utcnow()
+        if worker_id is None:
+            self.start_time = datetime.utcnow()
 
     def stopTestRun(self, worker_id=None):
-        self.stop_time = datetime.utcnow()
+        # we don't want to start multiple time the test run
+        if worker_id is None:
+            self.stop_time = datetime.utcnow()
 
     def startTest(self, test, loads_status, worker_id=None):
         cycle, user, current_cycle, current_user = loads_status
@@ -274,7 +277,7 @@ class Test(object):
     @property
     def duration(self):
         if self.end is not None:
-            return (self.end - self.start).seconds
+            return (self.end - self.start).total_seconds()
         else:
             return None
 

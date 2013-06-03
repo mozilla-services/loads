@@ -68,12 +68,10 @@ class Runner(object):
     def _run(self, num, test, cycles, user):
         for cycle in cycles:
             for current_cycle in range(cycle):
-                self.test_result.startTestRun()
                 test(cycle=cycle,
                      user=user,
                      current_user=num,
                      current_cycle=current_cycle + 1)
-                self.test_result.stopTestRun()
                 gevent.sleep(0)
 
     def _execute(self):
@@ -91,6 +89,8 @@ class Runner(object):
                    test_result=self.test_result,
                    server_url=self.args['server_url'])
 
+        worker_id = self.args.get('worker_id', None)
+        self.test_result.startTestRun(worker_id)
         for user in self.users:
             group = [gevent.spawn(self._run, i, ob, self.cycles, user)
                      for i in range(user)]
@@ -98,6 +98,7 @@ class Runner(object):
             gevent.joinall(group)
 
         gevent.sleep(0)
+        self.test_result.stopTestRun(worker_id)
 
         # be sure we flush the outputs that need it.
         # but do it only if we are in "normal" mode
@@ -156,9 +157,11 @@ class DistributedRunner(Runner):
 
     def _execute(self):
         # calling the clients now
+        self.test_result.startTestRun()
         client = Client(self.args['broker'])
         client.run(self.args)
         self.loop.start()
+        self.test_result.stopTestRun()
         self.flush()
 
 
