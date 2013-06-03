@@ -1,5 +1,6 @@
 from cStringIO import StringIO
 import traceback
+import errno
 
 import zmq.green as zmq
 
@@ -79,7 +80,15 @@ class ZMQRelay(object):
 
     def push(self, data_type, **data):
         data.update({'data_type': data_type, 'worker_id': self.wid})
-        self._push.send(self.encoder.encode(data), zmq.NOBLOCK)
+        while True:
+            try:
+                self._push.send(self.encoder.encode(data), zmq.NOBLOCK)
+                return
+            except zmq.ZMQError as e:
+                if e.errno in (errno.EAGAIN, errno.EWOULDBLOCK):
+                    continue
+                else:
+                    raise
 
     def add_observer(self, *args, **kwargs):
         pass  # NOOP
