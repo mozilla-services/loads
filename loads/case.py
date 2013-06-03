@@ -4,6 +4,8 @@ import warnings
 from unittest import SkipTest
 from unittest.case import _ExpectedFailure, _UnexpectedSuccess
 
+from requests.adapters import HTTPAdapter
+
 from loads.measure import Session, TestApp
 from loads.websockets import create_ws
 
@@ -19,6 +21,9 @@ class FakeTestApp(object):
         return wrapper
 
 
+MAX_CON = 1000
+
+
 class TestCase(unittest.TestCase):
     def __init__(self, test_name, test_result=None, server_url=None):
         super(TestCase, self).__init__(test_name)
@@ -26,6 +31,11 @@ class TestCase(unittest.TestCase):
         self._test_result = test_result
 
         self.session = Session(test=self, test_result=test_result)
+        http_adapter = HTTPAdapter(pool_maxsize=MAX_CON,
+                                   pool_connections=MAX_CON)
+        self.session.mount('http://', http_adapter)
+        self.session.mount('https://', http_adapter)
+
         if self.server_url is not None:
             self.app = TestApp(self.server_url, self.session, test_result)
         else:
