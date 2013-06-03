@@ -71,6 +71,7 @@ class Runner(object):
                 self.test_result.startTestRun()
                 test(cycle=cycle,
                      user=user,
+                     current_user=num,
                      current_cycle=current_cycle + 1)
                 self.test_result.stopTestRun()
                 gevent.sleep(0)

@@ -23,12 +23,10 @@ class ZMQRelay(object):
         self.encoder = DateTimeJSONEncoder()
         self.wid = self.args['worker_id']
 
-    def startTest(self, test, cycle, user, current_cycle):
+    def startTest(self, test, loads_status):
         self.push('startTest',
                   test=str(test),
-                  cycle=cycle,
-                  user=user,
-                  current_cycle=current_cycle)
+                  loads_status=loads_status)
 
     def startTestRun(self):
         self.push('startTestRun')
@@ -36,12 +34,10 @@ class ZMQRelay(object):
     def stopTestRun(self):
         self.push('stopTestRun')
 
-    def stopTest(self, test, cycle, user, current_cycle):
+    def stopTest(self, test, loads_status):
         self.push('stopTest',
                   test=str(test),
-                  cycle=cycle,
-                  user=user,
-                  current_cycle=current_cycle)
+                  loads_status=loads_status)
 
     def _transform_exc_info(self, exc):
         string = StringIO()
@@ -49,43 +45,37 @@ class ZMQRelay(object):
         tb = traceback.print_tb(tb, string)
         return str(exc), str(exc_class), tb
 
-    def addFailure(self, test, exc, cycle, user, current_cycle):
+    def addFailure(self, test, exc, loads_status):
         # Because the information to trace the exception is a python object, it
         # may not be JSON-serialisable, so we just pass its string
         # representation.
         self.push('addFailure',
                   test=str(test),
                   exc_info=self._transform_exc_info(exc),
-                  cycle=cycle,
-                  user=user,
-                  current_cycle=current_cycle)
+                  loads_status=loads_status)
 
-    def addError(self, test, exc, cycle, user, current_cycle):
+    def addError(self, test, exc, loads_status):
         self.push('addError',
                   test=str(test),
                   exc_info=self._transform_exc_info(exc),
-                  cycle=cycle,
-                  user=user,
-                  current_cycle=current_cycle)
+                  loads_status=loads_status)
 
-    def addSuccess(self, test, cycle, user, current_cycle):
+    def addSuccess(self, test, loads_status):
         self.push('addSuccess',
                   test=str(test),
-                  cycle=cycle,
-                  user=user,
-                  current_cycle=current_cycle)
+                  loads_status=loads_status)
 
     def add_hit(self, **data):
         self.push('add_hit', **data)
 
-    def socket_open(self):
-        self.push('socket_open')
+    def socket_open(self, loads_status):
+        self.push('socket_open', loads_status=loads_status)
 
-    def socket_close(self):
-        self.push('socket_close')
+    def socket_close(self, loads_status):
+        self.push('socket_close', loads_status)
 
-    def socket_message(self, size):
-        self.push('socket_message', size=size)
+    def socket_message(self, size, loads_status):
+        self.push('socket_message', size=size, loads_status=loads_status)
 
     def push(self, data_type, **data):
         data.update({'data_type': data_type, 'worker_id': self.wid})

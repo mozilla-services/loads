@@ -38,10 +38,12 @@ class TestCase(unittest.TestCase):
         return create_ws(url, callback, self._test_result, protocols,
                          extensions)
 
-    def run(self, result=None, cycle=-1, user=-1, current_cycle=-1):
+    def run(self, result=None, cycle=-1, user=-1, current_cycle=-1,
+            current_user=-1):
         # pass the information about the cycles to the session so we're able to
         # track which cycle the information sent belongs to, if there is any.
-        self.session.loads_status = (cycle, user, current_cycle)
+        loads_status = (cycle, user, current_cycle, current_user)
+        self.session.loads_status = loads_status
 
         # We want to be compatible with the unittest / nose APIs, so we need to
         # be sure to get back the TestResult object is the good one
@@ -59,7 +61,7 @@ class TestCase(unittest.TestCase):
                 startTestRun()
 
         self._resultForDoCleanups = result
-        result.startTest(self, cycle, user, current_cycle)
+        result.startTest(self, loads_status)
 
         testMethod = getattr(self, self._testMethodName)
         if (getattr(self.__class__, "__unittest_skip__", False) or   # NOQA
@@ -72,7 +74,7 @@ class TestCase(unittest.TestCase):
                                        '__unittest_skip_why__', ''))
                 self._addSkip(result, skip_why)
             finally:
-                result.stopTest(self, cycle, user, current_cycle)
+                result.stopTest(self, loads_status)
             return
         try:
             success = False
@@ -81,14 +83,12 @@ class TestCase(unittest.TestCase):
             except SkipTest as e:
                 self._addSkip(result, str(e))
             except Exception:
-                result.addError(self, sys.exc_info(), cycle, user,
-                                current_cycle)
+                result.addError(self, sys.exc_info(), loads_status)
             else:
                 try:
                     testMethod()
                 except self.failureException:
-                    result.addFailure(self, sys.exc_info(), cycle, user,
-                                      current_cycle)
+                    result.addFailure(self, sys.exc_info(), loads_status)
                 except _ExpectedFailure as e:
                     addExpectedFailure = getattr(result,
                                                  'addExpectedFailure',
@@ -99,7 +99,7 @@ class TestCase(unittest.TestCase):
                         warnings.warn("TestResult has no addExpectedFailure"
                                       " method, reporting as passes",
                                       RuntimeWarning)
-                        result.addSuccess(self, cycle, user, current_cycle)
+                        result.addSuccess(self, loads_status)
                 except _UnexpectedSuccess:
                     addUnexpectedSuccess = getattr(result,
                                                    'addUnexpectedSuccess',
@@ -110,13 +110,11 @@ class TestCase(unittest.TestCase):
                         warnings.warn("TestResult has no addUnexpectedSuccess "
                                       "method, reporting as failures",
                                       RuntimeWarning)
-                        result.addFailure(self, sys.exc_info(), cycle, user,
-                                          current_cycle)
+                        result.addFailure(self, sys.exc_info(), loads_status)
                 except SkipTest as e:
                     self._addSkip(result, str(e))
                 except Exception:
-                    result.addError(self, sys.exc_info(), cycle, user,
-                                    current_cycle)
+                    result.addError(self, sys.exc_info(), loads_status)
                 else:
                     success = True
 
@@ -129,9 +127,9 @@ class TestCase(unittest.TestCase):
             cleanUpSuccess = self.doCleanups()
             success = success and cleanUpSuccess
             if success:
-                result.addSuccess(self, cycle, user, current_cycle)
+                result.addSuccess(self, loads_status)
         finally:
-            result.stopTest(self, cycle, user, current_cycle)
+            result.stopTest(self, loads_status)
 
             if orig_result is None:
                 stopTestRun = getattr(result, 'stopTestRun', None)

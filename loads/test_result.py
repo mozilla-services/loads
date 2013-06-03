@@ -170,36 +170,39 @@ class TestResult(object):
     def stopTestRun(self, worker_id=None):
         self.stop_time = datetime.utcnow()
 
-    def startTest(self, test, cycle, user, current_cycle, worker_id=None):
-        ob = self.tests[test, current_cycle, worker_id]
+    def startTest(self, test, loads_status, worker_id=None):
+        cycle, user, current_cycle, current_user = loads_status
+        ob = self.tests[test, current_user, current_cycle, worker_id]
         ob.name = test
         ob.current_cycle = current_cycle
         ob.user = user
 
-    def stopTest(self, test, cycle, user, current_cycle, worker_id=None):
-        self.tests[test, current_cycle, worker_id].end = datetime.utcnow()
+    def stopTest(self, test, loads_status, worker_id=None):
+        test = self._get_test(test, loads_status, worker_id)
+        test.end = datetime.utcnow()
 
-    def addError(self, test, exc_info, cycle, user, current_cycle,
-                 worker_id=None):
-        self.tests[test, current_cycle, worker_id].errors.append(exc_info)
+    def addError(self, test, exc_info, loads_status, worker_id=None):
+        test = self._get_test(test, loads_status, worker_id)
+        test.errors.append(exc_info)
 
-    def addFailure(self, test, exc_info, cycle, user, current_cycle,
-                   worker_id=None):
-        self.tests[test, current_cycle, worker_id].failures.append(exc_info)
+    def addFailure(self, test, exc_info, loads_status, worker_id=None):
+        test = self._get_test(test, loads_status, worker_id)
+        test.failures.append(exc_info)
 
-    def addSuccess(self, test, cycle, user, current_cycle, worker_id=None):
-        self.tests[test, current_cycle, worker_id].success += 1
+    def addSuccess(self, test, loads_status, worker_id=None):
+        test = self._get_test(test, loads_status, worker_id)
+        test.success += 1
 
     def add_hit(self, **data):
         self.hits.append(Hit(**data))
 
-    def socket_open(self, worker_id=None):
+    def socket_open(self, loads_status, worker_id=None):
         self.sockets += 1
 
-    def socket_close(self, worker_id=None):
+    def socket_close(self, loads_status, worker_id=None):
         self.sockets -= 1
 
-    def socket_message(self, size, worker_id=None):
+    def socket_message(self, loads_status, size, worker_id=None):
         self.socket_data_received += size
 
     def __getattribute__(self, name):
@@ -220,6 +223,10 @@ class TestResult(object):
 
     def add_observer(self, observer):
         self.observers.append(observer)
+
+    def _get_test(self, test, loads_status, worker_id):
+        cycle, user, current_cycle, current_user = loads_status
+        return self.tests[test, current_user, current_cycle, worker_id]
 
 
 class Hit(object):
