@@ -17,8 +17,8 @@ class ZMQRelay(object):
         self.args = args
         self.context = zmq.Context()
         self._push = self.context.socket(zmq.PUSH)
-        self._push.set_hwm(8096 * 4)
-        self._push.setsockopt(zmq.LINGER, 1000)
+        self._push.set_hwm(8096 * 10)
+        self._push.setsockopt(zmq.LINGER, -1)
         self._push.connect(args.get('stream_zmq_endpoint',
                                     'tcp://127.0.0.1:5558'))
         self.encoder = DateTimeJSONEncoder()
@@ -92,3 +92,6 @@ class ZMQRelay(object):
 
     def add_observer(self, *args, **kwargs):
         pass  # NOOP
+
+    def close(self):
+        self.context.destroy()

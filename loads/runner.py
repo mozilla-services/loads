@@ -102,6 +102,9 @@ class Runner(object):
         # but do it only if we are in "normal" mode
         if not self.slave:
             self.flush()
+        else:
+            # in slave mode, be sure to close the zmq relay.
+            self.test_result.close()
 
     def flush(self):
         for output in self.outputs:
@@ -123,10 +126,10 @@ class DistributedRunner(Runner):
         self.loop = None
         self.test_result = TestResult()
 
-        context = zmq.Context()
-        self.pull = context.socket(zmq.PULL)
-        self.pull.set_hwm(8096 * 4)
-        self.pull.setsockopt(zmq.LINGER, 1000)
+        self.context = zmq.Context()
+        self.pull = self.context.socket(zmq.PULL)
+        self.pull.set_hwm(8096 * 10)
+        self.pull.setsockopt(zmq.LINGER, -1)
         self.pull.bind(self.args['zmq_endpoint'])
 
         # io loop
@@ -142,6 +145,9 @@ class DistributedRunner(Runner):
     def _recv_result(self, msg):
         """When we receive some data from zeromq, send it to the test_result
            for later use."""
+        self.loop.add_callback(self._process_result, msg)
+
+    def _process_result(self, msg):
         data = json.loads(msg[0])
         data_type = data.pop('data_type')
         #wid = data.pop('worker_id')
@@ -160,6 +166,8 @@ class DistributedRunner(Runner):
         client.run(self.args)
         self.loop.start()
         self.test_result.stopTestRun()
+        # end..
+        self.context.destroy()
         self.flush()
 
 
