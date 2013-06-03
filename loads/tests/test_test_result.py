@@ -13,9 +13,9 @@ class TestTestResult(TestCase):
 
     def _get_data(self, url='http://notmyidea.org', method='GET',
                   status=200, started=None, elapsed=None, cycle=1, user=1,
-                  current_cycle=1):
+                  current_cycle=1, current_user=1):
         started = started or TIME1
-        loads_status = (cycle, user, current_cycle)
+        loads_status = (cycle, user, current_cycle, current_user)
         return {'elapsed': elapsed or 0.2000,
                 'started': started,
                 'status': status,
@@ -123,7 +123,7 @@ class TestTestResult(TestCase):
     def test_tests_per_second(self):
         test_result = TestResult()
         for x in range(20):
-            test_result.startTest('rainbow', 1, 1, x)
+            test_result.startTest('rainbow', (1, 1, x, 1))
 
         test_result.start_time = TIME1
         test_result.stop_time = TIME2
@@ -165,9 +165,10 @@ class TestTestResult(TestCase):
     def test_test_success_rate_is_correct(self):
         test_result = TestResult()
 
-        test_result.startTest('bacon', 1, 1, 1)
-        test_result.addSuccess('bacon', 1, 1, 1)
-        test_result.addFailure('bacon', 'A failure', 1, 1, 1)
+        loads_status = (1, 1, 1, 1)
+        test_result.startTest('bacon', loads_status)
+        test_result.addSuccess('bacon', loads_status)
+        test_result.addFailure('bacon', 'A failure', loads_status)
 
         self.assertEquals(0.5, test_result.test_success_rate())
 
@@ -193,7 +194,7 @@ class TestHits(TestCase):
                 status=200,
                 started=started,
                 elapsed=0.0,
-                loads_status=(1, 2, 3))
+                loads_status=(1, 2, 3, 4))
 
         self.assertEquals(h.cycle, 1)
         self.assertEquals(h.user, 2)
