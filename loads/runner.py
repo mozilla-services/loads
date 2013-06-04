@@ -10,7 +10,7 @@ import gevent
 import zmq.green as zmq
 from zmq.green.eventloop import ioloop, zmqstream
 
-from loads.util import resolve_name
+from loads.util import resolve_name, logger, set_logger
 from loads.test_result import TestResult
 from loads.relay import ZMQRelay
 from loads.output import output_list, create_output
@@ -164,7 +164,9 @@ class DistributedRunner(Runner):
         # calling the clients now
         self.test_result.startTestRun()
         client = Client(self.args['broker'])
+        logger.info('Calling the broker...')
         client.run(self.args)
+        logger.info('Waiting for results')
         self.loop.start()
         self.test_result.stopTestRun()
         # end..
@@ -200,6 +202,7 @@ def run(args):
             print traceback.format_exc()
             raise
     else:
+        logger.info('Summoning %d agents' % args['agents'])
         return DistributedRunner(args).execute()
 
 
@@ -259,10 +262,12 @@ def main():
 
     args = parser.parse_args()
 
+    # loggers setting
     wslogger = logging.getLogger('ws4py')
     ch = logging.StreamHandler()
     ch.setLevel(logging.DEBUG)
     wslogger.addHandler(ch)
+    set_logger()
 
     if args.version:
         print(__version__)
