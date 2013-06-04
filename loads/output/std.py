@@ -38,10 +38,14 @@ class StdOutput(object):
 
     def _print_tb(self, data):
         exc_class, exc, tb = data.next()[0]
-        sys.stderr.write("\n %s: %s" % (exc_class.__name__, exc))
-        sys.stderr.write("\n Traceback: \n")
-
-        traceback.print_tb(tb, sys.stderr)
+        if isinstance(exc_class, basestring):
+            name = exc_class
+        else:
+            name = exc_class.__name__
+        sys.stderr.write("\n%s: %s" % (name, exc))
+        if tb is not None:
+            sys.stderr.write("\n Traceback: \n")
+            traceback.print_tb(tb, sys.stderr)
 
     def push(self, method_called, *args, **data):
         """Collect data in real time and make make the progress bar progress"""
