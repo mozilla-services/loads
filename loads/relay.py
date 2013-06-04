@@ -46,7 +46,7 @@ class ZMQRelay(object):
         tb = traceback.print_tb(tb, string)
         return str(exc), str(exc_class), tb
 
-    def addFailure(self, test, exc, loads_status=None):
+    def addFailure(self, test, exc, loads_status):
         # Because the information to trace the exception is a python object, it
         # may not be JSON-serialisable, so we just pass its string
         # representation.
@@ -55,13 +55,13 @@ class ZMQRelay(object):
                   exc_info=self._transform_exc_info(exc),
                   loads_status=loads_status)
 
-    def addError(self, test, exc, loads_status=None):
+    def addError(self, test, exc, loads_status):
         self.push('addError',
                   test=str(test),
                   exc_info=self._transform_exc_info(exc),
                   loads_status=loads_status)
 
-    def addSuccess(self, test, loads_status=None):
+    def addSuccess(self, test, loads_status):
         self.push('addSuccess',
                   test=str(test),
                   loads_status=loads_status)
@@ -70,16 +70,14 @@ class ZMQRelay(object):
         self.push('add_hit', **data)
 
     def socket_open(self, loads_status):
-        self.push('socket_open', loads_status=loads_status,
-                  worker_id=None)
+        self.push('socket_open', loads_status=loads_status)
 
-    def socket_close(self, loads_status, worker_id=None):
-        self.push('socket_close', loads_status=loads_status,
-                  worker_id=None)
+    def socket_close(self, loads_status):
+        self.push('socket_close', loads_status=loads_status)
 
-    def socket_message(self, loads_status, size, worker_id=None):
-        self.push('socket_message', loads_status=loads_status, size=size,
-                  worker_id=worker_id)
+    def socket_message(self, loads_status, size):
+        self.push('socket_message', loads_status=loads_status,
+                  size=size)
 
     def push(self, data_type, **data):
         data.update({'data_type': data_type, 'worker_id': self.wid})
