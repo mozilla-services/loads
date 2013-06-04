@@ -149,29 +149,36 @@ class DistributedRunner(Runner):
         self.loop.add_callback(self._process_result, msg)
 
     def _process_result(self, msg):
-        data = json.loads(msg[0])
-        data_type = data.pop('data_type')
-        #wid = data.pop('worker_id')
-        # XXX Do something with the WID we get back here.
+        try:
+            data = json.loads(msg[0])
+            data_type = data.pop('data_type')
+            #wid = data.pop('worker_id')
+            # XXX Do something with the WID we get back here.
 
-        method = getattr(self.test_result, data_type)
-        method(**data)
+            method = getattr(self.test_result, data_type)
+            method(**data)
 
-        if self.test_result.nb_finished_tests == self.total:
+            if self.test_result.nb_finished_tests == self.total:
+                self.loop.stop()
+        except KeyboardInterrupt:
             self.loop.stop()
 
     def _execute(self):
         # calling the clients now
         self.test_result.startTestRun()
-        client = Client(self.args['broker'])
-        logger.info('Calling the broker...')
-        client.run(self.args)
-        logger.info('Waiting for results')
-        self.loop.start()
-        self.test_result.stopTestRun()
-        # end..
-        self.context.destroy()
-        self.flush()
+        try:
+            client = Client(self.args['broker'])
+            logger.info('Calling the broker...')
+            client.run(self.args)
+            logger.info('Waiting for results')
+            self.loop.start()
+        except KeyboardInterrupt:
+            pass
+        finally:
+            # end..
+            self.test_result.stopTestRun()
+            self.context.destroy()
+            self.flush()
 
 
 def _compute_arguments(args):
