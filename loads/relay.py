@@ -29,10 +29,10 @@ class ZMQRelay(object):
                   test=str(test),
                   loads_status=loads_status)
 
-    def startTestRun(self):
+    def startTestRun(self, worker_id=None):
         self.push('startTestRun')
 
-    def stopTestRun(self):
+    def stopTestRun(self, worker_id=None):
         self.push('stopTestRun')
 
     def stopTest(self, test, loads_status):

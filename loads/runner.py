@@ -89,6 +89,7 @@ class Runner(object):
 
         worker_id = self.args.get('worker_id', None)
         self.test_result.startTestRun(worker_id)
+
         for user in self.users:
             group = [gevent.spawn(self._run, i, ob, self.cycles, user)
                      for i in range(user)]
