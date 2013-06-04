@@ -68,7 +68,7 @@ class Runner(object):
     def _run(self, num, test, cycles, user):
         for cycle in cycles:
             for current_cycle in range(cycle):
-                loads_status = (cycle, user, current_cycle + 1, num)
+                loads_status = cycle, user, current_cycle + 1, num
                 test(loads_status=loads_status)
                 gevent.sleep(0)
 
