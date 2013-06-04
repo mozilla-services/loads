@@ -37,7 +37,10 @@ class StdOutput(object):
         sys.stderr.flush()
 
     def _print_tb(self, data):
-        exc_class, exc, tb = data.next()[0]
+        data = data.next()
+        if len(data) == 0:
+            return
+        exc_class, exc, tb = data[0]
         if isinstance(exc_class, basestring):
             name = exc_class
         else:
