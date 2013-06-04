@@ -14,21 +14,22 @@ class WebSocketHook(WebSocketClient):
                                             extensions)
         self.callback = callback
         self._test_result = test_result
+        self.loads_status = None, None, None, None
 
     def received_message(self, m):
         self.callback(m)
         if self._test_result is not None:
-            self._test_result.socket_message(None, len(m.data), None)
+            self._test_result.socket_message(self.loads_status, len(m.data))
         super(WebSocketHook, self).received_message(m)
 
     def opened(self):
         if self._test_result is not None:
-            self._test_result.socket_open(None)
+            self._test_result.socket_open(self.loads_status)
         super(WebSocketHook, self).opened()
 
     def closed(self, code, reason):
         if self._test_result is not None:
-            self._test_result.socket_close(None)
+            self._test_result.socket_close(self.loads_status)
         super(WebSocketHook, self).closed(code, reason)
 
 
