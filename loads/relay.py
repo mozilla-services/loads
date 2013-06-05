@@ -69,15 +69,14 @@ class ZMQRelay(object):
     def add_hit(self, **data):
         self.push('add_hit', **data)
 
-    def socket_open(self, loads_status):
-        self.push('socket_open', loads_status=loads_status)
+    def socket_open(self):
+        self.push('socket_open')
 
-    def socket_close(self, loads_status):
-        self.push('socket_close', loads_status=loads_status)
+    def socket_close(self):
+        self.push('socket_close')
 
-    def socket_message(self, loads_status, size):
-        self.push('socket_message', loads_status=loads_status,
-                  size=size)
+    def socket_message(self, size):
+        self.push('socket_message', size=size)
 
     def push(self, data_type, **data):
         data.update({'data_type': data_type, 'worker_id': self.wid})

@@ -199,13 +199,13 @@ class TestResult(object):
     def add_hit(self, **data):
         self.hits.append(Hit(**data))
 
-    def socket_open(self, loads_status, worker_id=None):
+    def socket_open(self, worker_id=None):
         self.sockets += 1
 
-    def socket_close(self, loads_status, worker_id=None):
+    def socket_close(self, worker_id=None):
         self.sockets -= 1
 
-    def socket_message(self, loads_status, size, worker_id=None):
+    def socket_message(self, size, worker_id=None):
         self.socket_data_received += size
 
     def __getattribute__(self, name):
