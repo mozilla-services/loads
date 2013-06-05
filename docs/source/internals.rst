@@ -48,10 +48,10 @@ rather than running the tests locally, asks an `Agent` to run them. It is
 possible to run a number of agents at the same time.
 
 These agents are just simple runners, but instead of reporting everything
-locally, using a *TestResult* object, they proxy all the data to the master
+locally, using a *TestResult* object, they relay all the data to the master
 instance using a 0MQ stream.
 
-It means that the code in `loads/proxy.py` is a drop-in replacement for
+It means that the code in `loads/relay.py` is a drop-in replacement for
 a TestResult object.
 
 Once the results are back to the master, it populates its local *test_runner*,
