@@ -1,17 +1,19 @@
 import StringIO
 import datetime
 import mock
-import sys
-import unittest
-import tempfile
 import shutil
+import sys
+import tempfile
+import traceback
+import unittest
 
 from loads.output import (create_output, output_list, register_output,
                           StdOutput, NullOutput, FileOutput)
+from loads.tests import hush
 
 
 class FakeTestResult(object):
-    def __init__(self):
+    def __init__(self, nb_errors=0, nb_failures=0):
         self.nb_hits = 10
         self.start_time = datetime.datetime.now()
         self.duration = 0
@@ -19,8 +21,12 @@ class FakeTestResult(object):
         self.requests_per_second = lambda: 0
         self.sockets = 0
         self.socket_data_received = 0
-        self.nb_success = self.nb_errors = self.nb_failures = 0
+        self.nb_success = 0
+        self.nb_errors = nb_errors
+        self.nb_failures = nb_failures
         self.nb_finished_tests = 0
+        self.errors = []
+        self.failures = []
 
 
 class FakeOutput(object):
@@ -52,6 +58,48 @@ class TestStdOutput(unittest.TestCase):
 
         self.assertTrue('Hits: 10' in output)
         self.assertTrue('100%' in output)
+
+    @hush
+    def test_errors_are_processed(self):
+        test_result = FakeTestResult(nb_errors=1, nb_failures=1)
+        std = StdOutput(test_result, {'total': 10})
+        std._print_tb = mock.Mock()
+        std.flush()
+        self.assertEquals(2, std._print_tb.call_count)
+
+    def test_tb_is_rendered(self):
+        old = sys.stderr
+        sys.stderr = StringIO.StringIO()
+        try:
+            # create a tb
+            try:
+                raise Exception
+            except Exception:
+                errors = iter([[sys.exc_info(), ]])
+                std = StdOutput(mock.sentinel.test_result, mock.sentinel.args)
+                std._print_tb(errors)
+        finally:
+            sys.stderr.seek(0)
+            output = sys.stderr.read()
+            sys.stderr = old
+
+        self.assertTrue('Exception' in output)
+
+    def test_empty_tb_is_not_processed(self):
+        std = StdOutput(mock.sentinel.test_result, mock.sentinel.args)
+        std._print_tb(iter(([], [])))
+
+    def test_classnames_strings_are_used_when_available(self):
+        old = sys.stderr
+        sys.stderr = StringIO.StringIO()
+        try:
+            std = StdOutput(mock.sentinel.test_result, mock.sentinel.args)
+            std._print_tb(iter([[['foo', 'foobar', None]]]))
+        finally:
+            sys.stderr.seek(0)
+            output = sys.stderr.read()
+            sys.stderr = old
+        self.assertTrue('foo: foobar' in output)
 
 
 class TestNullOutput(unittest.TestCase):
