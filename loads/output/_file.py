@@ -14,12 +14,7 @@ class FileOutput(object):
         self.fd = open(self.filename, 'a+')
 
     def push(self, method, **data):
-        pass
-
-    # XXX replace by an atexit
-    def __del__(self):
-        self.fd.close()
+        self.fd.write(' - '.join((method, self.encoder.encode(data))))
 
     def flush(self):
-        # XXX Read what's in the test_result and build a report with it.
-        raise NotImplemented()
+        self.fd.close()

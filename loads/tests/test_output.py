@@ -3,9 +3,11 @@ import datetime
 import mock
 import sys
 import unittest
+import tempfile
+import shutil
 
 from loads.output import (create_output, output_list, register_output,
-                          StdOutput, NullOutput)
+                          StdOutput, NullOutput, FileOutput)
 
 
 class FakeTestResult(object):
@@ -58,6 +60,23 @@ class TestNullOutput(unittest.TestCase):
         output = NullOutput(mock.sentinel.test_result, mock.sentinel.args)
         output.push('something')
         output.flush()
+
+
+class TestFileOutput(unittest.TestCase):
+
+    def test_file_is_written(self):
+        tmpdir = tempfile.mkdtemp()
+        try:
+            output = FileOutput(mock.sentinel.test_result,
+                                {'output_file_filename': '%s/loads' % tmpdir})
+            output.push('something')
+            output.flush()
+
+            with open('%s/loads' % tmpdir) as f:
+                self.assertEquals('something - {}', f.read())
+
+        except:
+            shutil.rmtree(tmpdir)
 
 
 class TestOutputPlugins(unittest.TestCase):
