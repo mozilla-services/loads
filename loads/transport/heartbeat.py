@@ -76,7 +76,7 @@ class Stethoscope(object):
         logger.debug('Starting the loop')
         if self.running:
             return
-
+        self.running = True
         self._initialize()
         time.sleep(self.warmup_delay)
         self._timer.start()

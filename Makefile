@@ -23,7 +23,7 @@ clean:
 
 test: build
 	$(BIN)/pip install nose coverage circus mock
-	- $(BIN)/nosetests -s -d -v --with-coverage --cover-package loads loads/tests
+	- $(BIN)/nosetests -s -d -v --cover-html --cover-html-dir=html --with-coverage --cover-package loads loads/tests
 
 bin/sphinx-build:
 	bin/pip install Sphinx

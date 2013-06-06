@@ -30,6 +30,8 @@ class TestHeartbeat(unittest.TestCase):
 
         def start_2():
             stetho.start()
+            # it's ok to try to start it again
+            stetho.start()
 
         # hb starts immediatly
         loop.add_callback(start)
