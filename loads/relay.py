@@ -22,7 +22,7 @@ class ZMQRelay(object):
         self._push.connect(args.get('stream_zmq_endpoint',
                                     'tcp://127.0.0.1:5558'))
         self.encoder = DateTimeJSONEncoder()
-        self.wid = self.args['worker_id']
+        self.wid = self.args.get('worker_id')
 
     def startTest(self, test, loads_status):
         self.push('startTest',
@@ -41,10 +41,10 @@ class ZMQRelay(object):
                   loads_status=loads_status)
 
     def _transform_exc_info(self, exc):
-        string = StringIO()
+        string_tb = StringIO()
         exc, exc_class, tb = exc
-        tb = traceback.print_tb(tb, string)
-        return str(exc), str(exc_class), tb
+        traceback.print_tb(tb, string_tb)
+        return str(exc), str(exc_class), string_tb.read()
 
     def addFailure(self, test, exc, loads_status):
         # Because the information to trace the exception is a python object, it

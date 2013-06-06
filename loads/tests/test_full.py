@@ -5,7 +5,7 @@ import subprocess
 import sys
 
 from loads.case import TestCase
-from loads.tests import hush
+from loads.tests.support import hush
 
 
 _SERVER = [sys.executable, '%s/echo_server.py' % os.path.dirname(__file__)]
@@ -14,7 +14,9 @@ _SERVER = [sys.executable, '%s/echo_server.py' % os.path.dirname(__file__)]
 class TestWebSite(TestCase):
 
     def setUp(self):
-        self._server = subprocess.Popen(_SERVER)
+        devnull = open('/dev/null', 'w')
+        self._server = subprocess.Popen(_SERVER, stdout=devnull,
+                                        stderr=devnull)
         time.sleep(.5)
 
     def tearDown(self):
@@ -23,8 +25,6 @@ class TestWebSite(TestCase):
 
     @hush
     def test_something(self):
-        from gevent.monkey import patch_socket
-        patch_socket()
         res = self.session.get('http://localhost:9000')
         self.assertTrue('chatform' in res.content)
         results = []
@@ -32,13 +32,17 @@ class TestWebSite(TestCase):
         def callback(m):
             results.append(m.data)
 
-        ws = self.create_ws('ws://localhost:9000/ws', callback=callback)
+        ws = self.create_ws('ws://localhost:9000/ws',
+                            protocols=['chat', 'http-only'],
+                            callback=callback)
 
         one = 'something' + os.urandom(10).encode('hex')
         two = 'happened' + os.urandom(10).encode('hex')
 
         ws.send(one)
+        ws.receive()
         ws.send(two)
+        ws.receive()
 
         start = time.time()
         while one not in results and two not in results:

@@ -8,7 +8,7 @@ import unittest
 
 from loads.output import (create_output, output_list, register_output,
                           StdOutput, NullOutput, FileOutput)
-from loads.tests import hush
+from loads.tests.support import get_tb, hush
 
 
 class FakeTestResult(object):
@@ -69,18 +69,13 @@ class TestStdOutput(unittest.TestCase):
     def test_tb_is_rendered(self):
         old = sys.stderr
         sys.stderr = StringIO.StringIO()
-        try:
-            # create a tb
-            try:
-                raise Exception
-            except Exception:
-                errors = iter([[sys.exc_info(), ]])
-                std = StdOutput(mock.sentinel.test_result, mock.sentinel.args)
-                std._print_tb(errors)
-        finally:
-            sys.stderr.seek(0)
-            output = sys.stderr.read()
-            sys.stderr = old
+
+        errors = iter([[get_tb(), ]])
+        std = StdOutput(mock.sentinel.test_result, mock.sentinel.args)
+        std._print_tb(errors)
+        sys.stderr.seek(0)
+        output = sys.stderr.read()
+        sys.stderr = old
 
         self.assertTrue('Exception' in output)
 
@@ -91,13 +86,11 @@ class TestStdOutput(unittest.TestCase):
     def test_classnames_strings_are_used_when_available(self):
         old = sys.stderr
         sys.stderr = StringIO.StringIO()
-        try:
-            std = StdOutput(mock.sentinel.test_result, mock.sentinel.args)
-            std._print_tb(iter([[['foo', 'foobar', None]]]))
-        finally:
-            sys.stderr.seek(0)
-            output = sys.stderr.read()
-            sys.stderr = old
+        std = StdOutput(mock.sentinel.test_result, mock.sentinel.args)
+        std._print_tb(iter([[['foo', 'foobar', None]]]))
+        sys.stderr.seek(0)
+        output = sys.stderr.read()
+        sys.stderr = old
         self.assertTrue('foo: foobar' in output)
 
 
@@ -122,7 +115,7 @@ class TestFileOutput(unittest.TestCase):
             with open('%s/loads' % tmpdir) as f:
                 self.assertEquals('something - {}', f.read())
 
-        except:
+        finally:
             shutil.rmtree(tmpdir)
 
 
