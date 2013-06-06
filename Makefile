@@ -22,8 +22,9 @@ clean:
 	rm -rf $(BUILD_DIRS)
 
 test: build
-	$(BIN)/pip install nose coverage circus mock
+	$(BIN)/pip install nose coverage circus mock flake8
 	- $(BIN)/nosetests -s -d -v --cover-html --cover-html-dir=html --with-coverage --cover-package loads loads/tests
+	- $(BIN)/flake8 loads
 
 bin/sphinx-build:
 	bin/pip install Sphinx
