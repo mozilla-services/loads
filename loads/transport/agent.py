@@ -138,6 +138,16 @@ class Agent(object):
                     status[pid] = 'terminated'
 
             return __({'result': status})
+        elif command == 'STOP':
+            status = {}
+
+            for pid, proc in self._processes.items():
+                if proc.is_alive():
+                    proc.terminate()
+                    del self._processes[pid]
+                    status[pid] = 'terminated'
+
+            return __({'result': status})
 
         raise NotImplementedError()
 

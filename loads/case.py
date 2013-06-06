@@ -2,9 +2,7 @@ import unittest
 import functools
 
 from requests.adapters import HTTPAdapter
-
 from loads.measure import Session, TestApp
-from loads.websockets import create_ws
 
 
 class FakeTestApp(object):
@@ -42,6 +40,7 @@ class TestCase(unittest.TestCase):
         return TestResult()
 
     def create_ws(self, url, callback, protocols=None, extensions=None):
+        from loads.websockets import create_ws
         return create_ws(url, callback, self._test_result, protocols,
                          extensions)
 
@@ -90,55 +89,60 @@ class TestResult(unittest.TestResult):
     def addSuccess(self, test, *args, **kw):
         unittest.TestResult.addSuccess(self, test)
 
-# patching nose if present
-try:
-    from nose import core
-    core._oldTextTestResult = core.TextTestResult
 
-    class _TestResult(core._oldTextTestResult):
-        def startTest(self, test, *args, **kw):
-            super(_TestResult, self).startTest(test)
+def _patching():
+    # patching nose if present
+    try:
+        from nose import core
+        core._oldTextTestResult = core.TextTestResult
 
-        def stopTest(self, test, *args, **kw):
-            super(_TestResult, self).stopTest(test)
+        class _TestResult(core._oldTextTestResult):
+            def startTest(self, test, *args, **kw):
+                super(_TestResult, self).startTest(test)
 
-        def addError(self, test, exc_info, *args, **kw):
-            super(_TestResult, self).addError(test, exc_info)
+            def stopTest(self, test, *args, **kw):
+                super(_TestResult, self).stopTest(test)
 
-        def addFailure(self, test, exc_info, *args, **kw):
-            super(_TestResult, self).addFailure(test, exc_info)
+            def addError(self, test, exc_info, *args, **kw):
+                super(_TestResult, self).addError(test, exc_info)
 
-        def addSuccess(self, test, *args, **kw):
-            super(_TestResult, self).addSuccess(test)
+            def addFailure(self, test, exc_info, *args, **kw):
+                super(_TestResult, self).addFailure(test, exc_info)
 
-    core.TextTestResult = _TestResult
+            def addSuccess(self, test, *args, **kw):
+                super(_TestResult, self).addSuccess(test)
 
-    from nose import proxy
-    proxy._ResultProxy = proxy.ResultProxy
+        core.TextTestResult = _TestResult
 
-    class _ResultProxy(proxy._ResultProxy):
-        def startTest(self, test, *args, **kw):
-            super(_ResultProxy, self).startTest(test)
+        from nose import proxy
+        proxy._ResultProxy = proxy.ResultProxy
 
-        def stopTest(self, test, *args, **kw):
-            super(_ResultProxy, self).stopTest(test)
+        class _ResultProxy(proxy._ResultProxy):
+            def startTest(self, test, *args, **kw):
+                super(_ResultProxy, self).startTest(test)
 
-        def addError(self, test, exc_info, *args, **kw):
-            super(_ResultProxy, self).addError(test, exc_info)
+            def stopTest(self, test, *args, **kw):
+                super(_ResultProxy, self).stopTest(test)
 
-        def addFailure(self, test, exc_info, *args, **kw):
-            super(_ResultProxy, self).addFailure(test, exc_info)
+            def addError(self, test, exc_info, *args, **kw):
+                super(_ResultProxy, self).addError(test, exc_info)
 
-        def addSuccess(self, test, *args, **kw):
-            super(_ResultProxy, self).addSuccess(test)
+            def addFailure(self, test, exc_info, *args, **kw):
+                super(_ResultProxy, self).addFailure(test, exc_info)
 
-    proxy.ResultProxy = _ResultProxy
-except ImportError:
-    pass
+            def addSuccess(self, test, *args, **kw):
+                super(_ResultProxy, self).addSuccess(test)
 
-# patch unittest TestResult object
-try:
-    import unittest2.runner
-    unittest2.runner.TextTestResult = TestResult
-except ImportError:
-    pass
+        proxy.ResultProxy = _ResultProxy
+    except ImportError:
+        pass
+
+    # patch unittest TestResult object
+    try:
+        import unittest2.runner
+        unittest2.runner.TextTestResult = TestResult
+    except ImportError:
+        pass
+
+
+_patching()

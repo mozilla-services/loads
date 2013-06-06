@@ -180,6 +180,9 @@ class Client(object):
     def status(self, worker_id):
         return self.execute({'command': 'STATUS', 'worker_id': worker_id})
 
+    def stop(self, worker_id):
+        return self.execute({'command': 'STOP', 'worker_id': worker_id})
+
     def list(self):
         return self.execute({'command': 'LIST'})
 
@@ -260,3 +263,7 @@ class Pool(object):
     def list(self):
         with self._connector(self.timeout) as connector:
             return connector.list()
+
+    def stop(self, worker_id):
+        with self._connector(self.timeout) as connector:
+            return connector.stop(worker_id)

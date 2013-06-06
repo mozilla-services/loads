@@ -53,6 +53,7 @@ class TestCluster(unittest.TestCase):
                          register=reg,
                          numprocesses=1, background=True, debug=False,
                          timeout=client.DEFAULT_TIMEOUT_MOVF, **kw)
+
         cl.start()
         time.sleep(1.)  # stabilization
         self.clusters.append(cl)
@@ -65,26 +66,18 @@ class TestCluster(unittest.TestCase):
         while len(workers) != 1:
             time.sleep(1.)
             workers = cli.list()
+
         return cli, cl
 
     @hush
-    @unittest.skip('broken for now')
     def test_success(self):
         client, cluster = self._get_cluster()
         job = {'fqn': 'loads.tests.jobs.SomeTests.test_one'}
         res = client.run(job)
         worker_id = res[0]
+        time.sleep(.3)
 
-        status = client.status(worker_id)
-        while status.values() != ['terminated']:
-            time.sleep(.2)
-            status = client.status(worker_id)
-            cluster.stop()
-            pid = status.get('pid', None)
-            if pid is not None:
-                try:
-                    os.kill(pid, 0)
-                except OSError:
-                    break
+        res = client.stop(worker_id)
+        self.assertEqual(res.values(), ['terminated'])
 
         # todo: plug the zmq streamer and test it

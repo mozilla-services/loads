@@ -45,4 +45,4 @@ def timeout_overflow(job):
 
 class SomeTests(TestCase):
     def test_one(self):
-        raise Exception()
+        pass
