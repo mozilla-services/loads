@@ -6,6 +6,7 @@ import unittest
 import zmq
 import gevent
 
+import loads
 from loads import util
 from loads.util import (resolve_name, set_logger, logger, dns_resolve,
                         DateTimeJSONEncoder)
@@ -36,10 +37,23 @@ class TestUtil(unittest.TestCase):
         ob = resolve_name('loads.tests.test_util.TestUtil')
         self.assertTrue(ob is TestUtil)
 
+        ob = resolve_name('loads')
+        self.assertTrue(ob is loads)
+
+        self.assertRaises(ImportError, resolve_name, 'xx.cc')
+        self.assertRaises(ImportError, resolve_name, 'xx')
+        self.assertRaises(ImportError, resolve_name, 'loads.xx')
+
     def test_set_logger(self):
         before = len(logger.handlers)
         set_logger()
         self.assertTrue(len(logger.handlers), before + 1)
+
+        fd, logfile = mkstemp()
+        os.close(fd)
+        set_logger(debug=True)
+        set_logger(logfile=logfile)
+        os.remove(logfile)
 
     def test_ipc_files(self):
         fd, path = mkstemp()
@@ -107,3 +121,4 @@ class TestUtil(unittest.TestCase):
         delta = datetime.timedelta(0, 12, 126509)
         self.assertEquals(encoder.encode(date), '"2013-05-30T18:35:11.550482"')
         self.assertEquals(encoder.encode(delta), '12.126509')
+        self.assertRaises(TypeError, encoder.encode, gevent.socket)
