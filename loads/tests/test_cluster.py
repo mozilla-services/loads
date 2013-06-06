@@ -65,12 +65,12 @@ class TestCluster(unittest.TestCase):
         while len(workers) != 1:
             time.sleep(1.)
             workers = cli.list()
-        return cli
+        return cli, cl
 
     @hush
     def test_success(self):
-        client = self._get_cluster()
-        job = {'fqn': 'loads.tests.jobs2.SomeTests.test_one'}
+        client, cluster = self._get_cluster()
+        job = {'fqn': 'loads.tests.jobs.SomeTests.test_one'}
         res = client.run(job)
         worker_id = res[0]
 
@@ -78,5 +78,12 @@ class TestCluster(unittest.TestCase):
         while status.values() != ['terminated']:
             time.sleep(.2)
             status = client.status(worker_id)
+            cluster.stop()
+            pid = status.get('pid', None)
+            if pid is not None:
+                try:
+                    os.kill(pid, 0)
+                except OSError:
+                    break
 
         # todo: plug the zmq streamer and test it
