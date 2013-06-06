@@ -1,15 +1,21 @@
 Under the hood — How loads is designed
 ######################################
 
-Hopefully it's not really complicated to dig into the code and have a good
+Hopefully, it's not really complicated to dig into the code and have a good
 overview of how *loads* is designed, but sometimes a good document explaining
 things is a good starting point, so let's try!
 
-XXX Add a schema here explaining the broker / agents / distributed runner mode,
-where the messages goes etc.
+You can run loads either in *distributed mode* or in *non-distributed* mode.
+The vast majority of the time, you want to spawn a number of agents and let
+them hammer the site you want to test. That's what we call the distributed
+mode. Alternatively, you may want to run things in a single process, for
+instance while writing your functional tests, that's the *non-distributed*
+mode.
+
 
 What happens during a non-distributed run
 =========================================
+
 
 1. You invoke the `loads.runner.Runner` class.
 
@@ -56,6 +62,27 @@ a TestResult object.
 
 Once the results are back to the master, it populates its local *test_runner*,
 which will in turn call the outputs to generate the reports.
+
+A schema might help you to get things right::
+
+
+    [ Distributed mode ]
+
+                               /- Agent 1
+    Loads-agent <--> broker ---
+                               \- Agent 2
+
+
+All the inter-process communications (IPC) are handled by ZeroMQ, as you can
+see on the schema. Here is the caption:
+
+1. The distributed loads runner (**the master**) sends a message to the broker,
+   asking it to run the tests on N agents.
+2. The broker selects the spare agents and send them the job
+3. The agents start a loads-runner instance in slave mode (**the slave**),
+   proxying all the calls to the `test_result` objects to the zmq push socket.
+4. The **master** receives the calls and pass them to its local `test_results`
+   instance.
 
 The TestResult object
 =====================
