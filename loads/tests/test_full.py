@@ -6,12 +6,15 @@ import sys
 
 from loads.case import TestCase
 from loads.tests.support import hush
+import webtest
 
 
 _SERVER = [sys.executable, '%s/echo_server.py' % os.path.dirname(__file__)]
 
 
 class TestWebSite(TestCase):
+
+    server_url = 'http://localhost:9000'
 
     def setUp(self):
         devnull = open('/dev/null', 'w')
@@ -25,8 +28,8 @@ class TestWebSite(TestCase):
 
     @hush
     def test_something(self):
-        res = self.session.get('http://localhost:9000')
-        self.assertTrue('chatform' in res.content)
+        res = self.app.get('/')
+        self.assertTrue('chatform' in res.body)
         results = []
 
         def callback(m):
@@ -50,10 +53,9 @@ class TestWebSite(TestCase):
             if time.time() - start > 1:
                 raise AssertionError('Too slow')
 
-    def _test_will_fail(self):
-        res = self.session.get('http://localhost:9200')
-        self.assertTrue('xFsj' in res.content)
+    def test_will_fail(self):
+        res = self.app.get('/')
+        self.assertFalse('xFsj' in res.body)
 
-    def _test_will_error(self):
-        res = self.session.get('http://localhost:9200')
-        raise ValueError(res)
+    def test_webtest_integration(self):
+        self.assertRaises(webtest.AppError, self.app.get, '/', status=400)
