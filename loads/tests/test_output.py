@@ -4,7 +4,6 @@ import mock
 import shutil
 import sys
 import tempfile
-import traceback
 import unittest
 
 from loads.output import (create_output, output_list, register_output,

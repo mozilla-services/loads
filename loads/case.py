@@ -69,7 +69,7 @@ class TestResultProxy(object):
         if name in ('startTest', 'stopTest', 'addSuccess', 'addException',
                     'addError', 'addFailure'):
             status = (super(TestResultProxy, self).
-                        __getattribute__('loads_status'))
+                      __getattribute__('loads_status'))
             return functools.partial(attr, loads_status=status)
         return attr
 

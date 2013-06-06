@@ -50,7 +50,7 @@ class DistributedFunctionalTest(TestCase):
     def _start_cmd(self, cmd):
         devnull = open('/dev/null', 'w')
         process = subprocess.Popen([sys.executable, '-m', cmd],
-                                    stdout=devnull, stderr=devnull)
+                                   stdout=devnull, stderr=devnull)
         self._processes.append(process)
 
     def tearDown(self):
