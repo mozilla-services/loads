@@ -1,3 +1,8 @@
+import functools
+import sys
+import StringIO
+
+
 from loads.transport.util import DEFAULT_FRONTEND
 
 
@@ -15,3 +20,27 @@ def get_runner_args(fqn, users=1, cycles=1, agents=None,
             'server_url': server_url,
             'zmq_endpoint': zmq_endpoint,
             'output': output}
+
+
+def get_tb():
+    """runs an exception and return the traceback information"""
+    try:
+        raise Exception
+    except Exception:
+        return sys.exc_info()
+
+
+def hush(func):
+    """Make the passed function silent."""
+    @functools.wraps(func)
+    def _silent(*args, **kw):
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
+        sys.stdout = StringIO.StringIO()
+        sys.stderr = StringIO.StringIO()
+        try:
+            return func(*args, **kw)
+        finally:
+            sys.stdout = old_stdout
+            sys.stderr = old_stderr
+    return _silent
