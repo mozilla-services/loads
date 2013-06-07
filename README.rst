@@ -13,4 +13,4 @@ Installation::
 
     $ bin/pip install loads
 
-See the docs at http://loads.readsthedocs.org
+See the docs at http://loads.readthedocs.org
