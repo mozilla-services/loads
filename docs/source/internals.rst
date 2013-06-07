@@ -12,8 +12,6 @@ mode. Alternatively, you may want to run things in a single process, for
 instance while writing your functional tests, that's the *non-distributed*
 mode.
 
-.. image:: loads.png
-
 
 What happens during a non-distributed run
 =========================================
@@ -65,14 +63,9 @@ a TestResult object.
 Once the results are back to the master, it populates its local *test_runner*,
 which will in turn call the outputs to generate the reports.
 
-A schema might help you to get things right::
+A schema might help you to get things right:
 
-
-    [ Distributed mode ]
-
-                               /- Agent 1
-    Loads-agent <--> broker ---
-                               \- Agent 2
+.. image:: loads.png
 
 
 All the inter-process communications (IPC) are handled by ZeroMQ, as you can
