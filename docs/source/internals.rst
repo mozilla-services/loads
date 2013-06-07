@@ -12,6 +12,8 @@ mode. Alternatively, you may want to run things in a single process, for
 instance while writing your functional tests, that's the *non-distributed*
 mode.
 
+.. image:: loads.png
+
 
 What happens during a non-distributed run
 =========================================
@@ -37,7 +39,7 @@ What happens during a non-distributed run
    websocket objects report their progress in real time to test_result. When
    there is a need to disambiguate the calls, a loads_status object is passed
    along.
-   
+
    It contains data about the cycles, the total number of users, the current
    user and the current cycle.
 
