@@ -8,7 +8,7 @@ def _prefix(prefix, msg):
 
 class Host(object):
 
-    def __init__(self, host, port, user, password=None):
+    def __init__(self, host, port, user, password=None, root=None):
         self.password = password
         self.host = host
         self.user = user
@@ -21,13 +21,18 @@ class Host(object):
         else:
             client.connect(self.host, self.port, self.user)
         self.client = client
+        self.root = root
 
-    def execute(self, cmd):
+    def execute(self, cmd, prefixed=True):
+        if self.root is not None:
+            cmd = 'mkdir -p %s; cd %s;' % (self.root, self.root) + cmd
         stdin, stdout, stderr = self.client.exec_command(cmd)
         stderr = stderr.read()
         if stderr != '':
             raise ValueError(stderr)
-        return _prefix(self.host, stdout.read())
+        if prefixed:
+            return _prefix(self.host, stdout.read())
+        return stdout.read()
 
     def close(self):
         self.client.close()
@@ -44,25 +49,43 @@ def deploy(master, slaves, ssh):
     port = master.get('port', 22)
     password = master.get('password')
 
-    broker = Host(host, port, user, password)
+    broker = Host(host, port, user, password, '/tmp/loads-broker')
     try:
         # deploying the latest Loads repo - if needed
-        cmd = 'cd /tmp/;'
-        cmd += 'git clone https://github.com/tarekziade/loads'
-        print broker.execute(cmd)
+        check = '[ -d "loads" ] && echo 1 || echo 0'
+        res = broker.execute(check, prefixed=False).strip()
+
+        if res == '0':
+            cmd = 'git clone https://github.com/mozilla-services/loads'
+            print broker.execute(cmd)
+        else:
+            cmd = 'cd loads; git pull'
+            print broker.execute(cmd)
 
         # building the virtualenv in a dedicated tmp file
         venv = '/usr/local/bin/virtualenv'
         venv_options = '--no-site-packages .'
-        cmd = 'cd /tmp/loads; %s %s' % (venv, venv_options)
+        cmd = 'cd loads; %s %s' % (venv, venv_options)
         print broker.execute(cmd)
 
         # installing all deps
-        cmd = 'cd /tmp/loads; bin/python setup.py develop'
+        cmd = 'cd loads; bin/python setup.py develop; bin/pip install circus'
         print broker.execute(cmd)
 
+        # stopping any running instance
+        cmd = 'cd loads; bin/circusctl quit'
+        try:
+            print broker.execute(cmd)
+        except ValueError:
+            pass
+
+        # now running the broker & some slaves
+        cmd = 'cd loads; bin/circusd --daemon loads.ini'
+        print broker.execute(cmd)
     finally:
         broker.close()
+
+
 
 
 if __name__ == '__main__':
