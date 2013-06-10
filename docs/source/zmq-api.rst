@@ -20,15 +20,15 @@ of that that's being sent.
 The messages respect the following rules:
 
 - All the data is JSON encoded.
-- Dates are expressed in ISO 8601 format, (YYYY-MM-DDTHH:MM:SS.mmmmmm)
-- You should send along the worker with every message. Each worker id should be
-  different from each other.
+- Dates are expressed in `ISO 8601 format
+  <https://en.wikipedia.org/wiki/ISO_8601>`_, (YYYY-MM-DDTHH:MM:SS)
+- You should send along the worker id with every message. Each worker id should
+  be different from each other.
 
 A message generally looks like this::
   
     {
         data_type: 'something',
-        worker_id: WID
         worker_id: '1',
         other_key_1: 'foo'
         other_key_2: 'bar'
