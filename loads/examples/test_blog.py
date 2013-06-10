@@ -7,6 +7,9 @@ from loads.case import TestCase
 
 class TestWebSite(TestCase):
 
+    def test_public(self):
+        self.session.get('http://google.com')
+
     def test_es(self):
         self.session.get('http://localhost:9200')
 
