@@ -160,12 +160,16 @@ def main():
         print(__version__)
         sys.exit(0)
 
-    # first task: create the AWS boxes
-    aws = AWSConnection(args.access_key, args.secret_key)
-    nodes = aws.create_nodes(args.image_id, 1)
-    master, master_id = nodes[0]
+    print aws_deploy(args.access_key, args.secret_key, args.ssh_user,
+                     args.ssh_key)
 
-    ssh = {'username': args.ssh_user, 'key': args.ssh_key}
+
+def aws_deploy(access_key, secret_key, ssh_user, ssh_key, image_id):
+    # first task: create the AWS boxes
+    aws = AWSConnection(access_key, secret_key)
+    nodes = aws.create_nodes(image_id, 1)
+    master, master_id = nodes[0]
+    ssh = {'username': ssh_user, 'key': ssh_key}
     master = {'host': master}
     slaves = []
     try:
@@ -175,7 +179,8 @@ def main():
         aws.terminate_nodes([master_id])
         raise
 
-    print master, master_id
+    return master, master_id
+
 
 def shutdown():
     parser = argparse.ArgumentParser(description='Shutdown a box on Amazon')

@@ -4,6 +4,7 @@ import sys
 import json
 import logging
 import traceback
+import os
 
 import gevent
 
@@ -253,6 +254,19 @@ def main():
                         help='The output used to display the results',
                         choices=outputs)
 
+    parser.add_argument('--aws-image-id', help='Amazon Server Id', type=str,
+                        default='ami-be77e08e')
+    parser.add_argument('--aws-access-key', help='Amazon Access Key',
+                        type=str, default=os.environ.get('ACCESS_KEY'))
+    parser.add_argument('--aws-secret-key', help='Amazon Secret Key',
+                        type=str, default=os.environ.get('SECRET_KEY'))
+    parser.add_argument('--aws-ssh-user', help='Amazon User',
+                        type=str, default='ubuntu')
+    parser.add_argument('--aws-ssh-key', help='Amazon SSH Key file',
+                        type=str, default='ubuntu')
+    parser.add_argument('--aws', help='Running on AWS ?', action='store_true',
+                        default=False)
+
     # per-output options
     for output in output_list():
         for option, value in output.options.items():
@@ -283,6 +297,16 @@ def main():
     if args.fqn is None:
         parser.print_usage()
         sys.exit(0)
+
+    # deploy on amazon
+    if args.aws:
+        from loads.deploy import aws_deploy
+        master, master_id = aws_deploy(args.aws_access_key,
+                                       args.aws_secret_key,
+                                       args.aws_ssh_user,
+                                       args.aws_ssh_key,
+                                       args.aws_image_id)
+        args.broker = 'tcp://%s:5554' % master['host']
 
     args = dict(args._get_kwargs())
     res = run(args)
