@@ -53,22 +53,21 @@ def _deploy(host, port, user, password, root, cfg, force=False,
             endpoint='tcp://127.0.0.1:5555', key=None):
 
     host = Host(host, port, user, password, root, key=key)
-    print host.execute('sudo apt-get update')
+    host.execute('sudo apt-get update')
 
     prereqs = ['git', 'python-virtualenv', 'python-dev', 'libevent-dev']
     cmd = ('DEBIAN_FRONTEND=noninteractive sudo apt-get -y '
            '--force-yes install %s')
 
     for req in prereqs:
-        stdout, stderr = host.execute(cmd % req,  ignore_error=True)
-        print stdout, stderr
+        host.execute(cmd % req,  ignore_error=True)
 
     try:
         # if it's running let's bypass
         if not force:
             cmd = 'cd loads; bin/circusctl --endpoint %s status' % endpoint
             try:
-                print host.execute(cmd)[0]
+                host.execute(cmd)
                 return
             except ValueError:
                 pass
@@ -79,31 +78,31 @@ def _deploy(host, port, user, password, root, cfg, force=False,
 
         if res == '0':
             cmd = 'git clone https://github.com/mozilla-services/loads'
-            print host.execute(cmd)[0]
+            host.execute(cmd)
         else:
             cmd = 'cd loads; git pull'
-            print host.execute(cmd)[0]
+            host.execute(cmd)
 
         # building the virtualenv in a dedicated tmp file
         venv = '/usr/bin/virtualenv'
         venv_options = '--no-site-packages .'
         cmd = 'cd loads; %s %s' % (venv, venv_options)
-        print host.execute(cmd)[0]
+        host.execute(cmd)
 
         # installing all deps
         cmd = 'cd loads; bin/python setup.py develop; bin/pip install circus'
-        print host.execute(cmd, ignore_error=True)
+        host.execute(cmd, ignore_error=True)
 
         # stopping any running instance
         cmd = 'cd loads; bin/circusctl quit'
         try:
-            print host.execute(cmd)[0]
+            host.execute(cmd)
         except ValueError:
             pass
 
         # now running
         cmd = 'cd loads; bin/circusd --daemon %s' % cfg
-        print host.execute(cmd)[0]
+        host.execute(cmd)
 
     finally:
         host.close()
@@ -170,12 +169,13 @@ def main():
     master = {'host': master}
     slaves = []
     try:
-        return deploy(master, slaves, ssh)
+        deploy(master, slaves, ssh)
     except Exception, a:
-        print 'shutting down amazon'
+        print 'Something went wrong. Shutting down amazon'
         aws.terminate_nodes([master_id])
         raise
 
+    print master, master_id
 
 def shutdown():
     parser = argparse.ArgumentParser(description='Shutdown a box on Amazon')
