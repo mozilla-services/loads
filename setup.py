@@ -41,4 +41,6 @@ setup(name='loads',
       loads-agent  = loads.transport.agent:main
       loads-runner  = loads.runner:main
       loads-cluster = loads.transport:main
+      loads-deploy = loads.deploy:main
+      loads-shutdown = loads.deploy:shutdown
       """)
