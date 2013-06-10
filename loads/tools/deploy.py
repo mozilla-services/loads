@@ -86,10 +86,25 @@ def deploy(master, slaves, ssh):
         broker.close()
 
 
+def check(broker):
+    user = ssh['username']
+    host = master['host']
+    port = master.get('port', 22)
+    password = master.get('password')
+
+    broker = Host(host, port, user, password, '/tmp/loads-broker')
+    cmd = 'cd loads; bin/circusctl status'
+    try:
+        print broker.execute(cmd)
+        return True
+    except ValueError:
+        return False
+    broker.close()
 
 
 if __name__ == '__main__':
     ssh = {'username': 'tarek'}
     master = {'host': 'localhost'}
     slaves = [{}]
-    deploy(master, slaves, ssh)
+    if not check(master):
+        deploy(master, slaves, ssh)
