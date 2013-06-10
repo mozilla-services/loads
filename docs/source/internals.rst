@@ -73,10 +73,10 @@ see on the schema. Here is the caption:
 
 1. The distributed loads runner (**the master**) sends a message to the broker,
    asking it to run the tests on N agents.
-2. The broker selects the spare agents and send them the job
-3. The agents start a loads-runner instance in slave mode (**the slave**),
+2. The broker selects the spare agents and send them the job.
+   The agents start a loads-runner instance in slave mode (**the slave**),
    proxying all the calls to the `test_result` objects to the zmq push socket.
-4. The **master** receives the calls and pass them to its local `test_results`
+3. The **master** receives the calls and pass them to its local `test_results`
    instance.
 
 The TestResult object

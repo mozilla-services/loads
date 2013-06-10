@@ -192,5 +192,4 @@ More documentation
    :maxdepth: 2
 
    internals
-
-
+   zmq-api
