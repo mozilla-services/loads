@@ -81,16 +81,20 @@ fail. Here are the APIs you can use:
 Requests
 --------
 
-- add_hit(
-      url, # http://notmyidea.org
-      method, # GET
-      http_status, # 200
-      started, # the time when it started
-      elapsed, # number of seconds (decimal) the request took
-      loads_status)
+To track requests, you only have one method, named "add_hit" with the following parameters:
+
+- `url`, the URL of the request, for instance http://notmyidea.org
+- `method`, the HTTP method (GET, POST, PUT, etc.)
+- `status`, the response of the call (200)
+- `started`, the time when it started
+- `elapsed`, the number of seconds (decimal) the request took to run
+- loads_status, as already described
 
 Sockets
 -------
+
+If you're also able to track what's going on with the socket connections, then
+you can use the following messages:
 
 - socket_open()
 - socket_close()
