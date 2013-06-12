@@ -18,7 +18,8 @@ from loads.output import output_list, create_output
 
 from loads import __version__
 from loads.transport.client import Client
-from loads.transport.util import DEFAULT_FRONTEND
+from loads.transport.util import (DEFAULT_FRONTEND, DEFAULT_RECEIVER,
+                                  DEFAULT_PUBLISHER)
 
 
 class Runner(object):
@@ -128,11 +129,13 @@ class DistributedRunner(Runner):
         self.loop = None
         self.test_result = TestResult()
 
+        # socket where the results are published
         self.context = zmq.Context()
-        self.pull = self.context.socket(zmq.PULL)
+        self.pull = self.context.socket(zmq.SUB)
+        self.pull.setsockopt(zmq.SUBSCRIBE, '')
         self.pull.set_hwm(8096 * 10)
         self.pull.setsockopt(zmq.LINGER, -1)
-        self.pull.bind(self.args['zmq_endpoint'])
+        self.pull.connect(self.args.get('zmq_publisher', DEFAULT_PUBLISHER))
 
         # io loop
         self.loop = ioloop.IOLoop()
@@ -244,8 +247,11 @@ def main():
                              'will override any value your provided in '
                              'the tests for the WebTest client.')
 
-    parser.add_argument('--zmq-endpoint', default='tcp://127.0.0.1:5558',
-                        help='Socket to send the results to')
+    parser.add_argument('--zmq-receiver', default=DEFAULT_RECEIVER,
+                        help='Socket where the agents send the results to.')
+
+    parser.add_argument('--zmq-publisher', default=DEFAULT_PUBLISHER,
+                        help='Socket where the results are published.')
 
     outputs = [st.name for st in output_list()]
     outputs.sort()
@@ -264,7 +270,7 @@ def main():
                         type=str, default='ubuntu')
     parser.add_argument('--aws-ssh-key', help='Amazon SSH Key file',
                         type=str, default='ubuntu')
-    parser.add_argument('--aws', help='Running on AWS ?', action='store_true',
+    parser.add_argument('--aws', help='Running on AWS?', action='store_true',
                         default=False)
 
     # per-output options

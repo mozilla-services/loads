@@ -17,7 +17,8 @@ from loads.util import set_logger, logger
 from loads.transport.util import (register_ipc_file, DEFAULT_FRONTEND,
                                   DEFAULT_BACKEND, DEFAULT_HEARTBEAT,
                                   DEFAULT_REG, verify_broker,
-                                  kill_ghost_brokers)
+                                  kill_ghost_brokers, DEFAULT_RECEIVER,
+                                  DEFAULT_PUBLISHER)
 from loads.transport.heartbeat import Heartbeat
 from loads.transport.exc import DuplicateBrokerError
 from loads.transport.client import DEFAULT_TIMEOUT_MOVF
@@ -34,12 +35,15 @@ class Broker(object):
     - **frontend**: the ZMQ socket to receive jobs.
     - **backend**: the ZMQ socket to communicate with workers.
     - **heartbeat**: the ZMQ socket to receive heartbeat requests.
-    - **register** : the ZMQ socket to register workers
+    - **register** : the ZMQ socket to register workers.
+    - **receiver**: the ZMQ socket that receives data from workers.
+    - **publisher**: the ZMQ socket to publish workers data.
     """
     def __init__(self, frontend=DEFAULT_FRONTEND, backend=DEFAULT_BACKEND,
                  heartbeat=DEFAULT_HEARTBEAT, register=DEFAULT_REG,
                  io_threads=DEFAULT_IOTHREADS,
-                 worker_timeout=DEFAULT_TIMEOUT_MOVF):
+                 worker_timeout=DEFAULT_TIMEOUT_MOVF,
+                 receiver=DEFAULT_RECEIVER, publisher=DEFAULT_PUBLISHER):
         # before doing anything, we verify if a broker is already up and
         # running
         logger.debug('Verifying if there is a running broker')
@@ -56,7 +60,7 @@ class Broker(object):
 
         self.context = zmq.Context(io_threads=io_threads)
 
-        # setting up the three sockets
+        # setting up the sockets
         self._frontend = self.context.socket(zmq.ROUTER)
         self._frontend.identity = 'broker-' + frontend
         self._frontend.bind(frontend)
@@ -64,6 +68,10 @@ class Broker(object):
         self._backend.bind(backend)
         self._registration = self.context.socket(zmq.PULL)
         self._registration.bind(register)
+        self._receiver = self.context.socket(zmq.PULL)
+        self._receiver.bind(receiver)
+        self._publisher = self.context.socket(zmq.PUB)
+        self._publisher.bind(publisher)
 
         # setting up the streams
         self.loop = ioloop.IOLoop()
@@ -73,6 +81,8 @@ class Broker(object):
         self._backstream.on_recv(self._handle_recv_back)
         self._regstream = zmqstream.ZMQStream(self._registration, self.loop)
         self._regstream.on_recv(self._handle_reg)
+        self._rcvstream = zmqstream.ZMQStream(self._receiver, self.loop)
+        self._rcvstream.on_recv(self._handle_rcv)
 
         # heartbeat
         self.pong = Heartbeat(heartbeat, io_loop=self.loop, ctx=self.context)
@@ -91,6 +101,10 @@ class Broker(object):
         self._workers.remove(worker_id)
         if worker_id in self._worker_times:
             del self._worker_times[worker_id]
+
+    def _handle_rcv(self, msg):
+        # publishing all the data received from slaves
+        self._publisher.send(msg[0])
 
     def _handle_reg(self, msg):
         if msg[0] == 'REGISTER':

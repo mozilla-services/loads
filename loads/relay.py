@@ -5,24 +5,28 @@ import errno
 import zmq.green as zmq
 
 from loads.util import DateTimeJSONEncoder
+from loads.transport.util import DEFAULT_RECEIVER
 
 
 class ZMQRelay(object):
     """Relays all the method calls to a zmq endpoint"""
 
-    options = {'endpoint': ('Socket to send the calls to',
-                            str, 'tcp://127.0.0.1:5558', True)}
+    options = {'receiver': ('Socket to send the calls to',
+                            str, DEFAULT_RECEIVER, True)}
 
     def __init__(self, args):
         self.args = args
         self.context = zmq.Context()
+        self._init_socket()
+        self.encoder = DateTimeJSONEncoder()
+        self.wid = self.args.get('worker_id')
+
+    def _init_socket(self):
+        receive = self.args.get('stream_zmq_receiver', DEFAULT_RECEIVER)
         self._push = self.context.socket(zmq.PUSH)
         self._push.set_hwm(8096 * 10)
         self._push.setsockopt(zmq.LINGER, -1)
-        self._push.connect(args.get('stream_zmq_endpoint',
-                                    'tcp://127.0.0.1:5558'))
-        self.encoder = DateTimeJSONEncoder()
-        self.wid = self.args.get('worker_id')
+        self._push.connect(receive)
 
     def startTest(self, test, loads_status):
         self.push('startTest',

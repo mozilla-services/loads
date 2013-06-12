@@ -15,6 +15,9 @@ DEFAULT_FRONTEND = "ipc:///tmp/loads-front.ipc"
 DEFAULT_BACKEND = "ipc:///tmp/loads-back.ipc"
 DEFAULT_HEARTBEAT = "ipc:///tmp/loads-beat.ipc"
 DEFAULT_REG = "ipc:///tmp/loads-reg.ipc"
+DEFAULT_RECEIVER = "ipc:///tmp/loads-receiver.ipc"
+DEFAULT_PUBLISHER = "ipc:///tmp/loads-publisher.ipc"
+
 DEFAULT_TIMEOUT = 5.
 DEFAULT_TIMEOUT_MOVF = 7.5
 DEFAULT_TIMEOUT_OVF = 1
