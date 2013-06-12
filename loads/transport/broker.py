@@ -314,6 +314,14 @@ def main(args=sys.argv):
                         default=DEFAULT_REG,
                         help="ZMQ socket for the registration.")
 
+    parser.add_argument('--receiver', dest='receiver',
+                        default=DEFAULT_RECEIVER,
+                        help="ZMQ socket for the registration.")
+
+    parser.add_argument('--publisher', dest='publisher',
+                        default=DEFAULT_PUBLISHER,
+                        help="ZMQ socket for the registration.")
+
     parser.add_argument('--io-threads', type=int,
                         default=DEFAULT_IOTHREADS,
                         help="Number of I/O threads")
@@ -360,6 +368,7 @@ def main(args=sys.argv):
     try:
         broker = Broker(frontend=args.frontend, backend=args.backend,
                         heartbeat=args.heartbeat, register=args.register,
+                        receiver=args.receiver, publisher=args.publisher,
                         io_threads=args.io_threads)
     except DuplicateBrokerError, e:
         logger.info('There is already a broker running on PID %s' % e)
