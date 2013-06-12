@@ -312,11 +312,23 @@ def main():
                                        args.aws_ssh_user,
                                        args.aws_ssh_key,
                                        args.aws_image_id)
-        args.broker = 'tcp://%s:5554' % master['host']
+        # XXX
+        args.broker = 'tcp://%s:5553' % master['host']
+        args.zmq_publisher = 'tcp://%s:5554' % master['host']
+    else:
+        master_id = None
 
-    args = dict(args._get_kwargs())
-    res = run(args)
-    return res
+    try:
+        args = dict(args._get_kwargs())
+        res = run(args)
+        return res
+    finally:
+        if master_id is not None:
+            print 'Shutting down Amazon boxes'
+            from loads.deploy import aws_shutdown
+            aws_shutdown(args['aws_access_key'],
+                         args['aws_secret_key'],
+                         master_id)
 
 
 if __name__ == '__main__':

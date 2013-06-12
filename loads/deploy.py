@@ -182,18 +182,9 @@ def aws_deploy(access_key, secret_key, ssh_user, ssh_key, image_id):
     return master, master_id
 
 
-def shutdown():
-    parser = argparse.ArgumentParser(description='Shutdown a box on Amazon')
-    parser.add_argument('id', help='Amazon Server Id', type=str)
-    parser.add_argument('--access-key', help='Amazon Access Key', type=str,
-                        default=os.environ.get('ACCESS_KEY'))
-    parser.add_argument('--secret-key', help='Amazon Secret Key', type=str,
-                        default=os.environ.get('SECRET_KEY'))
-
-    # parse args
-    args = parser.parse_args()
-    aws = AWSConnection(args.access_key, args.secret_key)
-    print aws.terminate_nodes([args.id])
+def aws_shutdown(access_key, secret_key, node_id):
+    aws = AWSConnection(access_key, secret_key)
+    print aws.terminate_nodes([node_id])
 
 
 if __name__ == '__main__':
