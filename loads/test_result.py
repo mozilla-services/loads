@@ -2,6 +2,7 @@ import itertools
 
 from collections import defaultdict
 from datetime import datetime, timedelta
+from scipy.stats.mstats import mquantiles
 
 
 class TestResult(object):
@@ -17,7 +18,7 @@ class TestResult(object):
 
     __test__ = False  # This is not something to run as a test.
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, args=None):
         self.config = config
         self.hits = []
         self.tests = defaultdict(Test)
@@ -26,6 +27,7 @@ class TestResult(object):
         self.start_time = None
         self.stop_time = None
         self.observers = []
+        self.args = args
 
     @property
     def nb_finished_tests(self):
@@ -128,6 +130,10 @@ class TestResult(object):
             return float(sum(elapsed)) / len(elapsed)
         else:
             return 0
+
+    def get_request_time_quantiles(self):
+        elapsed = [h.elapsed.total_seconds() for h in self._get_hits()]
+        return mquantiles(elapsed, (0, 0.1, 0.5, 0.9, 1))
 
     def hits_success_rate(self, url=None, cycle=None):
         """Returns the success rate for the filtered hits.

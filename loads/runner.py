@@ -42,7 +42,10 @@ class Runner(object):
         (self.total, self.cycles,
          self.users, self.agents) = _compute_arguments(args)
 
-        args['total'] = self.total
+        self.args['cycles'] = self.cycles
+        self.args['users'] = self.users
+        self.args['agents'] = self.agents
+        self.args['total'] = self.total
 
         # If we are in slave mode, set the test_result to a 0mq relay
         if self.slave:
@@ -50,13 +53,13 @@ class Runner(object):
 
         # The normal behavior is to collect the results locally.
         else:
-            self.test_result = TestResult()
+            self.test_result = TestResult(args=self.args)
 
-        output = args.get('output', 'stdout')
-        self.register_output(output, args)
+        output = self.args.get('output', 'stdout')
+        self.register_output(output)
 
-    def register_output(self, output_name, args):
-        output = create_output(output_name, self.test_result, args)
+    def register_output(self, output_name):
+        output = create_output(output_name, self.test_result)
         self.outputs.append(output)
         self.test_result.add_observer(output)
 
