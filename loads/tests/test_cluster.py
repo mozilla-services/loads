@@ -75,7 +75,7 @@ class TestCluster(unittest.TestCase):
         job = {'fqn': 'loads.tests.jobs.SomeTests.test_one'}
         res = client.run(job)
         worker_id = res[0]
-        time.sleep(.3)
+        time.sleep(.2)
 
         res = client.stop(worker_id)
         self.assertEqual(res.values(), ['terminated'])
