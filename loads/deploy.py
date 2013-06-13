@@ -1,9 +1,12 @@
 import argparse
 import os
 import time
+import sys
 
-from loads.aws import AWSConnection
 import paramiko
+
+from loads import __version__
+from loads.aws import AWSConnection
 
 
 def _prefix(prefix, msg):
@@ -25,7 +28,8 @@ class Host(object):
         if password is not None:
             client.connect(self.host, self.port, self.user, self.password)
         elif key is not None:
-            client.connect(self.host, self.port, username=self.user, key_filename=key)
+            client.connect(self.host, self.port, username=self.user,
+                           key_filename=key)
         else:
             client.load_system_host_keys()
             client.connect(self.host, self.port, self.user)
@@ -46,7 +50,6 @@ class Host(object):
 
     def close(self):
         self.client.close()
-
 
 
 def _deploy(host, port, user, password, root, cfg, force=False,
@@ -115,7 +118,8 @@ def deploy(master, slaves, ssh):
     key = ssh['key']
 
     # deploy the broker
-    master_host = host = master['host']
+    #master_host =
+    host = master['host']
     print 'Deploying the broker at %s' % host
     port = master.get('port', 22)
     password = master.get('password')
@@ -129,9 +133,8 @@ def deploy(master, slaves, ssh):
         host = slave['host']
         port = slave.get('port', 22)
         password = slave.get('password')
-        env = {'NUMSLAVES': slave.get('num', 10),
-               'MASTER': master_host}
-
+        #env = {'NUMSLAVES': slave.get('num', 10),
+        #       'MASTER': master_host}
         _deploy(host, port, user, password, root='/tmp/loads-slaves',
                 cfg='slaves.ini', endpoint='tcp://127.0.0.1:5558',
                 key=key)
@@ -174,8 +177,7 @@ def aws_deploy(access_key, secret_key, ssh_user, ssh_key, image_id):
     slaves = []
     try:
         deploy(master, slaves, ssh)
-    except Exception, a:
-        print 'Something went wrong. Shutting down amazon'
+    except Exception:
         aws.terminate_nodes([master_id])
         raise
 
