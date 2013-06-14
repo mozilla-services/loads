@@ -30,3 +30,8 @@ class BrokerDB(object):
     def close(self):
         self._callback.stop()
         self._file.close()
+
+    def get_data(self):
+        # XXX stream it?
+        with open(self.path) as f:
+            return f.read().split()

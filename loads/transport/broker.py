@@ -149,10 +149,22 @@ class Broker(object):
         # front => back
         # if the last part of the message is 'PING', we just PONG back
         # this is used as a health check
-        if msg[-1] == 'PING':
-            self._frontstream.send_multipart(msg[:-1] + [str(os.getpid())])
+        data = json.loads(msg[2])
+        cmd = data['command']
+
+        if cmd == 'PING':
+            res = json.dumps({'result': os.getpid()})
+            self._frontstream.send_multipart(msg[:-1] + [res])
+            return
+        elif cmd == 'GET_DATA':
+            # we send back the data we have in the db
+            # XXX stream ?
+            db_data = self._db.get_data()
+            res = json.dumps({'result': db_data})
+            self._frontstream.send_multipart(msg[:-1] + [res])
             return
 
+        # other commands below this point are for workers
         if tentative == 3:
             logger.debug('No workers')
             msg = msg[:-1] + ['%d:ERROR:No worker' % os.getpid()]
@@ -163,11 +175,13 @@ class Broker(object):
         data = json.loads(msg[2])   # XXX we need to unserialize here
 
         # broker protocol
-        if data['command'] == 'LIST':
+        cmd = data['command']
+
+        if cmd == 'LIST':
             # we return a list of worker ids and their status
             self._send_json(msg[:-1], {'result': self._workers})
             return
-        elif data['command'] == 'SIMULRUN':
+        elif cmd == 'SIMULRUN':
             if data['agents'] > len(self._workers):
                 self._send_json(msg[:-1], {'error': 'Not enough agents'})
                 return

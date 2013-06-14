@@ -52,7 +52,7 @@ class Client(object):
         self.timeout_counters = defaultdict(int)
         self.debug = debug
 
-    def execute(self, job, timeout=None):
+    def execute(self, job, timeout=None, extract=True):
         """Runs the job
 
         Options:
@@ -73,7 +73,13 @@ class Client(object):
             timeout = self.timeout_max_overflow
 
         try:
-            duration, res = timed(self.debug)(self._execute)(job, timeout)
+            duration, res = timed(self.debug)(self._execute)(job, timeout,
+                                                             extract)
+
+            # XXX unify
+            if isinstance(res, str):
+                return json.loads(res)['result']
+
             worker_pid, res, data = res
 
             # if we overflowed we want to increment the counter
@@ -102,32 +108,6 @@ class Client(object):
             raise ValueError(res['error'])
         return res['result']
 
-    def ping(self, timeout=1.):
-        """Can be used to simply ping the broker to make sure
-        it's responsive.
-
-
-        Returns the broker PID"""
-        with self.lock:
-            send(self.master, 'PING')
-            while True:
-                try:
-                    socks = dict(self.poller.poll(timeout * 1000))
-                    break
-                except zmq.ZMQError as e:
-                    if e.errno != errno.EINTR:
-                        return None
-
-        if socks.get(self.master) == zmq.POLLIN:
-            res = recv(self.master)
-            try:
-                res = int(res)
-            except TypeError:
-                pass
-            return res
-
-        return None
-
     def close(self):
         #self.master.close()
         self.master.setsockopt(zmq.LINGER, 0)
@@ -136,7 +116,8 @@ class Client(object):
         if self.kill_ctx:
             self.ctx.destroy(0)
 
-    def _execute(self, job, timeout=None):
+    def _execute(self, job, timeout=None, extract=False):
+
         if not isinstance(job, Message):
             job = Message(**job)
 
@@ -155,7 +136,10 @@ class Client(object):
                         raise
 
         if socks.get(self.master) == zmq.POLLIN:
-            return extract_result(recv(self.master))
+            if extract:
+                return extract_result(recv(self.master))
+            else:
+                return recv(self.master)
 
         raise TimeoutError(timeout / 1000)
 
@@ -176,6 +160,13 @@ class Client(object):
                              'async': async,
                              'agents': agents_needed,
                              'args': args})
+
+    def ping(self, timeout=None):
+        return self.execute({'command': 'PING'}, extract=False,
+                            timeout=timeout)
+
+    def get_data(self):
+        return self.execute({'command': 'GET_DATA'}, extract=False)
 
     def status(self, worker_id):
         return self.execute({'command': 'STATUS', 'worker_id': worker_id})
@@ -267,3 +258,7 @@ class Pool(object):
     def stop(self, worker_id):
         with self._connector(self.timeout) as connector:
             return connector.stop(worker_id)
+
+    def get_data(self):
+        with self._connector(self.timeout) as connector:
+            return connector.get_data()

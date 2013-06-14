@@ -173,7 +173,9 @@ def verify_broker(broker_endpoint=DEFAULT_FRONTEND, timeout=1.):
     from loads.transport.client import Client
     client = Client(broker_endpoint)
     try:
-        return client.ping(timeout)
+        return client.ping(timeout=timeout)
+    except TimeoutError:
+        return None
     finally:
         client.close()
 

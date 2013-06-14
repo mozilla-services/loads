@@ -57,8 +57,8 @@ class DistributedFunctionalTest(TestCase):
                 time.sleep(.1)
 
             # wait for the broker to be up with 3 slaves.
-            client = Client()
-            while len(client.list()) != 3:
+            self.client = Client()
+            while len(self.client.list()) != 3:
                 time.sleep(.1)
         except Exception:
             self.tearDown()
@@ -79,4 +79,7 @@ class DistributedFunctionalTest(TestCase):
             fqn='loads.examples.test_blog.TestWebSite.test_something',
             agents=2,
             output='null',
-            users=1, cycles=1))
+            users=1, cycles=10))
+
+        data = self.client.get_data()
+        self.assertTrue(len(data) > 100)
