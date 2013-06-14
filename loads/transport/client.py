@@ -165,17 +165,21 @@ class Client(object):
         return self.execute({'command': 'PING'}, extract=False,
                             timeout=timeout)
 
-    def get_data(self):
-        return self.execute({'command': 'GET_DATA'}, extract=False)
+    def get_data(self, run_id):
+        return self.execute({'command': 'GET_DATA', 'run_id': run_id},
+                            extract=False)
 
-    def status(self, worker_id):
-        return self.execute({'command': 'STATUS', 'worker_id': worker_id})
+    def status(self, run_id):
+        return self.execute({'command': 'STATUS', 'run_id': run_id})
 
     def stop(self, worker_id):
         return self.execute({'command': 'STOP', 'worker_id': worker_id})
 
     def list(self):
         return self.execute({'command': 'LIST'})
+
+    def list_runs(self):
+        return self.execute({'command': 'LISTRUNS'}, extract=False)
 
 
 class Pool(object):
@@ -255,10 +259,14 @@ class Pool(object):
         with self._connector(self.timeout) as connector:
             return connector.list()
 
+    def list_runs(self):
+        with self._connector(self.timeout) as connector:
+            return connector.list_runs()
+
     def stop(self, worker_id):
         with self._connector(self.timeout) as connector:
             return connector.stop(worker_id)
 
-    def get_data(self):
+    def get_data(self, run_id):
         with self._connector(self.timeout) as connector:
-            return connector.get_data()
+            return connector.get_data(run_id)

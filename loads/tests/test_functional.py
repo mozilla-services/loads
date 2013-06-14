@@ -81,5 +81,6 @@ class DistributedFunctionalTest(TestCase):
             output='null',
             users=1, cycles=10))
 
-        data = self.client.get_data()
+        runs = self.client.list_runs()
+        data = self.client.get_data(runs.keys()[0])
         self.assertTrue(len(data) > 100)

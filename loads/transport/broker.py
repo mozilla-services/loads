@@ -9,6 +9,8 @@ import os
 import time
 import psutil
 import json
+from uuid import uuid4
+from collections import defaultdict
 
 import zmq.green as zmq
 from zmq.green.eventloop import ioloop, zmqstream
@@ -96,6 +98,7 @@ class Broker(object):
         self._workers = []
         self._worker_times = {}
         self.worker_timeout = worker_timeout
+        self._runs = {}
 
         # local DB
         self._db = BrokerDB(self.loop)
@@ -105,13 +108,19 @@ class Broker(object):
         self._workers.remove(worker_id)
         if worker_id in self._worker_times:
             del self._worker_times[worker_id]
+        if worker_id in self._runs:
+            del self._runs[worker_id]
 
     def _handle_rcv(self, msg):
         # publishing all the data received from slaves
         self._publisher.send(msg[0])
 
         # saving the data locally
-        self._db.add(msg[0])
+        data = json.loads(msg[0])
+        worker_id = str(data.get('worker_id'))
+        if worker_id in self._runs:
+            data['run_id'] = self._runs[worker_id]
+        self._db.add(data)
 
     def _handle_reg(self, msg):
         if msg[0] == 'REGISTER':
@@ -121,6 +130,10 @@ class Broker(object):
         elif msg[0] == 'UNREGISTER':
             if msg[1] in self._workers:
                 self._remove_worker(msg[1])
+
+    def _associate(self, run_id, workers):
+        for worker_id in workers:
+            self._runs[worker_id] = run_id
 
     def _check_worker(self, worker_id):
         # box-specific, will do better later XXX
@@ -156,10 +169,18 @@ class Broker(object):
             res = json.dumps({'result': os.getpid()})
             self._frontstream.send_multipart(msg[:-1] + [res])
             return
+        elif cmd == 'LISTRUNS':
+            runs = defaultdict(list)
+            for worker_id, run_id in self._runs.items():
+                runs[run_id].append(worker_id)
+            res = json.dumps({'result': runs})
+            self._frontstream.send_multipart(msg[:-1] + [res])
+            return
+
         elif cmd == 'GET_DATA':
             # we send back the data we have in the db
             # XXX stream ?
-            db_data = self._db.get_data()
+            db_data = self._db.get_data(data['run_id'])
             res = json.dumps({'result': db_data})
             self._frontstream.send_multipart(msg[:-1] + [res])
             return
@@ -199,12 +220,17 @@ class Broker(object):
                     workers.append(worker_id)
                     available.remove(worker_id)
 
+            # create a unique id for this run
+            run_id = str(uuid4())
+            self._associate(run_id, workers)
+
             # send to every worker
             for worker_id in workers:
                 self._send_to_worker(worker_id, msg)
 
             # tell the client what workers where picked
-            self._send_json(msg[:-1], {'result': workers})
+            self._send_json(msg[:-1], {'result': {'workers': workers,
+                                                  'run_id': run_id}})
             return
 
         # regular pass-through == one worker
