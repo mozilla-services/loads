@@ -1,6 +1,4 @@
-import os
 import sys
-import argparse
 import time
 
 from loads.transport.util import (DEFAULT_BACKEND, DEFAULT_HEARTBEAT,  # NOQA
@@ -103,54 +101,3 @@ def get_cluster(numprocesses=5, frontend=DEFAULT_FRONTEND,
                 break
 
     return arbiter
-
-
-def main(args=sys.argv):
-    from loads.util import set_logger, resolve_name
-
-    parser = argparse.ArgumentParser(description='Run a Powerhose cluster.')
-
-    parser.add_argument('--frontend', dest='frontend',
-                        default=DEFAULT_FRONTEND,
-                        help="ZMQ socket to receive jobs.")
-
-    parser.add_argument('--backend', dest='backend',
-                        default=DEFAULT_BACKEND,
-                        help="ZMQ socket for workers.")
-
-    parser.add_argument('--heartbeat', dest='heartbeat',
-                        default=DEFAULT_HEARTBEAT,
-                        help="ZMQ socket for the heartbeat.")
-
-    parser.add_argument('target', help="Fully qualified name of the callable.")
-
-    parser.add_argument('--debug', action='store_true', default=False,
-                        help="Debug mode")
-
-    parser.add_argument('--numprocesses', dest='numprocesses', default=5,
-                        help="Number of processes to run.")
-
-    parser.add_argument('--logfile', dest='logfile', default='stdout',
-                        help="File to log in to .")
-
-    args = parser.parse_args()
-
-    set_logger(args.debug, 'loads', args.logfile)
-    #set_logger(args.debug, 'circus', args.logfile)
-    sys.path.insert(0, os.getcwd())  # XXX
-    resolve_name(args.target)  # check the callable
-
-    cluster = get_cluster(args.target, args.numprocesses,
-                          frontend=args.frontend, backend=args.backend,
-                          heartbeat=args.heartbeat, logfile=args.logfile,
-                          debug=args.debug)
-    try:
-        cluster.start()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        cluster.stop()
-
-
-if __name__ == '__main__':
-    main()
