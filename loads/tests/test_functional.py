@@ -6,14 +6,17 @@
 # - normal distributed run
 # - run via nosetest
 # - run with cycles / users
-
 from unittest import TestCase
 import sys
-import subprocess
+#import subprocess
 import time
+
+import requests
+from gevent import subprocess
 
 from loads.runner import run as start_runner
 from loads.tests.support import get_runner_args
+from loads.transport.client import Client
 
 
 class FunctionalTest(TestCase):
@@ -41,11 +44,25 @@ class DistributedFunctionalTest(TestCase):
 
     def setUp(self):
         self._processes = []
-        self._start_cmd('loads.examples.echo_server')
-        self._start_cmd('loads.transport.broker')
-        for x in range(3):
-            self._start_cmd('loads.transport.agent')
-        time.sleep(2)  # Wait for the registration to happen
+        try:
+            self._start_cmd('loads.transport.broker')
+            for x in range(3):
+                self._start_cmd('loads.transport.agent')
+            self._start_cmd('loads.examples.echo_server')
+
+            # wait for the echo server to be started
+            try:
+                requests.get('http://0.0.0.0:9000')
+            except requests.ConnectionError:
+                time.sleep(.1)
+
+            # wait for the broker to be up with 3 slaves.
+            client = Client()
+            while len(client.list()) != 3:
+                time.sleep(.1)
+        except Exception:
+            self.tearDown()
+            raise
 
     def _start_cmd(self, cmd):
         devnull = open('/dev/null', 'w')
@@ -60,4 +77,6 @@ class DistributedFunctionalTest(TestCase):
     def test_distributed_run(self):
         start_runner(get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_something',
-            agents=2, output='null', users=1, cycles=1))
+            agents=2,
+            output='null',
+            users=1, cycles=1))

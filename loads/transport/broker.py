@@ -22,6 +22,7 @@ from loads.transport.util import (register_ipc_file, DEFAULT_FRONTEND,
 from loads.transport.heartbeat import Heartbeat
 from loads.transport.exc import DuplicateBrokerError
 from loads.transport.client import DEFAULT_TIMEOUT_MOVF
+from loads.transport.brokerdb import BrokerDB
 
 
 DEFAULT_IOTHREADS = 1
@@ -96,6 +97,9 @@ class Broker(object):
         self._worker_times = {}
         self.worker_timeout = worker_timeout
 
+        # local DB
+        self._db = BrokerDB(self.loop)
+
     def _remove_worker(self, worker_id):
         logger.debug('%r removed' % worker_id)
         self._workers.remove(worker_id)
@@ -105,6 +109,9 @@ class Broker(object):
     def _handle_rcv(self, msg):
         # publishing all the data received from slaves
         self._publisher.send(msg[0])
+
+        # saving the data locally
+        self._db.add(msg[0])
 
     def _handle_reg(self, msg):
         if msg[0] == 'REGISTER':
