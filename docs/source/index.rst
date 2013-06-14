@@ -14,11 +14,20 @@ Installation::
     $ bin/pip install loads
 
 
-Using Loads
------------
+**Loads** works like Funkload: load tests are classical
+Python unit tests that are calling the server(s) to tests
+and a command line use them to run the actual load.
 
-**Loads** uses **Requests** and **WebTest**, in addition to Python unitest to
-perform load tests.
+Instead of providing its own API to call the server to
+test, **Loads** offers an integration with 3 existing
+libraries: **Requests**, **WebTest** and **ws4py**.
+
+Notice that the tests you write in Loads can also be
+executed by test runners like Nose as classical tests.
+
+
+Using Loads with Requests
+-------------------------
 
 Let's say you want to load test the Elastic Search root page on your
 system.
@@ -30,27 +39,24 @@ Write a unittest like this one and save it in an **example.py** file::
 
     class TestWebSite(TestCase):
 
-        def test_something(self):
-            self.assertTrue('Search' in self.app.get('/'))
-
-Another way to do it is to use the **Requests** *session* object, like this::
-
-    def test_something(self):
-        self.session.get('http://localhost:9200')
+        def test_es(self):
+            self.session.get('http://localhost:9200')
 
 
-The *TestCase* class provided by loads sets a *session* object you can use
-to interact with an HTTP server. It's a **Session** instance from Requests.
+The *TestCase* class provided by **Load** has a *session* attribute you
+can use to interact with an HTTP server. It's a **Session** instance
+from Requests.
 
 Now run **loads-runner** against it::
 
-    $ bin/loads-runner example.TestWebSite.test_something --server_url http://localhost:9200
+    $ bin/loads-runner example.TestWebSite.test_es
     [======================================================================]  100%
 
     Hits: 1
-    Started: 2013-05-28 08:13:17.802290
-    Duration: 0.00 seconds
-    Approximate Average RPS: 0
+    Started: 2013-06-14 12:15:42.860586
+    Duration: 0.03 seconds
+    Approximate Average RPS: 39
+    Average request time: 0.01s
     Opened web sockets: 0
     Bytes received via web sockets : 0
 
@@ -58,13 +64,25 @@ Now run **loads-runner** against it::
     Errors: 0
     Failures: 0
 
+
 This will execute your test just once - so you can control it works well.
 
-Now try to run it using 100 virtual users, each of them running the test 10 times::
+Now, try to run it using 100 virtual users (-u), each of them running the test
+10 times (-c)::
 
-    $ bin/loads-runner example.TestWebSite.test_something -u 100 -c 10
+    $ bin/loads-runner example.TestWebSite.test_es -u 100 -c 10
     [======================================================================]  100%
-    <unittest.result.TestResult run=1000 errors=0 failures=0>
+    Hits: 1000
+    Started: 2013-06-14 12:15:06.375365
+    Duration: 2.02 seconds
+    Approximate Average RPS: 496
+    Average request time: 0.04s
+    Opened web sockets: 0
+    Bytes received via web sockets : 0
+
+    Success: 1000
+    Errors: 0
+    Failures: 0
 
 
 Congrats, you've just sent a load of 1000 hits, using 100 concurrent threads.
@@ -72,22 +90,20 @@ Congrats, you've just sent a load of 1000 hits, using 100 concurrent threads.
 Now let's run a cycle of 10, 20 then 30 users, each one running 20 hits::
 
     $ bin/loads-runner loads.examples.test_blog.TestWebSite.test_something -c 20 -u 10:20:30
-    <unittest.result.TestResult run=1200 errors=0 failures=0>
 
 That's 1200 hits total.
 
 
-Using Web sockets
------------------
+Using Loads with ws4py
+----------------------
 
 **Loads** provides web sockets API through the **ws4py** library. You can
 initialize a new socket connection using the **create_ws** method.
 
 Run the echo_server.py file located in the examples directory, then
-write a test that uses a web socket::
+write a test that uses a web socket against it::
 
 
-    import unittest
     from loads.case import TestCase
 
     class TestWebSite(TestCase):
@@ -112,14 +128,45 @@ XXX I'm actually unsure about the API we expose to test websockets. We should
 have a look at how others do it
 
 
-Using the cluster
-=================
+Using Loads with WebTest
+------------------------
+
+If you are a **WebTest** fan, you can use it instead of Requests.
+You just need to use **app** instead of **session** in the test class::
+
+    from loads.case import TestCase
+
+    class TestWebSite(TestCase):
+
+        def test_something(self):
+            self.assertTrue('Search' in self.app.get('/'))
+
+
+
+Then you can define the server root url with **--server-url**
+when you run your load test::
+
+    $ bin/loads-runner example.TestWebSite.test_something --server_url http://localhost:9200
+
+The **app** attribute is a `WebTest <https://webtest.readthedocs.org>`_ TestApp
+instance, that provides all the APIs to interact with a web application.
+
+
+Distributed test
+================
+
+If you want to send a lot of load, you need to run a distributed test.
+The **Loads** command line is able to interact with several **agents**
+through a **broker**.
+
+To run a broker and some agents, let's use Circus.
 
 Install Circus::
 
     $ bin/pip install circus
 
-And run it against **loads.ini**::
+And run it against the provided **loads.ini** configuration file that's
+located in the Loads source repository::
 
     $ bin/circusd --daemon loads.ini
 
@@ -127,10 +174,8 @@ Here is the content of the `loads.ini` file::
 
     [circus]
     check_delay = 5
-    endpoint = tcp://127.0.0.1:5555
-    pubsub_endpoint = tcp://127.0.0.1:5556
-    stats_endpoint = tcp://127.0.0.1:5557
     httpd = 0
+    statsd = 1
     debug = 0
 
     [watcher:broker]
@@ -154,10 +199,15 @@ Let's use them now, with the **agents** option::
 Congrats, you have just sent 6000 hits from 5 different agents.
 
 
+Running on Amazon
+=================
+
+XXX
+
 
 
 Background
-----------
+==========
 
 Loads is a client/server architecture based on ZMQ using a very
 simple protocol.
