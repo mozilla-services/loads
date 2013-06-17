@@ -1,14 +1,18 @@
 import sys
+import time
 import traceback
 
 
 class StdOutput(object):
     name = 'stdout'
-    options = {'total': ('Total Number of items', int, None, False)}
+    options = {'total': ('Total Number of items', int, None, False),
+               'duration': ('Duration', int, None, False)}
 
     def __init__(self, test_result, args):
         self.results = test_result
         self.args = args
+        self.current = 0
+        self.starting = None
 
     def flush(self):
         write = sys.stdout.write
@@ -50,11 +54,36 @@ class StdOutput(object):
             sys.stderr.write("\n Traceback: \n")
             traceback.print_tb(tb, sys.stderr)
 
-    def push(self, method_called, *args, **data):
-        """Collect data in real time and make make the progress bar progress"""
-        if method_called == 'stopTest':
+    def refresh(self):
+        if self.starting is None:
+            self.starting = time.time()
+        self._duration_progress()
+
+    def _duration_progress(self):
+        duration = self.args.get('duration')
+        if duration is not None:
+            age = time.time() - self.starting
+            percent = int(float(age) / float(duration) * 100.)
+            if percent >= 100:
+                percent = 100
+        else:
             percent = int(float(self.results.nb_finished_tests)
                           / float(self.args['total']) * 100.)
-            bar = '[' + '=' * percent + ' ' * (100 - percent) + ']'
-            sys.stdout.write("\r%s %d%%" % (bar, percent))
+
+        bar = '[' + '=' * percent + ' ' * (100 - percent) + ']'
+        sys.stdout.write("\r%s %d%%" % (bar, percent))
         sys.stdout.flush()
+
+    def push(self, method_called, *args, **data):
+        """Collect data in real time and make make the progress bar progress"""
+        duration = self.args.get('duration')
+
+        # duration-based
+        if method_called == 'startTestRun' and duration is not None:
+            if self.starting is None:
+                self.starting = time.time()
+                self._duration_progress()
+
+        # count-based
+        elif method_called == 'stopTest' and duration is None:
+            self._duration_progress()
