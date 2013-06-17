@@ -1,9 +1,13 @@
-import sys
+from contextlib import contextmanager
+import datetime
+import json
 import logging
 import logging.handlers
-import json
-import datetime
+import os
+import sys
+import tempfile
 import urlparse
+import math
 
 from gevent.socket import gethostbyname
 
@@ -101,3 +105,60 @@ def resolve_name(name):
             raise ImportError(exc)
 
     return ret
+
+
+@contextmanager
+def temporary_file(suffix=''):
+    """Creates a temporary file ready to be written into.
+
+    This is a context manager, so that you can ask for a new file to write to
+    inside the with block and don't care about closing the file nor deleting
+    it.
+
+    :param suffix: the suffix to eventually pass to the mkstemp operation.
+    """
+    fd, filename = tempfile.mkstemp(suffix)
+    f = os.fdopen(fd, 'w+')
+    yield (f, filename)
+    f.close()
+
+
+def get_quantiles(data, quantiles):
+    """Computes the quantiles for the data array you pass along.
+
+    This assumes that the data array you're passing is already sorted.
+
+    :param data: the input array
+    :param quantiles: a list of quantiles you want to compute.
+
+    This is an adapted version of an implementation by Ernesto P.Adorio Ph.D.
+    UP Extension Program in Pampanga, Clark Field.
+
+    Warning: this implentation is probably slow. We are using this atm to avoid
+    depending on scipy, who have a much better and faster version, see
+    scipy.stats.mstats.mquantiles
+
+    References:
+       http://reference.wolfram.com/mathematica/ref/Quantile.html
+       http://wiki.r-project.org/rwiki/doku.php?id=rdoc:stats:quantile
+       http://adorio-research.org/wordpress/?p=125
+
+    """
+    def _get_quantile(q, data_len):
+        a, b, c, d = (1.0 / 3, 1.0 / 3, 0, 1)
+        g, j = math.modf(a + (data_len + b) * q - 1)
+        if j < 0:
+                return data[0]
+        elif j >= data_len:
+                return data[data_len - 1]
+        j = int(math.floor(j))
+
+        if g == 0:
+            return data[j]
+        else:
+            return data[j] + (data[j + 1] - data[j]) * (c + d * g)
+
+    data = sorted(data)
+    data_len = len(data)
+
+    return [_get_quantile(q, data_len) for q in quantiles]

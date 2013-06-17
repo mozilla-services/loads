@@ -59,7 +59,7 @@ class Runner(object):
         self.register_output(output)
 
     def register_output(self, output_name):
-        output = create_output(output_name, self.test_result)
+        output = create_output(output_name, self.test_result, self.args)
         self.outputs.append(output)
         self.test_result.add_observer(output)
 
@@ -148,7 +148,7 @@ class DistributedRunner(Runner):
         self.outputs = []
 
         output = args.get('output', 'stdout')
-        self.register_output(output, args)
+        self.register_output(output)
 
     def _recv_result(self, msg):
         """When we receive some data from zeromq, send it to the test_result
