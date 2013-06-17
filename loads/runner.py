@@ -195,8 +195,12 @@ def _compute_arguments(args):
     """
     users = args.get('users', '1')
     cycles = args.get('cycles', '1')
-    users = [int(user) for user in users.split(':')]
-    cycles = [int(cycle) for cycle in cycles.split(':')]
+    if not isinstance(users, list):
+        users = [int(user) for user in users.split(':')]
+
+    if not isinstance(cycles, list):
+        cycles = [int(cycle) for cycle in cycles.split(':')]
+
     agents = args.get('agents', 1)
     total = 0
     for user in users:
