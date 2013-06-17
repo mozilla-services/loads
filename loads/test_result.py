@@ -2,7 +2,7 @@ import itertools
 
 from datetime import datetime, timedelta
 
-from loads.util import get_quantiles
+from loads.util import get_percentiles
 
 
 class TestResult(object):
@@ -142,7 +142,7 @@ class TestResult(object):
                    for h in self._get_hits(url=url, cycle=cycle)]
 
         # XXX Cache these results, they might be long to compute.
-        return get_quantiles(elapsed, (0, 0.1, 0.5, 0.9, 1))
+        return get_percentiles(elapsed, (0, 0.1, 0.5, 0.9, 1))
 
     def hits_success_rate(self, url=None, cycle=None):
         """Returns the success rate for the filtered hits.

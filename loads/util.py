@@ -123,42 +123,37 @@ def temporary_file(suffix=''):
     f.close()
 
 
-def get_quantiles(data, quantiles):
-    """Computes the quantiles for the data array you pass along.
+def get_percentiles(data, percentiles):
+    """Computes the percentiles for the data array you pass along.
 
     This assumes that the data array you're passing is already sorted.
 
     :param data: the input array
-    :param quantiles: a list of quantiles you want to compute.
+    :param percentiles: a list of percentiles you want to compute, from 0.0 to
+                        1.0
 
-    This is an adapted version of an implementation by Ernesto P.Adorio Ph.D.
-    UP Extension Program in Pampanga, Clark Field.
-
-    Warning: this implentation is probably slow. We are using this atm to avoid
-    depending on scipy, who have a much better and faster version, see
-    scipy.stats.mstats.mquantiles
-
-    References:
-       http://reference.wolfram.com/mathematica/ref/Quantile.html
-       http://wiki.r-project.org/rwiki/doku.php?id=rdoc:stats:quantile
-       http://adorio-research.org/wordpress/?p=125
-
+    Source: http://code.activestate.com/recipes/511478-finding-the-percentile-of-the-values/  # NOQA
     """
-    def _get_quantile(q, data_len):
-        a, b, c, d = (1.0 / 3, 1.0 / 3, 0, 1)
-        g, j = math.modf(a + (data_len + b) * q - 1)
-        if j < 0:
-                return data[0]
-        elif j >= data_len:
-                return data[data_len - 1]
-        j = int(math.floor(j))
+    def _percentile(N, percent):
+        """
+        Find the percentile of a list of values.
 
-        if g == 0:
-            return data[j]
-        else:
-            return data[j] + (data[j + 1] - data[j]) * (c + d * g)
+        @parameter N - is a list of values. Note N MUST BE already sorted.
+        @parameter percent - a float value from 0.0 to 1.0.
+
+        @return - the percentile of the values
+        """
+        if not N:
+            return None
+
+        k = (len(N) - 1) * percent
+        f = math.floor(k)
+        c = math.ceil(k)
+        if f == c:
+            return N[int(k)]
+        d0 = N[int(f)] * (c - k)
+        d1 = N[int(c)] * (k - f)
+        return d0 + d1
 
     data = sorted(data)
-    data_len = len(data)
-
-    return [_get_quantile(q, data_len) for q in quantiles]
+    return tuple([_percentile(data, p) for p in percentiles])
