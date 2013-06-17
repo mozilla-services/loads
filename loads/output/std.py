@@ -2,8 +2,6 @@ import sys
 import time
 import traceback
 
-import gevent
-
 
 class StdOutput(object):
     name = 'stdout'
@@ -62,11 +60,16 @@ class StdOutput(object):
         self._duration_progress()
 
     def _duration_progress(self):
-        age = time.time() - self.starting
-        percent = int(float(age) / float(self.args['duration'])
-                      * 100.)
-        if percent >= 100:
-            percent = 100
+        duration = self.args.get('duration')
+        if duration is not None:
+            age = time.time() - self.starting
+            percent = int(float(age) / float(duration) * 100.)
+            if percent >= 100:
+                percent = 100
+        else:
+            percent = int(float(self.results.nb_finished_tests)
+                          / float(self.args['total']) * 100.)
+
         bar = '[' + '=' * percent + ' ' * (100 - percent) + ']'
         sys.stdout.write("\r%s %d%%" % (bar, percent))
         sys.stdout.flush()
@@ -83,9 +86,4 @@ class StdOutput(object):
 
         # count-based
         elif method_called == 'stopTest' and duration is None:
-            percent = int(float(self.results.nb_finished_tests)
-                          / float(self.args['total']) * 100.)
-            bar = '[' + '=' * percent + ' ' * (100 - percent) + ']'
-            sys.stdout.write("\r%s %d%%" % (bar, percent))
-
-        sys.stdout.flush()
+            self._duration_progress()

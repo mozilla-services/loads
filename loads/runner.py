@@ -22,7 +22,6 @@ from loads.transport.util import (DEFAULT_FRONTEND, DEFAULT_RECEIVER,
                                   DEFAULT_PUBLISHER)
 
 
-
 class Runner(object):
     """Local tests runner.
 
@@ -109,8 +108,8 @@ class Runner(object):
             # creating the test case instance
             klass = self.test.im_class
             ob = klass(test_name=self.test.__name__,
-                    test_result=self.test_result,
-                    server_url=self.args.get('server_url'))
+                       test_result=self.test_result,
+                       server_url=self.args.get('server_url'))
 
             worker_id = self.args.get('worker_id', None)
             self.test_result.startTestRun(worker_id)
@@ -237,6 +236,8 @@ def _compute_arguments(args):
     # XXX duration based == no total
     total = 0
     if duration is None:
+        if cycles is None:
+            cycles = '1'
         cycles = [int(cycle) for cycle in cycles.split(':')]
         for user in users:
             total += sum([cycle * user for cycle in cycles])
@@ -269,7 +270,7 @@ def main():
     # loads works with cycles or duration
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-c', '--cycles', help='Number of cycles per users',
-                        type=str, default=None)
+                       type=str, default=None)
     group.add_argument('-d', '--duration', help='Duration of the test (s)',
                        type=int, default=None)
 
