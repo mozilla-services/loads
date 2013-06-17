@@ -1,6 +1,6 @@
 import itertools
+import hashlib
 
-from collections import defaultdict
 from datetime import datetime, timedelta
 
 from loads.util import get_quantiles
@@ -22,7 +22,7 @@ class TestResult(object):
     def __init__(self, config=None, args=None):
         self.config = config
         self.hits = []
-        self.tests = defaultdict(Test)
+        self.tests = {}
         self.sockets = 0
         self.socket_data_received = 0
         self.start_time = None
@@ -174,7 +174,6 @@ class TestResult(object):
     def test_success_rate(self, test=None, cycle=None):
         rates = [t.success_rate for t in self._get_tests(test, cycle)]
         if rates:
-            from pdb import set_trace; set_trace()
             return sum(rates) / len(rates)
 
     def requests_per_second(self, url=None, cycle=None):
@@ -191,12 +190,15 @@ class TestResult(object):
             self.stop_time = datetime.utcnow()
 
     def startTest(self, test, loads_status, worker_id=None):
-        # This creates the test object
-        self._get_test(test, loads_status, worker_id)
+        cycle, user, current_cycle, current_user = loads_status
+        t = Test(name=test, cycle=cycle, user=user)
+        key = self._get_key(test, loads_status, worker_id)
+        self.tests[key] = t
 
     def stopTest(self, test, loads_status, worker_id=None):
-        test = self._get_test(test, loads_status, worker_id)
-        test.end = datetime.utcnow()
+        cycle, user, current_cycle, current_user = loads_status
+        t = self._get_test(test, loads_status, worker_id)
+        t.end = datetime.utcnow()
 
     def addError(self, test, exc_info, loads_status, worker_id=None):
         test = self._get_test(test, loads_status, worker_id)
@@ -241,18 +243,14 @@ class TestResult(object):
     def add_observer(self, observer):
         self.observers.append(observer)
 
+    def _get_key(self, test, loads_status, worker_id):
+        key = []
+        key.extend(loads_status)
+        key.extend((test, worker_id))
+        return hashlib.md5(''.join(map(str, key))).hexdigest()
+
     def _get_test(self, test, loads_status, worker_id):
-        cycle, user, current_cycle, current_user = loads_status
-        ob = self.tests[test, current_user, current_cycle, worker_id]
-
-        if ob.name is None:
-            ob.name = test
-        if ob.cycle is None:
-            ob.cycle = cycle
-        if ob.user is None:
-            ob.user = user
-
-        return ob
+        return self.tests[self._get_key(test, loads_status, worker_id)]
 
 
 class Hit(object):
@@ -296,7 +294,7 @@ class Test(object):
 
     @property
     def finished(self):
-        return bool(self.start and self.end)
+        return bool(self.end)
 
     @property
     def duration(self):
