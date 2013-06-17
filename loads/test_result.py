@@ -1,5 +1,4 @@
 import itertools
-import hashlib
 
 from datetime import datetime, timedelta
 
@@ -244,10 +243,7 @@ class TestResult(object):
         self.observers.append(observer)
 
     def _get_key(self, test, loads_status, worker_id):
-        key = []
-        key.extend(loads_status)
-        key.extend((test, worker_id))
-        return hashlib.md5(''.join(map(str, key))).hexdigest()
+        return tuple((str(test),) + tuple(loads_status) + (worker_id,))
 
     def _get_test(self, test, loads_status, worker_id):
         return self.tests[self._get_key(test, loads_status, worker_id)]
