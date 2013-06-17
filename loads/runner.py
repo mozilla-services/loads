@@ -22,6 +22,7 @@ from loads.transport.util import (DEFAULT_FRONTEND, DEFAULT_RECEIVER,
                                   DEFAULT_PUBLISHER)
 
 
+
 class Runner(object):
     """Local tests runner.
 
@@ -38,9 +39,10 @@ class Runner(object):
         self.test = resolve_name(self.fqn)
         self.slave = 'slave' in args
         self.outputs = []
+        self.stop = False
 
         (self.total, self.cycles,
-         self.users, self.agents) = _compute_arguments(args)
+         self.duration, self.users, self.agents) = _compute_arguments(args)
 
         args['total'] = self.total
 
@@ -67,47 +69,72 @@ class Runner(object):
             return 1
         return 0
 
-    def _run(self, num, test, cycles, user):
-        for cycle in cycles:
-            for current_cycle in range(cycle):
-                loads_status = cycle, user, current_cycle + 1, num
-                test(loads_status=loads_status)
-                gevent.sleep(0)
+    def _run(self, num, test, user):
+        if self.stop:
+            return
+
+        if self.duration is None:
+            for cycle in self.cycles:
+                for current_cycle in range(cycle):
+                    loads_status = cycle, user, current_cycle + 1, num
+                    test(loads_status=loads_status)
+                    gevent.sleep(0)
+        else:
+            # duration-based
+            timeout = gevent.Timeout(self.duration)
+            timeout.start()
+            try:
+                while True and not self.stop:
+                    loads_status = 0, user, 0, num
+                    test(loads_status=loads_status)
+                    gevent.sleep(0)
+            except gevent.Timeout:
+                pass
+            except KeyboardInterrupt:
+                # flag to stop
+                self.stop = True
+            finally:
+                timeout.cancel()
 
     def _execute(self):
         """Spawn all the tests needed and wait for them to finish.
         """
-        from gevent import monkey
-        monkey.patch_all()
+        try:
+            from gevent import monkey
+            monkey.patch_all()
 
-        if not hasattr(self.test, 'im_class'):
-            raise ValueError(self.test)
+            if not hasattr(self.test, 'im_class'):
+                raise ValueError(self.test)
 
-        # creating the test case instance
-        klass = self.test.im_class
-        ob = klass(test_name=self.test.__name__,
-                   test_result=self.test_result,
-                   server_url=self.args.get('server_url'))
+            # creating the test case instance
+            klass = self.test.im_class
+            ob = klass(test_name=self.test.__name__,
+                    test_result=self.test_result,
+                    server_url=self.args.get('server_url'))
 
-        worker_id = self.args.get('worker_id', None)
-        self.test_result.startTestRun(worker_id)
+            worker_id = self.args.get('worker_id', None)
+            self.test_result.startTestRun(worker_id)
 
-        for user in self.users:
-            group = [gevent.spawn(self._run, i, ob, self.cycles, user)
-                     for i in range(user)]
+            for user in self.users:
+                if self.stop:
+                    break
 
-            gevent.joinall(group)
+                group = [gevent.spawn(self._run, i, ob, user)
+                         for i in range(user)]
+                gevent.joinall(group)
 
-        gevent.sleep(0)
-        self.test_result.stopTestRun(worker_id)
-
-        # be sure we flush the outputs that need it.
-        # but do it only if we are in "normal" mode
-        if not self.slave:
-            self.flush()
-        else:
-            # in slave mode, be sure to close the zmq relay.
-            self.test_result.close()
+            gevent.sleep(0)
+            self.test_result.stopTestRun(worker_id)
+        except KeyboardInterrupt:
+            pass
+        finally:
+            # be sure we flush the outputs that need it.
+            # but do it only if we are in "normal" mode
+            if not self.slave:
+                self.flush()
+            else:
+                # in slave mode, be sure to close the zmq relay.
+                self.test_result.close()
 
     def flush(self):
         for output in self.outputs:
@@ -188,21 +215,27 @@ class DistributedRunner(Runner):
 def _compute_arguments(args):
     """
     Read the given :param args: and builds up the total number of runs, the
-    number of cycles, users and agents to use.
+    number of cycles, duration, users and agents to use.
 
-    Returns a tuple of (total, cycles, users, agents).
+    Returns a tuple of (total, cycles, duration, users, agents).
     """
     users = args.get('users', '1')
     cycles = args.get('cycles', '1')
+    duration = args.get('duration')
+
     users = [int(user) for user in users.split(':')]
     cycles = [int(cycle) for cycle in cycles.split(':')]
     agents = args.get('agents', 1)
+
+    # XXX duration based == no total
     total = 0
-    for user in users:
-        total += sum([cycle * user for cycle in cycles])
-    if agents is not None:
-        total *= agents
-    return total, cycles, users, agents
+    if duration is None:
+        for user in users:
+            total += sum([cycle * user for cycle in cycles])
+        if agents is not None:
+            total *= agents
+
+    return total, cycles, duration, users, agents
 
 
 def run(args):
@@ -225,8 +258,12 @@ def main():
     parser.add_argument('-u', '--users', help='Number of virtual users',
                         type=str, default='1')
 
-    parser.add_argument('-c', '--cycles', help='Number of cycles per users',
+    # loads works with cycles or duration
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-c', '--cycles', help='Number of cycles per users',
                         type=str, default='1')
+    group.add_argument('-d', '--duration', help='Duration of the test (s)',
+                       type=int, default=None)
 
     parser.add_argument('--version', action='store_true', default=False,
                         help='Displays Loads version and exits.')
