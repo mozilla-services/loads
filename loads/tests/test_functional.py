@@ -71,10 +71,12 @@ class DistributedFunctionalTest(TestCase):
         self._processes.append(process)
 
     def tearDown(self):
+        self.client.close()
         for process in self._processes:
-            process.kill()
+            process.terminate()
+            process.wait()
 
-    def test_distributed_run(self):
+    def _test_distributed_run(self):
         start_runner(get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_something',
             agents=2,
@@ -84,3 +86,16 @@ class DistributedFunctionalTest(TestCase):
         runs = self.client.list_runs()
         data = self.client.get_data(runs.keys()[0])
         self.assertTrue(len(data) > 100)
+
+    def test_distributed_run_duration(self):
+        args = get_runner_args(
+            fqn='loads.examples.test_blog.TestWebSite.test_something',
+            agents=2,
+            output='null',
+            users=10,
+            duration=10)
+
+        start_runner(args)
+        runs = self.client.list_runs()
+        data = self.client.get_data(runs.keys()[0])
+        self.assertTrue(len(data) > 10)

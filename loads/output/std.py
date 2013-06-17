@@ -56,19 +56,24 @@ class StdOutput(object):
             sys.stderr.write("\n Traceback: \n")
             traceback.print_tb(tb, sys.stderr)
 
+    def refresh(self):
+        if self.starting is None:
+            self.starting = time.time()
+        self._duration_progress()
+
     def _duration_progress(self):
         age = time.time() - self.starting
         percent = int(float(age) / float(self.args['duration'])
                       * 100.)
+        if percent >= 100:
+            percent = 100
         bar = '[' + '=' * percent + ' ' * (100 - percent) + ']'
         sys.stdout.write("\r%s %d%%" % (bar, percent))
         sys.stdout.flush()
-        gl = gevent.Greenlet(self._duration_progress)
-        gl.start_later(.05)   # refresh time
 
     def push(self, method_called, *args, **data):
         """Collect data in real time and make make the progress bar progress"""
-        duration = self.args['duration']
+        duration = self.args.get('duration')
 
         # duration-based
         if method_called == 'startTestRun' and duration is not None:

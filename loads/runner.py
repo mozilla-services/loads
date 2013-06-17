@@ -141,6 +141,11 @@ class Runner(object):
             if hasattr(output, 'flush'):
                 output.flush()
 
+    def refresh(self):
+        for output in self.outputs:
+            if hasattr(output, 'refresh'):
+                output.refresh()
+
 
 class DistributedRunner(Runner):
     """Test runner distributing the load on a cluster of agents, collecting the
@@ -168,7 +173,6 @@ class DistributedRunner(Runner):
         self.loop = ioloop.IOLoop()
         self.zstream = zmqstream.ZMQStream(self.pull, self.loop)
         self.zstream.on_recv(self._recv_result)
-
         self.outputs = []
 
         output = args.get('output', 'stdout')
@@ -189,7 +193,7 @@ class DistributedRunner(Runner):
             method = getattr(self.test_result, data_type)
             method(**data)
 
-            if self.test_result.nb_finished_tests == self.total:
+            if data_type == 'stopTestRun':
                 self.loop.stop()
         except KeyboardInterrupt:
             self.loop.stop()
@@ -197,16 +201,20 @@ class DistributedRunner(Runner):
     def _execute(self):
         # calling the clients now
         self.test_result.startTestRun()
+
+        cb = ioloop.PeriodicCallback(self.refresh, 100, self.loop)
+        cb.start()
         try:
             client = Client(self.args['broker'])
-            logger.info('Calling the broker...')
+            logger.debug('Calling the broker...')
             client.run(self.args)
-            logger.info('Waiting for results')
+            logger.debug('Waiting for results')
             self.loop.start()
         except KeyboardInterrupt:
             pass
         finally:
             # end..
+            cb.stop()
             self.test_result.stopTestRun()
             self.context.destroy()
             self.flush()
@@ -220,16 +228,16 @@ def _compute_arguments(args):
     Returns a tuple of (total, cycles, duration, users, agents).
     """
     users = args.get('users', '1')
-    cycles = args.get('cycles', '1')
+    cycles = args.get('cycles')
     duration = args.get('duration')
 
     users = [int(user) for user in users.split(':')]
-    cycles = [int(cycle) for cycle in cycles.split(':')]
     agents = args.get('agents', 1)
 
     # XXX duration based == no total
     total = 0
     if duration is None:
+        cycles = [int(cycle) for cycle in cycles.split(':')]
         for user in users:
             total += sum([cycle * user for cycle in cycles])
         if agents is not None:
@@ -246,7 +254,7 @@ def run(args):
             print traceback.format_exc()
             raise
     else:
-        logger.info('Summoning %d agents' % args['agents'])
+        logger.debug('Summoning %d agents' % args['agents'])
         return DistributedRunner(args).execute()
 
 
@@ -261,7 +269,7 @@ def main():
     # loads works with cycles or duration
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-c', '--cycles', help='Number of cycles per users',
-                        type=str, default='1')
+                        type=str, default=None)
     group.add_argument('-d', '--duration', help='Duration of the test (s)',
                        type=int, default=None)
 
