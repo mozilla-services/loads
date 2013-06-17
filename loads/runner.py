@@ -55,8 +55,8 @@ class Runner(object):
         else:
             self.test_result = TestResult(args=self.args)
 
-        output = self.args.get('output', 'stdout')
-        self.register_output(output)
+        for output in self.args.get('output', ['stdout']):
+            self.register_output(output)
 
     def register_output(self, output_name):
         output = create_output(output_name, self.test_result, self.args)
@@ -147,8 +147,10 @@ class DistributedRunner(Runner):
 
         self.outputs = []
 
-        output = args.get('output', 'stdout')
-        self.register_output(output)
+        outputs = args.get('output', ['stdout'])
+
+        for output in outputs:
+            self.register_output(output)
 
     def _recv_result(self, msg):
         """When we receive some data from zeromq, send it to the test_result
@@ -261,7 +263,7 @@ def main():
     outputs = [st.name for st in output_list()]
     outputs.sort()
 
-    parser.add_argument('--output', default='stdout',
+    parser.add_argument('--output', default=['stdout'], action='append',
                         help='The output used to display the results',
                         choices=outputs)
 
