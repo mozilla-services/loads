@@ -62,16 +62,16 @@ class TestTestResult(TestCase):
 
     def test_average_request_time_with_cycle_filtering(self):
         test_result = TestResult()
-        test_result.add_hit(**self._get_data(elapsed=_1, current_cycle=1))
-        test_result.add_hit(**self._get_data(elapsed=_3, current_cycle=2))
-        test_result.add_hit(**self._get_data(elapsed=_2, current_cycle=3))
-        test_result.add_hit(**self._get_data(elapsed=_3, current_cycle=3))
+        test_result.add_hit(**self._get_data(elapsed=_1, cycle=1))
+        test_result.add_hit(**self._get_data(elapsed=_3, cycle=2))
+        test_result.add_hit(**self._get_data(elapsed=_2, cycle=3))
+        test_result.add_hit(**self._get_data(elapsed=_3, cycle=3))
 
         avg = test_result.average_request_time(cycle=3)
         self.assertEquals(avg, 2.5)
 
         # try adding another filter on the URL
-        test_result.add_hit(**self._get_data(elapsed=_3, current_cycle=3,
+        test_result.add_hit(**self._get_data(elapsed=_3, cycle=3,
                                              url='http://another-one'))
         avg = test_result.average_request_time(cycle=3,
                                                url='http://notmyidea.org')
@@ -96,7 +96,7 @@ class TestTestResult(TestCase):
         test_result = TestResult()
         for x in range(4):
             test_result.add_hit(**self._get_data(status=200))
-        test_result.add_hit(**self._get_data(status=400, current_cycle=2))
+        test_result.add_hit(**self._get_data(status=400, cycle=2))
 
         self.assertEquals(test_result.hits_success_rate(), 0.8)
         self.assertEquals(test_result.hits_success_rate(cycle=1), 1)
@@ -132,27 +132,27 @@ class TestTestResult(TestCase):
     def test_get_tests_filters_cycles(self):
         test_result = TestResult()
 
-        test_result.tests['bacon', 1] = Test(name='bacon', current_cycle=1)
-        test_result.tests['egg', 1] = Test(name='egg', current_cycle=1)
-        test_result.tests['spam', 2] = Test(name='spam', current_cycle=2)
+        test_result.tests['bacon', 1] = Test(name='bacon', cycle=1)
+        test_result.tests['egg', 1] = Test(name='egg', cycle=1)
+        test_result.tests['spam', 2] = Test(name='spam', cycle=2)
 
         self.assertEquals(len(test_result._get_tests(cycle=1)), 2)
 
     def test_get_tests_filters_names(self):
         test_result = TestResult()
 
-        test_result.tests['bacon', 1] = Test(name='bacon', current_cycle=1)
-        test_result.tests['bacon', 2] = Test(name='bacon', current_cycle=2)
-        test_result.tests['spam', 2] = Test(name='spam', current_cycle=2)
+        test_result.tests['bacon', 1] = Test(name='bacon', cycle=1)
+        test_result.tests['bacon', 2] = Test(name='bacon', cycle=2)
+        test_result.tests['spam', 2] = Test(name='spam', cycle=2)
 
         self.assertEquals(len(test_result._get_tests(name='bacon')), 2)
 
     def test_get_tests_filters_by_both_fields(self):
         test_result = TestResult()
 
-        test_result.tests['bacon', 1] = Test(name='bacon', current_cycle=1)
-        test_result.tests['bacon', 2] = Test(name='bacon', current_cycle=2)
-        test_result.tests['spam', 2] = Test(name='spam', current_cycle=2)
+        test_result.tests['bacon', 1] = Test(name='bacon', cycle=1)
+        test_result.tests['bacon', 2] = Test(name='bacon', cycle=2)
+        test_result.tests['spam', 2] = Test(name='spam', cycle=2)
 
         self.assertEquals(len(test_result._get_tests(name='bacon', cycle=2)),
                           1)
@@ -185,7 +185,7 @@ class TestHits(TestCase):
                 loads_status=None)
         self.assertEquals(h.cycle, None)
         self.assertEquals(h.user, None)
-        self.assertEquals(h.current_cycle, None)
+        self.assertEquals(h.cycle, None)
 
     def test_loads_status_extract_values(self):
         started = None
