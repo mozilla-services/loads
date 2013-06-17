@@ -2,7 +2,8 @@ import itertools
 
 from collections import defaultdict
 from datetime import datetime, timedelta
-from scipy.stats.mstats import mquantiles
+
+from loads.util import get_quantiles
 
 
 class TestResult(object):
@@ -83,7 +84,7 @@ class TestResult(object):
         """
 
         def _filter(hit):
-            if cycle is not None and hit.current_cycle != cycle:
+            if cycle is not None and hit.cycle != cycle:
                 return False
 
             if url is not None and hit.url != url:
@@ -93,19 +94,25 @@ class TestResult(object):
 
         return filter(_filter, self.hits)
 
-    def _get_tests(self, name=None, cycle=None, finished=None):
+    def _get_tests(self, name=None, cycle=None, finished=None, user=None):
         """Filters the tests with the given parameters.
 
         :param name:
             The name of the test you want to filter on.
 
         :param cycle:
-            The cycle you want to filter on.
+            The cycle key you want to filter on.
+
+        :param finished:
+            Return only the finished or unfinished tests
+
+        :param user:
+            The user key to filter on.
         """
         def _filter(test):
             if name is not None and test.name != name:
                 return False
-            if cycle is not None and test.current_cycle != cycle:
+            if cycle is not None and test.cycle != cycle:
                 return False
             if finished is not None and test.finished != finished:
                 return False
@@ -131,9 +138,12 @@ class TestResult(object):
         else:
             return 0
 
-    def get_request_time_quantiles(self):
-        elapsed = [h.elapsed.total_seconds() for h in self._get_hits()]
-        return mquantiles(elapsed, (0, 0.1, 0.5, 0.9, 1))
+    def get_request_time_quantiles(self, url=None, cycle=None):
+        elapsed = [h.elapsed.total_seconds()
+                   for h in self._get_hits(url=url, cycle=cycle)]
+
+        # XXX Cache these results, they might be long to compute.
+        return get_quantiles(elapsed, (0, 0.1, 0.5, 0.9, 1))
 
     def hits_success_rate(self, url=None, cycle=None):
         """Returns the success rate for the filtered hits.
@@ -164,6 +174,7 @@ class TestResult(object):
     def test_success_rate(self, test=None, cycle=None):
         rates = [t.success_rate for t in self._get_tests(test, cycle)]
         if rates:
+            from pdb import set_trace; set_trace()
             return sum(rates) / len(rates)
 
     def requests_per_second(self, url=None, cycle=None):
@@ -180,11 +191,8 @@ class TestResult(object):
             self.stop_time = datetime.utcnow()
 
     def startTest(self, test, loads_status, worker_id=None):
-        cycle, user, current_cycle, current_user = loads_status
-        ob = self.tests[test, current_user, current_cycle, worker_id]
-        ob.name = test
-        ob.current_cycle = current_cycle
-        ob.user = user
+        # This creates the test object
+        self._get_test(test, loads_status, worker_id)
 
     def stopTest(self, test, loads_status, worker_id=None):
         test = self._get_test(test, loads_status, worker_id)
@@ -235,7 +243,16 @@ class TestResult(object):
 
     def _get_test(self, test, loads_status, worker_id):
         cycle, user, current_cycle, current_user = loads_status
-        return self.tests[test, current_user, current_cycle, worker_id]
+        ob = self.tests[test, current_user, current_cycle, worker_id]
+
+        if ob.name is None:
+            ob.name = test
+        if ob.cycle is None:
+            ob.cycle = cycle
+        if ob.user is None:
+            ob.user = user
+
+        return ob
 
 
 class Hit(object):
@@ -269,7 +286,8 @@ class Test(object):
         self.end = None
         self.name = None
         self.cycle = None
-        self.current_cycle = None
+        self.user = None
+
         self.failures = []
         self.errors = []
         self.success = 0
@@ -294,7 +312,7 @@ class Test(object):
             return float(self.success) / total
 
     def __repr__(self):
-        return ('<Test %s. errors: %s, failures: %s, success: %s'
+        return ('<Test %s. errors: %s, failures: %s, success: %s>'
                 % (self.name, len(self.errors), len(self.failures),
                    self.success))
 
