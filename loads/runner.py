@@ -65,11 +65,15 @@ class Runner(object):
         self.test_result.add_observer(output)
 
     def execute(self):
-        self._execute()
-        if (not self.slave and
-                self.test_result.nb_errors + self.test_result.nb_failures):
-            return 1
-        return 0
+        self.running = True
+        try:
+            self._execute()
+            if (not self.slave and
+                    self.test_result.nb_errors + self.test_result.nb_failures):
+                return 1
+            return 0
+        finally:
+            self.running = False
 
     def _run(self, num, test, user):
         if self.stop:
@@ -90,12 +94,10 @@ class Runner(object):
                     loads_status = 0, user, 0, num
                     test(loads_status=loads_status)
                     gevent.sleep(0)
-            except gevent.Timeout:
+            except (gevent.Timeout, KeyboardInterrupt):
                 pass
-            except KeyboardInterrupt:
-                # flag to stop
-                self.stop = True
             finally:
+                self.stop = True
                 timeout.cancel()
 
     def _execute(self):
@@ -115,6 +117,8 @@ class Runner(object):
                        server_url=self.args.get('server_url'))
 
             worker_id = self.args.get('worker_id', None)
+
+            gevent.spawn(self._grefresh)
             self.test_result.startTestRun(worker_id)
 
             for user in self.users:
@@ -147,6 +151,11 @@ class Runner(object):
         for output in self.outputs:
             if hasattr(output, 'refresh'):
                 output.refresh()
+
+    def _grefresh(self):
+        self.refresh()
+        if not self.stop:
+            gevent.spawn_later(.1, self._grefresh)
 
 
 class DistributedRunner(Runner):
