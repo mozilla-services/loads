@@ -31,12 +31,13 @@ class FunctionalTest(TestCase):
 
     def test_normal_run(self):
         start_runner(get_runner_args(
-            fqn='loads.examples.test_blog.TestWebSite.test_something'))
+            fqn='loads.examples.test_blog.TestWebSite.test_something',
+            output=['null']))
 
     def test_normal_run_with_users_and_cycles(self):
         start_runner(get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_something',
-            users=10, cycles=5))
+            output=['null'], users=10, cycles=5))
 
 
 class DistributedFunctionalTest(TestCase):
@@ -79,6 +80,7 @@ class DistributedFunctionalTest(TestCase):
         start_runner(get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_something',
             agents=2,
+            output=['null'],
             users=1, cycles=10))
 
         runs = self.client.list_runs()
@@ -89,6 +91,7 @@ class DistributedFunctionalTest(TestCase):
         args = get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_something',
             agents=2,
+            output=['null'],
             users=10,
             duration=10)
 
