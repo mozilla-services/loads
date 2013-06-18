@@ -305,7 +305,7 @@ def main():
     outputs = [st.name for st in output_list()]
     outputs.sort()
 
-    parser.add_argument('--output', action='append',
+    parser.add_argument('--output', default=['stdout'], action='append',
                         help='The output used to display the results',
                         choices=outputs)
 
