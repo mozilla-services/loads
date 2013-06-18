@@ -56,8 +56,9 @@ class Runner(object):
         else:
             self.test_result = TestResult(args=self.args)
 
-        for output in self.args.get('output', ['stdout']):
-            self.register_output(output)
+        if not self.slave:
+            for output in self.args.get('output', ['stdout']):
+                self.register_output(output)
 
     def register_output(self, output_name):
         output = create_output(output_name, self.test_result, self.args)
