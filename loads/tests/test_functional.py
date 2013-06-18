@@ -76,7 +76,7 @@ class DistributedFunctionalTest(TestCase):
             process.terminate()
             process.wait()
 
-    def _test_distributed_run(self):
+    def test_distributed_run(self):
         start_runner(get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_something',
             agents=2,
@@ -87,7 +87,7 @@ class DistributedFunctionalTest(TestCase):
         data = self.client.get_data(runs.keys()[0])
         self.assertTrue(len(data) > 100)
 
-    def test_distributed_run_duration(self):
+    def _test_distributed_run_duration(self):
         args = get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_something',
             agents=2,

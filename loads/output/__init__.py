@@ -20,7 +20,6 @@ def output_list():
 from null import NullOutput
 from _file import FileOutput
 from std import StdOutput
-#from gnuplot import GNUPlotOutput
 
-for output in (NullOutput, FileOutput, StdOutput): #, GNUPlotOutput):
+for output in (NullOutput, FileOutput, StdOutput):
     register_output(output)

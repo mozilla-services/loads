@@ -230,7 +230,9 @@ def _compute_arguments(args):
     Returns a tuple of (total, cycles, duration, users, agents).
     """
     users = args.get('users', '1')
-    users = [int(user) for user in users.split(':')]
+    if isinstance(users, str):
+        users = users.split(':')
+    users = [int(user) for user in users]
     cycles = args.get('cycles')
     duration = args.get('duration')
     if duration is None and cycles is None:
