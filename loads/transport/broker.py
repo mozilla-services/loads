@@ -343,7 +343,7 @@ class Broker(object):
 
 
 def main(args=sys.argv):
-    parser = argparse.ArgumentParser(description='Powerhose broker.')
+    parser = argparse.ArgumentParser(description='Loads broker.')
 
     parser.add_argument('--frontend', dest='frontend',
                         default=DEFAULT_FRONTEND,
