@@ -9,7 +9,9 @@ from loads.tests.support import hush
 import webtest
 
 
-_SERVER = [sys.executable, '%s/echo_server.py' % os.path.dirname(__file__)]
+_HERE = os.path.dirname(__file__)
+_SERVER = [sys.executable,
+           os.path.join(_HERE, '..', 'examples', 'echo_server.py')]
 
 
 class TestWebSite(TestCase):
