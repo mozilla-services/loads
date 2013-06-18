@@ -231,12 +231,15 @@ def _compute_arguments(args):
     """
     users = args.get('users', '1')
     users = [int(user) for user in users.split(':')]
-    cycles = args.get('cycles', '1')
+    cycles = args.get('cycles')
+    duration = args.get('duration')
+    if duration is None and cycles is None:
+        cycles = '1'
+
     if cycles is not None:
         if not isinstance(cycles, list):
             cycles = [int(cycle) for cycle in cycles.split(':')]
 
-    duration = args.get('duration')
     agents = args.get('agents', 1)
 
     # XXX duration based == no total
@@ -305,7 +308,7 @@ def main():
     outputs = [st.name for st in output_list()]
     outputs.sort()
 
-    parser.add_argument('--output', default=['stdout'], action='append',
+    parser.add_argument('--output', action='append', default=['stdout'],
                         help='The output used to display the results',
                         choices=outputs)
 
