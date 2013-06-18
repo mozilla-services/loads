@@ -1,13 +1,14 @@
 from contextlib import contextmanager
 import datetime
+import errno
 import json
 import logging
 import logging.handlers
+import math
 import os
 import sys
 import tempfile
 import urlparse
-import math
 
 from gevent.socket import gethostbyname
 
@@ -157,3 +158,11 @@ def get_percentiles(data, percentiles):
 
     data = sorted(data)
     return tuple([_percentile(data, p) for p in percentiles])
+
+
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as e:
+        if e.errno != errno.EEXIST or not os.path.isdir(path):
+            raise

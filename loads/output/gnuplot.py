@@ -45,13 +45,13 @@ plot '{data_file}' using 1:3:2:4:4 with candlesticks notitle, \
 
 class GNUPlotOutput(object):
     name = 'gnuplot'
-    options = {}
+    options = {'output-dir': ('A directory to output the GNUPlot-generated'
+                              ' images to', str, '.', True)}
 
     def __init__(self, test_result, args):
         self.results = test_result
         self.args = args
-
-        self.output_dir = "gnuplot"
+        self.output_dir = args.get('output_gnuplot_output_dir')
 
     def flush(self):
         self.generate_test_percentages('ohyeah.png')
