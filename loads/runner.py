@@ -231,7 +231,7 @@ def _compute_arguments(args):
     """
     users = args.get('users', '1')
     users = [int(user) for user in users.split(':')]
-    cycles = args.get('cycles')
+    cycles = args.get('cycles', '1')
     if cycles is not None:
         if not isinstance(cycles, list):
             cycles = [int(cycle) for cycle in cycles.split(':')]
@@ -242,9 +242,6 @@ def _compute_arguments(args):
     # XXX duration based == no total
     total = 0
     if duration is None:
-        if cycles is None:
-            cycles = '1'
-        cycles = [int(cycle) for cycle in cycles.split(':')]
         for user in users:
             total += sum([cycle * user for cycle in cycles])
         if agents is not None:
