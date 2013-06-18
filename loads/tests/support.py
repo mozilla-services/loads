@@ -10,7 +10,7 @@ def get_runner_args(fqn, users=1, cycles=1, duration=None,
                     agents=None,
                     broker=DEFAULT_FRONTEND, test_runner=None,
                     server_url='http://localhost:9000',
-                    zmq_endpoint='tcp://127.0.0.1:5558', output='stdout'):
+                    zmq_endpoint='tcp://127.0.0.1:5558', output=['null']):
 
     args = {'fqn': fqn,
             'users': str(users),
