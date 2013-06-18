@@ -1,6 +1,6 @@
 import sys
-import time
 import traceback
+from loads.relay import ZMQRelay
 
 
 class StdOutput(object):
@@ -15,6 +15,7 @@ class StdOutput(object):
         self.starting = None
 
     def flush(self):
+        self._duration_progress()
         write = sys.stdout.write
         write("\nHits: %d" % self.results.nb_hits)
         write("\nStarted: %s" % self.results.start_time)
@@ -55,15 +56,15 @@ class StdOutput(object):
             traceback.print_tb(tb, sys.stderr)
 
     def refresh(self):
-        if self.starting is None:
-            self.starting = time.time()
+        if isinstance(self.results, ZMQRelay):
+            return
         self._duration_progress()
 
     def _duration_progress(self):
         duration = self.args.get('duration')
         if duration is not None:
-            age = time.time() - self.starting
-            percent = int(float(age) / float(duration) * 100.)
+            percent = int(float(self.results.duration)
+                          / float(duration) * 100.)
             if percent >= 100:
                 percent = 100
         else:
@@ -75,15 +76,4 @@ class StdOutput(object):
         sys.stdout.flush()
 
     def push(self, method_called, *args, **data):
-        """Collect data in real time and make make the progress bar progress"""
-        duration = self.args.get('duration')
-
-        # duration-based
-        if method_called == 'startTestRun' and duration is not None:
-            if self.starting is None:
-                self.starting = time.time()
-                self._duration_progress()
-
-        # count-based
-        elif method_called == 'stopTest' and duration is None:
-            self._duration_progress()
+        pass
