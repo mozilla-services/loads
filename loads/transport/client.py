@@ -52,7 +52,7 @@ class Client(object):
         self.timeout_counters = defaultdict(int)
         self.debug = debug
 
-    def execute(self, job, timeout=None, extract=True):
+    def execute(self, job, timeout=None, extract=True, log_exceptions=True):
         """Runs the job
 
         Options:
@@ -100,7 +100,8 @@ class Client(object):
                 raise ExecutionError(data)
         except Exception:
             # logged, connector replaced.
-            logger.exception('Failed to execute the job.')
+            if log_exceptions:
+                logger.exception('Failed to execute the job.')
             raise
 
         res = json.loads(data)
@@ -161,9 +162,10 @@ class Client(object):
                              'agents': agents_needed,
                              'args': args})
 
-    def ping(self, timeout=None):
+    def ping(self, timeout=None, log_exceptions=True):
         return self.execute({'command': 'PING'}, extract=False,
-                            timeout=timeout)
+                            timeout=timeout,
+                            log_exceptions=log_exceptions)
 
     def get_data(self, run_id):
         return self.execute({'command': 'GET_DATA', 'run_id': run_id},
