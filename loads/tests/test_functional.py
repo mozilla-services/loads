@@ -7,12 +7,13 @@
 # - run via nosetest
 # - run with cycles / users
 from unittest2 import TestCase
-import sys
-#import subprocess
-import time
-import atexit
 
+import atexit
+import os
+import sys
+import time
 import requests
+
 from gevent import subprocess
 
 from loads.runner import run as start_runner
@@ -20,6 +21,7 @@ from loads.tests.support import get_runner_args
 from loads.transport.client import Client
 
 
+_EXAMPLES_DIR = os.path.join(os.path.dirname(__file__), os.pardir, 'examples')
 _RUNNING = False
 _processes = []
 

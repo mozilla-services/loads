@@ -76,6 +76,12 @@ def resolve_name(name):
     Raises ImportError if importing the module fails or if one requested
     attribute is not found.
     """
+
+    # Depending how loads is ran, "" can or cannot be present in the path. This
+    # adds it if it's missing.
+    if os.getcwd() not in sys.path and '' not in sys.path:
+        sys.path.insert(0, os.getcwd())
+
     if '.' not in name:
         # shortcut
         __import__(name)

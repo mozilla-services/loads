@@ -1,7 +1,9 @@
 from tempfile import mkstemp
 import datetime
+import mock
 import os
 import unittest
+import sys
 
 import zmq
 import gevent
@@ -43,6 +45,17 @@ class TestUtil(unittest.TestCase):
         self.assertRaises(ImportError, resolve_name, 'xx.cc')
         self.assertRaises(ImportError, resolve_name, 'xx')
         self.assertRaises(ImportError, resolve_name, 'loads.xx')
+
+    @mock.patch('sys.path', [])
+    def test_resolve_adds_path(self):
+        ob = resolve_name('loads.tests.test_util.TestUtil')
+        self.assertTrue(ob is TestUtil)
+        self.assertIn(os.getcwd(), sys.path)
+        old_len = len(sys.path)
+
+        # And checks that it's not added twice
+        ob = resolve_name('loads.tests.test_util.TestUtil')
+        self.assertEquals(len(sys.path), old_len)
 
     def test_set_logger(self):
         before = len(logger.handlers)
