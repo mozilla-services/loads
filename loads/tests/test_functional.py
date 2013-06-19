@@ -48,7 +48,7 @@ def start_servers():
             requests.get('http://0.0.0.0:9000')
             break
         except requests.ConnectionError:
-            time.sleep(.1)
+            time.sleep(.3)
             tries += 1
             if tries > 3:
                 raise

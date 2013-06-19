@@ -11,6 +11,8 @@ import gevent
 import zmq.green as zmq
 from zmq.green.eventloop import ioloop, zmqstream
 
+from konfig import Config
+
 from loads.util import resolve_name, logger, set_logger
 from loads.test_result import TestResult
 from loads.relay import ZMQRelay
@@ -277,10 +279,16 @@ def run(args):
         return DistributedRunner(args).execute()
 
 
-def main():
+def main(sysargs=None):
+    if sysargs is None:
+        sysargs = sys.argv[1:]
+
     parser = argparse.ArgumentParser(description='Runs a load test.')
     parser.add_argument('fqn', help='Fully qualified name of the test',
                         nargs='?')
+
+    parser.add_argument('--config', help='Configuration file to read',
+                        type=str, default=None)
 
     parser.add_argument('-u', '--users', help='Number of virtual users',
                         type=str, default='1')
@@ -320,6 +328,7 @@ def main():
     outputs = [st.name for st in output_list()]
     outputs.sort()
 
+    parser.add_argument('--quiet', action='store_true', default=False)
     parser.add_argument('--output', action='append', default=['stdout'],
                         help='The output used to display the results',
                         choices=outputs)
@@ -351,7 +360,16 @@ def main():
             parser.add_argument('--output-%s-%s' % (output.name, option),
                                 **kw)
 
-    args = parser.parse_args()
+    args = parser.parse_args(sysargs)
+
+    if args.config is not None:
+        # second pass !
+        config = Config(args.config)
+        config_args = config.scan_args(parser, strip_prefixes=['loads'])
+        args = parser.parse_args(args=sysargs+config_args)
+
+    if args.quiet and 'stdout' in args.output:
+        args.output.remove('stdout')
 
     # loggers setting
     wslogger = logging.getLogger('ws4py')
