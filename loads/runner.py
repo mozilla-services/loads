@@ -345,6 +345,8 @@ def main(sysargs=None):
                         type=str, default='ubuntu')
     parser.add_argument('--aws', help='Running on AWS?', action='store_true',
                         default=False)
+    parser.add_argument('--aws-python-deps', help='Python deps to install',
+                        action='append', default=[])
 
     # per-output options
     for output in output_list():
@@ -388,12 +390,22 @@ def main(sysargs=None):
 
     # deploy on amazon
     if args.aws:
+        try:
+            import paramiko         # NOQA
+        except ImportError:
+            raise ImportError('You need to run "pip install paramiko"')
+        try:
+            import boto             # NOQA
+        except ImportError:
+            raise ImportError('You need to run "pip install boto"')
+
         from loads.deploy import aws_deploy
         master, master_id = aws_deploy(args.aws_access_key,
                                        args.aws_secret_key,
                                        args.aws_ssh_user,
                                        args.aws_ssh_key,
-                                       args.aws_image_id)
+                                       args.aws_image_id,
+                                       args.aws_python_deps)
         # XXX
         args.broker = 'tcp://%s:5553' % master['host']
         args.zmq_publisher = 'tcp://%s:5554' % master['host']

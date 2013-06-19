@@ -53,8 +53,10 @@ class Host(object):
 
 
 def _deploy(host, port, user, password, root, cfg, force=False,
-            endpoint='tcp://127.0.0.1:5555', key=None):
-
+            endpoint='tcp://127.0.0.1:5555', key=None,
+            python_deps=None):
+    if python_deps is None:
+        python_deps = []
     host = Host(host, port, user, password, root, key=key)
     host.execute('sudo apt-get update')
 
@@ -92,9 +94,12 @@ def _deploy(host, port, user, password, root, cfg, force=False,
         cmd = 'cd loads; %s %s' % (venv, venv_options)
         host.execute(cmd)
 
-        # installing all deps
+        # installing all python deps
         cmd = 'cd loads; bin/python setup.py develop; bin/pip install circus'
         host.execute(cmd, ignore_error=True)
+        for dep in python_deps:
+            cmd = 'cd loads;bin/pip install %s' % dep
+            host.execute(cmd, ignore_error=True)
 
         # stopping any running instance
         cmd = 'cd loads; bin/circusctl quit'
@@ -111,7 +116,7 @@ def _deploy(host, port, user, password, root, cfg, force=False,
         host.close()
 
 
-def deploy(master, slaves, ssh):
+def deploy(master, slaves, ssh, python_deps=None):
     """Deploy 1 broker and n agents via ssh, run them and give back the hand
     """
     user = ssh['username']
@@ -125,7 +130,8 @@ def deploy(master, slaves, ssh):
     password = master.get('password')
 
     _deploy(host, port, user, password, root='/tmp/loads-broker',
-            cfg='loads.ini', key=key)
+            cfg='loads.ini', key=key,
+            python_deps=python_deps)
 
     # now deploying slaves
     for slave in slaves:
@@ -164,10 +170,11 @@ def main():
         sys.exit(0)
 
     print aws_deploy(args.access_key, args.secret_key, args.ssh_user,
-                     args.ssh_key)
+                     args.ssh_key, args.image_id)
 
 
-def aws_deploy(access_key, secret_key, ssh_user, ssh_key, image_id):
+def aws_deploy(access_key, secret_key, ssh_user, ssh_key, image_id,
+               python_deps=None):
     # first task: create the AWS boxes
     aws = AWSConnection(access_key, secret_key)
     nodes = aws.create_nodes(image_id, 1)
@@ -176,7 +183,7 @@ def aws_deploy(access_key, secret_key, ssh_user, ssh_key, image_id):
     master = {'host': master}
     slaves = []
     try:
-        deploy(master, slaves, ssh)
+        deploy(master, slaves, ssh, python_deps=python_deps)
     except Exception:
         aws.terminate_nodes([master_id])
         raise
