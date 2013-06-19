@@ -74,3 +74,17 @@ class TestMeasure(unittest.TestCase):
         session = Session(test, test_result)
         session.get('http://impossible.place')
         self.assertEqual(len(test_result.data), 1)
+
+    def test_host_proxy(self):
+        uri = 'https://super-server:443/'
+        proxy = measure.HostProxy(uri)
+        self.assertEquals(proxy.uri, 'https://super-server:443')
+        env = {}
+        self.assertEquals(proxy.extract_uri(env), 'https://super-server:443')
+        self.assertEquals(env['HTTP_HOST'], 'super-server:443')
+        self.assertEquals(proxy.scheme, 'https')
+
+        proxy.uri = 'http://somewhere-else'
+        self.assertEquals(proxy.extract_uri(env), 'http://somewhere-else')
+        self.assertEquals(env['HTTP_HOST'], 'somewhere-else')
+        self.assertEquals(proxy.scheme, 'http')
