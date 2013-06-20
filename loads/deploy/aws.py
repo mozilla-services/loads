@@ -2,6 +2,8 @@ import time
 import sys
 from boto.ec2 import connect_to_region
 
+from loads.deploy.deploy import deploy
+
 
 class AWSConnection(object):
 
@@ -37,3 +39,28 @@ class AWSConnection(object):
 
     def terminate_nodes(self, nodes):
         return self.conn.terminate_instances(nodes)
+
+
+def aws_deploy(access_key, secret_key, ssh_user, ssh_key, image_id,
+               python_deps=None, system_deps=None, test_dir=None):
+    # first task: create the AWS boxes
+    aws = AWSConnection(access_key, secret_key)
+    nodes = aws.create_nodes(image_id, 1)
+    master, master_id = nodes[0]
+    ssh = {'username': ssh_user, 'key': ssh_key}
+    master = {'host': master}
+    slaves = []
+    try:
+        deploy(master, slaves, ssh, python_deps=python_deps,
+               system_deps=system_deps, test_dir=test_dir)
+        time.sleep(30)
+    except Exception:
+        aws.terminate_nodes([master_id])
+        raise
+
+    return master, master_id
+
+
+def aws_shutdown(access_key, secret_key, node_id):
+    aws = AWSConnection(access_key, secret_key)
+    print aws.terminate_nodes([node_id])

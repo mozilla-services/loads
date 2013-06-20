@@ -349,7 +349,8 @@ def main(sysargs=None):
                         action='append', default=[])
     parser.add_argument('--aws-system-deps', help='System deps to install',
                         action='append', default=[])
-
+    parser.add_argument('--aws-test-dir', help='Test dir to embark',
+                        default=None)
 
     # per-output options
     for output in output_list():
@@ -409,7 +410,8 @@ def main(sysargs=None):
                                        args.aws_ssh_key,
                                        args.aws_image_id,
                                        args.aws_python_deps,
-                                       args.aws_system_deps)
+                                       args.aws_system_deps,
+                                       args.aws_test_dir)
         # XXX
         args.broker = 'tcp://%s:5553' % master['host']
         args.zmq_publisher = 'tcp://%s:5554' % master['host']
