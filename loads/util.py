@@ -79,8 +79,8 @@ def resolve_name(name):
 
     # Depending how loads is ran, "" can or cannot be present in the path. This
     # adds it if it's missing.
-    if os.getcwd() not in sys.path and '' not in sys.path:
-        sys.path.insert(0, os.getcwd())
+    if len(sys.path) < 1 or sys.path[0] not in ('', os.getcwd()):
+        sys.path.insert(0, '')
 
     if '.' not in name:
         # shortcut
