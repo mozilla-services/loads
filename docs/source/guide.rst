@@ -128,6 +128,16 @@ The **app** attribute is a `WebTest <https://webtest.readthedocs.org>`_ TestApp
 instance, that provides all the APIs to interact with a web application.
 
 
+Changing the server URL
+~~~~~~~~~~~~~~~~~~~~~~~
+
+It may happen that you need to change the server url when you're running the
+tests. To do so, we provide a simple API::
+
+    self.app.proxy.uri = 'http://new-server'
+
+
+
 Distributed test
 ----------------
 
