@@ -53,8 +53,6 @@ With such a test, running loads simply consists of doing::
 
 See :ref:`guide` for more options and information.
 
-
-
 Background
 ----------
 
