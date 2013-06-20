@@ -1,5 +1,6 @@
 import unittest
 import functools
+import mock
 
 from loads.measure import Session
 from loads import measure
@@ -74,3 +75,27 @@ class TestMeasure(unittest.TestCase):
         session = Session(test, test_result)
         session.get('http://impossible.place')
         self.assertEqual(len(test_result.data), 1)
+
+    def test_host_proxy(self):
+        uri = 'https://super-server:443/'
+        proxy = measure.HostProxy(uri)
+        self.assertEquals(proxy.uri, 'https://super-server:443')
+        env = {}
+        self.assertEquals(proxy.extract_uri(env), 'https://super-server:443')
+        self.assertEquals(env['HTTP_HOST'], 'super-server:443')
+        self.assertEquals(proxy.scheme, 'https')
+
+        proxy.uri = 'http://somewhere-else'
+        self.assertEquals(proxy.extract_uri(env), 'http://somewhere-else')
+        self.assertEquals(env['HTTP_HOST'], 'somewhere-else')
+        self.assertEquals(proxy.scheme, 'http')
+
+    def test_TestApp(self):
+        session = mock.sentinel.session
+        test_result = _TestResult()
+
+        app = measure.TestApp('http://super-server', session, test_result)
+        self.assertEquals(app.server_url, 'http://super-server')
+
+        app.server_url = 'http://somewhere-else'
+        self.assertEquals(app.server_url, 'http://somewhere-else')

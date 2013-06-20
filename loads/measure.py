@@ -1,7 +1,9 @@
 import datetime
+import urlparse
+
 from requests.sessions import Session as _Session
 from webtest.app import TestApp as _TestApp
-from wsgiproxy import HostProxy
+from wsgiproxy.proxies import HostProxy as _HostProxy, ALLOWED_METHODS
 from wsgiproxy.requests_client import HttpClient
 
 from loads.util import dns_resolve
@@ -16,12 +18,44 @@ class TestApp(_TestApp):
         self.test_result = test_result
 
         client = HttpClient(session=self.session)
-        app = HostProxy(app, client=client)
+        self.proxy = HostProxy(app, client=client)
 
-        super(TestApp, self).__init__(app, *args, **kwargs)
+        super(TestApp, self).__init__(self.proxy, *args, **kwargs)
+
+    @property
+    def server_url(self):
+        return self.proxy.uri
+
+    @server_url.setter
+    def server_url(self, value):
+        self.proxy.uri = value
 
     # XXX redefine here the _do_request, check_status and check_errors methods.
     # so we can actually use them to send information to the test_result
+
+
+class HostProxy(_HostProxy):
+    """A proxy to redirect all request to a specific uri"""
+
+    def __init__(self, uri, *args, **kwargs):
+        super(HostProxy, self).__init__(uri, *args, **kwargs)
+        self._uri = None
+        self.scheme = None
+        self.net_loc = None
+        self.uri = uri
+
+    @property
+    def uri(self):
+        return self._uri
+
+    @uri.setter
+    def uri(self, value):
+        self._uri = value.rstrip('/')
+        self.scheme, self.net_loc = urlparse.urlparse(self.uri)[0:2]
+
+    def extract_uri(self, environ):
+        environ['HTTP_HOST'] = self.net_loc
+        return self.uri
 
 
 class Session(_Session):
