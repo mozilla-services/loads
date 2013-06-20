@@ -1,5 +1,7 @@
 import os
-import time
+import tarfile
+import tempfile
+
 import paramiko
 
 
@@ -27,7 +29,7 @@ class Host(object):
             cl.connect(self.host, self.port, self.user, self.password)
         elif key is not None:
             cl.connect(self.host, self.port, username=self.user,
-                        key_filename=key)
+                       key_filename=key)
         else:
             cl.load_system_host_keys()
             cl.connect(self.host, self.port, self.user)
@@ -42,8 +44,28 @@ class Host(object):
 
     def put_dir(self, local_dir, target):
         # first, create a tarball...
-        #self.sftp.put(local_file, target)
-        pass
+        fd, tarball = tempfile.mkstemp()
+        os.close(fd)
+        tar = tarfile.open(tarball, "w")
+
+        for root, dirs, files in os.walk(local_dir):
+            for file_ in files:
+                path = os.path.join(root, file_)
+                tar.add(path, arcname=file_)
+
+        tar.close()
+
+        # create a directory for the tarball content
+        self.execute('mkdir %s' % target)
+
+        # next, push it to the server
+        self.sftp.put(tarball, os.path.join(target, 'tarball'))
+
+        # untar the tarball in there
+        self.execute('cd %s; tar -xzvf tarball' % target, ignore_error=True)
+
+        # remove the distant tarball
+        self.execute('cd %s; rm tarball' % target)
 
     def execute(self, cmd, prefixed=True, ignore_error=False):
         if self.root is not None:
