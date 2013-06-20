@@ -134,8 +134,7 @@ Changing the server URL
 It may happen that you need to change the server url when you're running the
 tests. To do so, we provide a simple API::
 
-    self.app.proxy.uri = 'http://new-server'
-
+    self.app.server_url = 'http://new-server'
 
 
 Distributed test

@@ -22,6 +22,14 @@ class TestApp(_TestApp):
 
         super(TestApp, self).__init__(self.proxy, *args, **kwargs)
 
+    @property
+    def server_url(self):
+        return self.proxy.uri
+
+    @server_url.setter
+    def server_url(self, value):
+        self.proxy.uri = value
+
     # XXX redefine here the _do_request, check_status and check_errors methods.
     # so we can actually use them to send information to the test_result
 
