@@ -135,7 +135,7 @@ def deploy(master, slaves, ssh, python_deps=None, system_deps=None):
     password = master.get('password')
 
     _deploy(host, port, user, password, root='/tmp/loads-broker',
-            cfg='loads.ini', key=key,
+            cfg='aws.ini', key=key,
             python_deps=python_deps, system_deps=system_deps)
 
     # now deploying slaves
