@@ -347,6 +347,9 @@ def main(sysargs=None):
                         default=False)
     parser.add_argument('--aws-python-deps', help='Python deps to install',
                         action='append', default=[])
+    parser.add_argument('--aws-system-deps', help='System deps to install',
+                        action='append', default=[])
+
 
     # per-output options
     for output in output_list():
@@ -405,7 +408,8 @@ def main(sysargs=None):
                                        args.aws_ssh_user,
                                        args.aws_ssh_key,
                                        args.aws_image_id,
-                                       args.aws_python_deps)
+                                       args.aws_python_deps,
+                                       args.aws_system_deps)
         # XXX
         args.broker = 'tcp://%s:5553' % master['host']
         args.zmq_publisher = 'tcp://%s:5554' % master['host']

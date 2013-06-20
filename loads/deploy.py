@@ -54,13 +54,18 @@ class Host(object):
 
 def _deploy(host, port, user, password, root, cfg, force=False,
             endpoint='tcp://127.0.0.1:5555', key=None,
-            python_deps=None):
+            python_deps=None, system_deps=None):
     if python_deps is None:
         python_deps = []
+
+    if system_deps is None:
+        system_deps = []
+
     host = Host(host, port, user, password, root, key=key)
     host.execute('sudo apt-get update')
 
-    prereqs = ['git', 'python-virtualenv', 'python-dev', 'libevent-dev']
+    prereqs = system_deps + ['git', 'python-virtualenv', 'python-dev',
+                             'libevent-dev']
     cmd = ('DEBIAN_FRONTEND=noninteractive sudo apt-get -y '
            '--force-yes install %s')
 
@@ -116,7 +121,7 @@ def _deploy(host, port, user, password, root, cfg, force=False,
         host.close()
 
 
-def deploy(master, slaves, ssh, python_deps=None):
+def deploy(master, slaves, ssh, python_deps=None, system_deps=None):
     """Deploy 1 broker and n agents via ssh, run them and give back the hand
     """
     user = ssh['username']
@@ -131,7 +136,7 @@ def deploy(master, slaves, ssh, python_deps=None):
 
     _deploy(host, port, user, password, root='/tmp/loads-broker',
             cfg='loads.ini', key=key,
-            python_deps=python_deps)
+            python_deps=python_deps, system_deps=system_deps)
 
     # now deploying slaves
     for slave in slaves:
@@ -174,7 +179,7 @@ def main():
 
 
 def aws_deploy(access_key, secret_key, ssh_user, ssh_key, image_id,
-               python_deps=None):
+               python_deps=None, system_deps=None):
     # first task: create the AWS boxes
     aws = AWSConnection(access_key, secret_key)
     nodes = aws.create_nodes(image_id, 1)
@@ -183,7 +188,8 @@ def aws_deploy(access_key, secret_key, ssh_user, ssh_key, image_id,
     master = {'host': master}
     slaves = []
     try:
-        deploy(master, slaves, ssh, python_deps=python_deps)
+        deploy(master, slaves, ssh, python_deps=python_deps,
+               system_deps=system_deps)
     except Exception:
         aws.terminate_nodes([master_id])
         raise
