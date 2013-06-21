@@ -38,6 +38,12 @@ class Host(object):
         sftp = paramiko.SFTPClient.from_transport(self.client.get_transport())
         self.sftp = sftp
         self.root = root
+        self.curdir = root
+        if self.root is not None:
+            self.execute('mkdir -p %s' % self.root)
+
+    def chdir(self, dir):
+        self.curdir = os.path.join(self.root, dir)
 
     def put(self, local_file, target):
         self.sftp.put(local_file, target)
@@ -68,8 +74,8 @@ class Host(object):
         self.execute('cd %s; rm tarball' % target)
 
     def execute(self, cmd, prefixed=True, ignore_error=False):
-        if self.root is not None:
-            cmd = 'mkdir -p %s; cd %s;' % (self.root, self.root) + cmd
+        if self.curdir is not None:
+            cmd = 'cd %s;' % self.curdir + cmd
         stdin, stdout, stderr = self.client.exec_command(cmd)
         stderr = stderr.read()
         if stderr != '' and not ignore_error:
