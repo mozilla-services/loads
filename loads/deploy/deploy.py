@@ -2,107 +2,128 @@ import os
 from loads.deploy.host import Host
 
 
-def _deploy(host, port, user, password, root, cfg, force=False,
-            endpoint='tcp://127.0.0.1:5555', key=None,
-            python_deps=None, system_deps=None, test_dir=None):
-    if python_deps is None:
-        python_deps = []
+class LoadsHost(Host):
 
-    if system_deps is None:
-        system_deps = []
+    def __init__(self, host, port, user, password=None, root='/tmp',
+                 key=None, venv='loads'):
+        Host.__init__(self, host, port, user, password, root, key)
+        self.venv = os.path.join(root, venv)
 
-    host = Host(host, port, user, password, root, key=key)
-    host.execute('sudo apt-get update')
+    def apt_update(self):
+        self.execute('sudo apt-get update')
 
-    prereqs = system_deps + ['git', 'python-virtualenv', 'python-dev',
-                             'libevent-dev']
-    cmd = ('DEBIAN_FRONTEND=noninteractive sudo apt-get -y '
-           '--force-yes install %s')
+    def apt_install(self, packages):
+        cmd = ('DEBIAN_FRONTEND=noninteractive sudo apt-get -y '
+               '--force-yes install %s')
 
-    for req in prereqs:
-        host.execute(cmd % req,  ignore_error=True)
+        for package in packages:
+            self.execute(cmd % package,  ignore_error=True)
 
-    try:
-        # if it's running let's bypass
-        if not force:
-            cmd = 'cd loads; bin/circusctl --endpoint %s status' % endpoint
-            try:
-                host.execute(cmd)
-                return
-            except ValueError:
-                pass
+    def check_circus(self, endpoint):
+        cmd = 'cd %s;' % self.venv
+        cmd += 'bin/circusctl --endpoint %s status' % endpoint
+        try:
+            self.execute(cmd)
+            return True
+        except ValueError:
+            return False
 
+    def create_env(self):
         # deploying the latest Loads repo - if needed
         check = '[ -d "loads" ] && echo 1 || echo 0'
-        res = host.execute(check, prefixed=False)[0].strip()
-
+        res = self.execute(check, prefixed=False)[0].strip()
         if res == '0':
             cmd = 'git clone https://github.com/mozilla-services/loads'
-            host.execute(cmd)
+            self.execute(cmd)
         else:
             cmd = 'cd loads; git pull'
-            host.execute(cmd)
+            self.execute(cmd)
+
+        # changing directory
+        self.chdir('loads')
 
         # building the virtualenv in a dedicated tmp file
-        venv = '/usr/bin/virtualenv'
-        venv_options = '--no-site-packages .'
-        cmd = 'cd loads; %s %s' % (venv, venv_options)
-        host.execute(cmd)
+        locations = ('/usr/bin', '/usr/local/bin')
 
-        # copying the test dir if any
-        if test_dir is not None:
-            _, base = os.path.basename(test_dir)
-            host.put_dir(test_dir, os.path.join('loads', base))
+        for index, location in enumerate(locations):
+            cmd = (os.path.join(location, 'virtualenv') +
+                   ' --no-site-packages .')
+            try:
+                self.execute(cmd)
+            except ValueError:
+                if index == len(location) - 1:
+                    raise
 
-        # installing all python deps
-        cmd = 'cd loads; bin/python setup.py develop; bin/pip install circus'
-        host.execute(cmd, ignore_error=True)
-        for dep in python_deps:
-            cmd = 'cd loads;bin/pip install %s' % dep
-            host.execute(cmd, ignore_error=True)
+        # python setup.py develop
+        cmd = 'bin/python setup.py develop'
+        self.execute(cmd, ignore_error=True)
 
+        # deploying circus
+        self.pip_install('circus')
+
+    def pip_install(self, packages):
+        if self.venv != self.curdir:
+            self.chdir(self.venv)
+
+        for dep in packages:
+            cmd = 'bin/pip install %s' % dep
+            self.execute(cmd, ignore_error=True)
+
+    def stop_circus(self):
         # stopping any running instance
-        cmd = 'cd loads; bin/circusctl quit'
+        cmd = 'bin/circusctl quit'
         try:
-            host.execute(cmd)
+            self.execute(cmd)
         except ValueError:
             pass
 
-        # now running
-        cmd = 'cd loads; bin/circusd --daemon %s' % cfg
-        host.execute(cmd)
-
-    finally:
-        host.close()
+    def start_circus(self, cfg):
+        cmd = 'bin/circusd --daemon %s' % cfg
+        self.execute(cmd)
 
 
-def deploy(master, slaves, ssh, python_deps=None, system_deps=None,
-           test_dir=None):
+def deploy(master, ssh, python_deps=None, system_deps=None, test_dir=None):
     """Deploy 1 broker and n agents via ssh, run them and give back the hand
     """
     user = ssh['username']
     key = ssh['key']
 
     # deploy the broker
-    #master_host =
     host = master['host']
     print 'Deploying the broker at %s' % host
     port = master.get('port', 22)
     password = master.get('password')
+    cfg = 'aws.ini'
+    root = '/tmp/loads-broker'
 
-    _deploy(host, port, user, password, root='/tmp/loads-broker',
-            cfg='aws.ini', key=key,
-            python_deps=python_deps, system_deps=system_deps,
-            test_dir=test_dir)
+    if python_deps is None:
+        python_deps = []
 
-    # now deploying slaves
-    for slave in slaves:
-        print 'Deploying slaves at %s' % host
-        host = slave['host']
-        port = slave.get('port', 22)
-        password = slave.get('password')
-        #env = {'NUMSLAVES': slave.get('num', 10),
-        #       'MASTER': master_host}
-        _deploy(host, port, user, password, root='/tmp/loads-slaves',
-                cfg='slaves.ini', endpoint='tcp://127.0.0.1:5558',
-                key=key)
+    if system_deps is None:
+        system_deps = []
+
+    host = LoasdHost(host, port, user, password, root, key=key)
+    host.apt_update()
+
+    prereqs = system_deps + ['git', 'python-virtualenv', 'python-dev',
+                             'libevent-dev']
+    host.apt_install(prereqs)
+
+    try:
+        # if it's running let's bypass
+        if not force and host.check_circus(endpoint):
+            return
+
+        # create or check the venv
+        host.create_env()
+
+        # installing all python deps
+        host.pip_install(python_deps)
+
+        # stopping any running instance
+        host.stop_circus()
+
+        # now running
+        host.start_circus()
+    finally:
+        host.close()

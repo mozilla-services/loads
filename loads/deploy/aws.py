@@ -49,9 +49,8 @@ def aws_deploy(access_key, secret_key, ssh_user, ssh_key, image_id,
     master, master_id = nodes[0]
     ssh = {'username': ssh_user, 'key': ssh_key}
     master = {'host': master}
-    slaves = []
     try:
-        deploy(master, slaves, ssh, python_deps=python_deps,
+        deploy(master, ssh, python_deps=python_deps,
                system_deps=system_deps, test_dir=test_dir)
         time.sleep(30)
     except Exception:

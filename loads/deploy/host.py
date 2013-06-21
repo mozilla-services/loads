@@ -14,7 +14,7 @@ def _prefix(prefix, msg):
 
 class Host(object):
 
-    def __init__(self, host, port, user, password=None, root=None, key=None):
+    def __init__(self, host, port, user, password=None, root='/tmp', key=None):
         self.password = password
         self.host = host
         self.user = user
@@ -39,7 +39,7 @@ class Host(object):
         self.sftp = sftp
         self.root = root
         self.curdir = root
-        if self.root is not None:
+        if self.root is not '/tmp':
             self.execute('mkdir -p %s' % self.root)
 
     def chdir(self, dir):
@@ -86,3 +86,4 @@ class Host(object):
 
     def close(self):
         self.client.close()
+        self.sftp.close()
