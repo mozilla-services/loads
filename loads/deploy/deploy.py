@@ -82,7 +82,8 @@ class LoadsHost(Host):
         self.execute(cmd)
 
 
-def deploy(master, ssh, python_deps=None, system_deps=None, test_dir=None):
+def deploy(master, ssh, python_deps=None, system_deps=None, test_dir=None,
+           circus_endpoint='tcp://0.0.0.0:5554', force=False):
     """Deploy 1 broker and n agents via ssh, run them and give back the hand
     """
     user = ssh['username']
@@ -102,7 +103,7 @@ def deploy(master, ssh, python_deps=None, system_deps=None, test_dir=None):
     if system_deps is None:
         system_deps = []
 
-    host = LoasdHost(host, port, user, password, root, key=key)
+    host = LoadsHost(host, port, user, password, root, key=key)
     host.apt_update()
 
     prereqs = system_deps + ['git', 'python-virtualenv', 'python-dev',
@@ -111,7 +112,7 @@ def deploy(master, ssh, python_deps=None, system_deps=None, test_dir=None):
 
     try:
         # if it's running let's bypass
-        if not force and host.check_circus(endpoint):
+        if not force and host.check_circus(circus_endpoint):
             return
 
         # create or check the venv
@@ -124,6 +125,6 @@ def deploy(master, ssh, python_deps=None, system_deps=None, test_dir=None):
         host.stop_circus()
 
         # now running
-        host.start_circus()
+        host.start_circus(cfg)
     finally:
         host.close()
