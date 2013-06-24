@@ -32,3 +32,9 @@ bin/sphinx-build:
 
 docs:  bin/sphinx-build
 	cd docs; make html
+
+test_ssh: 
+	$(BIN)/pip install paramiko boto
+	@TEST_SSH= $(MAKE) test
+
+

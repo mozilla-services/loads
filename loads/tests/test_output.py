@@ -56,7 +56,7 @@ class TestStdOutput(unittest.TestCase):
             sys.stdout = old
 
         self.assertTrue('Hits: 10' in output)
-        self.assertTrue('100%' in output)
+        self.assertTrue('100%' in output, output)
 
     @hush
     def test_errors_are_processed(self):

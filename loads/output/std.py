@@ -65,11 +65,12 @@ class StdOutput(object):
         if duration is not None:
             percent = int(float(self.results.duration)
                           / float(duration) * 100.)
-            if percent >= 100:
-                percent = 100
         else:
             percent = int(float(self.results.nb_finished_tests)
                           / float(self.args['total']) * 100.)
+
+        if percent >= 100:
+            percent = 100
 
         bar = '[' + '=' * percent + ' ' * (100 - percent) + ']'
         sys.stdout.write("\r%s %d%%" % (bar, percent))
