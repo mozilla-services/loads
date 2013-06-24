@@ -75,9 +75,10 @@ class TestCluster(unittest.TestCase):
         job = {'fqn': 'loads.tests.jobs.SomeTests.test_one'}
         res = client.run(job)
         worker_id = res['workers'][0]
-        time.sleep(.2)
+        res = {}
+        while res == {}:
+            res = client.stop(worker_id)
 
-        res = client.stop(worker_id)
         self.assertEqual(res.values(), ['terminated'])
 
         # todo: plug the zmq streamer and test it

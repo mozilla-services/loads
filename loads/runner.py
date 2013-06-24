@@ -13,7 +13,7 @@ from zmq.green.eventloop import ioloop, zmqstream
 
 from konfig import Config
 
-from loads.util import resolve_name, logger, set_logger
+from loads.util import resolve_name, logger, set_logger, try_import
 from loads.test_result import TestResult
 from loads.relay import ZMQRelay
 from loads.output import output_list, create_output
@@ -345,6 +345,12 @@ def main(sysargs=None):
                         type=str, default='ubuntu')
     parser.add_argument('--aws', help='Running on AWS?', action='store_true',
                         default=False)
+    parser.add_argument('--aws-python-deps', help='Python deps to install',
+                        action='append', default=[])
+    parser.add_argument('--aws-system-deps', help='System deps to install',
+                        action='append', default=[])
+    parser.add_argument('--aws-test-dir', help='Test dir to embark',
+                        default=None)
 
     # per-output options
     for output in output_list():
@@ -388,12 +394,17 @@ def main(sysargs=None):
 
     # deploy on amazon
     if args.aws:
+        try_import('paramiko', 'boto')
+
         from loads.deploy import aws_deploy
         master, master_id = aws_deploy(args.aws_access_key,
                                        args.aws_secret_key,
                                        args.aws_ssh_user,
                                        args.aws_ssh_key,
-                                       args.aws_image_id)
+                                       args.aws_image_id,
+                                       args.aws_python_deps,
+                                       args.aws_system_deps,
+                                       args.aws_test_dir)
         # XXX
         args.broker = 'tcp://%s:5553' % master['host']
         args.zmq_publisher = 'tcp://%s:5554' % master['host']

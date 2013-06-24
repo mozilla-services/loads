@@ -145,7 +145,7 @@ class Agent(object):
                 if proc.is_alive():
                     proc.terminate()
                     del self._processes[pid]
-                    status[pid] = 'terminated'
+                status[pid] = 'terminated'
 
             return __({'result': status})
 
