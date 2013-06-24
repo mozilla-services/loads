@@ -3,7 +3,7 @@ import urlparse
 
 from requests.sessions import Session as _Session
 from webtest.app import TestApp as _TestApp
-from wsgiproxy.proxies import HostProxy as _HostProxy, ALLOWED_METHODS
+from wsgiproxy.proxies import HostProxy as _HostProxy
 from wsgiproxy.requests_client import HttpClient
 
 from loads.util import dns_resolve
