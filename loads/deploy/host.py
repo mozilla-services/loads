@@ -5,6 +5,10 @@ import tempfile
 import paramiko
 
 
+class ExecuteError(Exception):
+    pass
+
+
 def _prefix(prefix, msg):
     prefixed = []   # XXX stream?
     for msg in [line for line in msg.split('\n') if line != '']:
@@ -79,7 +83,7 @@ class Host(object):
         stdin, stdout, stderr = self.client.exec_command(cmd)
         stderr = stderr.read()
         if stderr != '' and not ignore_error:
-            raise ValueError(stderr)
+            raise ExecuteError(stderr)
         if prefixed:
             return _prefix(self.host, stdout.read()), stderr
         return stdout.read(), stderr

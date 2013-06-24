@@ -1,5 +1,5 @@
 import os
-from loads.deploy.host import Host
+from loads.deploy.host import Host, ExecuteError
 
 
 class LoadsHost(Host):
@@ -25,7 +25,7 @@ class LoadsHost(Host):
         try:
             self.execute(cmd)
             return True
-        except ValueError:
+        except ExecuteError:
             return False
 
     def create_env(self):
@@ -50,7 +50,7 @@ class LoadsHost(Host):
                    ' --no-site-packages .')
             try:
                 self.execute(cmd)
-            except ValueError:
+            except ExecuteError:
                 if index == len(location) - 1:
                     raise
 
@@ -77,7 +77,7 @@ class LoadsHost(Host):
         cmd = 'bin/circusctl quit'
         try:
             self.execute(cmd)
-        except ValueError:
+        except ExecuteError:
             pass
 
     def start_circus(self, cfg):
