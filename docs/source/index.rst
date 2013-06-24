@@ -168,7 +168,7 @@ Install Circus::
 And run it against the provided **loads.ini** configuration file that's
 located in the Loads source repository::
 
-    $ bin/circusd --daemon loads.ini
+    $ bin/circusd --daemon conf/loads.ini
 
 Here is the content of the `loads.ini` file::
 
