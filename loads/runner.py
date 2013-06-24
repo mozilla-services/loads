@@ -78,7 +78,13 @@ class Runner(object):
         finally:
             self.running = False
 
-    def _run(self, num, test, user):
+    def _run(self, num, user):
+        # creating the test case instance
+        klass = self.test.im_class
+        test = klass(test_name=self.test.__name__,
+                     test_result=self.test_result,
+                     config=self.args)
+
         if self.stop:
             return
 
@@ -113,12 +119,6 @@ class Runner(object):
             if not hasattr(self.test, 'im_class'):
                 raise ValueError(self.test)
 
-            # creating the test case instance
-            klass = self.test.im_class
-            ob = klass(test_name=self.test.__name__,
-                       test_result=self.test_result,
-                       server_url=self.args.get('server_url'))
-
             worker_id = self.args.get('worker_id', None)
 
             gevent.spawn(self._grefresh)
@@ -128,7 +128,7 @@ class Runner(object):
                 if self.stop:
                     break
 
-                group = [gevent.spawn(self._run, i, ob, user)
+                group = [gevent.spawn(self._run, i, user)
                          for i in range(user)]
                 gevent.joinall(group)
 
@@ -372,7 +372,7 @@ def main(sysargs=None):
         # second pass !
         config = Config(args.config)
         config_args = config.scan_args(parser, strip_prefixes=['loads'])
-        args = parser.parse_args(args=sysargs+config_args)
+        args = parser.parse_args(args=sysargs + config_args)
 
     if args.quiet and 'stdout' in args.output:
         args.output.remove('stdout')
