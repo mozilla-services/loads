@@ -9,15 +9,11 @@ from loads.deploy.host import Host
 class TestHost(unittest.TestCase):
 
     def setUp(self):
-        if 'TEST_SSH' not in os.environ:
-            return
         self.host = Host('localhost', 22, 'tarek')
         self.files = []
         self.dirs = []
 
     def tearDown(self):
-        if 'TEST_SSH' not in os.environ:
-            return
         self.host.close()
         for dir in self.dirs:
             if os.path.exists(dir):
@@ -38,9 +34,8 @@ class TestHost(unittest.TestCase):
         self.dirs.append(dir)
         return dir
 
+    @unittest.skipIf('TEST_SSH' not in os.environ, 'no ssh')
     def test_execute_and_put(self):
-        if 'TEST_SSH' not in os.environ:
-            return
         # now let's push a file
         temp = self._get_file()
         with open(temp, 'w') as f:
@@ -54,9 +49,8 @@ class TestHost(unittest.TestCase):
         finally:
             os.remove(temp + '.newname')
 
+    @unittest.skipIf('TEST_SSH' not in os.environ, 'no ssh')
     def test_put_dir(self):
-        if 'TEST_SSH' not in os.environ:
-            return
         # creating a dir with 3 files
         dir = self._get_dir()
         for i in range(3):
@@ -72,9 +66,8 @@ class TestHost(unittest.TestCase):
         files.sort()
         self.assertEqual(files, ['0', '1', '2'])
 
+    @unittest.skipIf('TEST_SSH' not in os.environ, 'no ssh')
     def test_chdir(self):
-        if 'TEST_SSH' not in os.environ:
-            return
         tmpdir = self._get_dir()
         host = Host('localhost', 22, 'tarek', root=tmpdir)
         host.execute('mkdir subdir')

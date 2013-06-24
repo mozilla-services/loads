@@ -13,7 +13,7 @@ from zmq.green.eventloop import ioloop, zmqstream
 
 from konfig import Config
 
-from loads.util import resolve_name, logger, set_logger
+from loads.util import resolve_name, logger, set_logger, try_import
 from loads.test_result import TestResult
 from loads.relay import ZMQRelay
 from loads.output import output_list, create_output
@@ -21,7 +21,7 @@ from loads.output import output_list, create_output
 from loads import __version__
 from loads.transport.client import Client
 from loads.transport.util import (DEFAULT_FRONTEND, DEFAULT_RECEIVER,
-                                  DEFAULT_PUBLISHER, try_import)
+                                  DEFAULT_PUBLISHER)
 
 
 class Runner(object):
