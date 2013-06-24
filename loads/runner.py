@@ -117,7 +117,7 @@ class Runner(object):
             klass = self.test.im_class
             ob = klass(test_name=self.test.__name__,
                        test_result=self.test_result,
-                       server_url=self.args.get('server_url'))
+                       config=self.args)
 
             worker_id = self.args.get('worker_id', None)
 
