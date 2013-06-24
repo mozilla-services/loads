@@ -2,7 +2,7 @@ import time
 import sys
 from boto.ec2 import connect_to_region
 
-from loads.deploy.deploy import deploy
+from loads.deploy.ssh import deploy
 
 
 class AWSConnection(object):

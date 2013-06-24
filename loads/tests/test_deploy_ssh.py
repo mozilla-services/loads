@@ -2,7 +2,7 @@ import unittest2
 import time
 import os
 
-from loads.deploy.deploy import LoadsHost
+from loads.deploy.ssh import LoadsHost
 
 
 class TestLoadsHost(unittest2.TestCase):
