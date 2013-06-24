@@ -65,6 +65,9 @@ class LoadsHost(Host):
         if self.venv != self.curdir:
             self.chdir(self.venv)
 
+        if isinstance(packages, str):
+            packages = [packages]
+
         for dep in packages:
             cmd = 'bin/pip install %s' % dep
             self.execute(cmd, ignore_error=True)
