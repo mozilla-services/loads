@@ -162,3 +162,11 @@ def get_quantiles(data, quantiles):
     data_len = len(data)
 
     return [_get_quantile(q, data_len) for q in quantiles]
+
+
+def try_import(packages):
+    for package in packages:
+        try:
+            __import__(package)
+        except ImportError:
+            raise ImportError('You need to run pip install "%s"' % package)

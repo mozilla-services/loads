@@ -21,7 +21,7 @@ from loads.output import output_list, create_output
 from loads import __version__
 from loads.transport.client import Client
 from loads.transport.util import (DEFAULT_FRONTEND, DEFAULT_RECEIVER,
-                                  DEFAULT_PUBLISHER)
+                                  DEFAULT_PUBLISHER, try_import)
 
 
 class Runner(object):
@@ -394,14 +394,7 @@ def main(sysargs=None):
 
     # deploy on amazon
     if args.aws:
-        try:
-            import paramiko         # NOQA
-        except ImportError:
-            raise ImportError('You need to run "pip install paramiko"')
-        try:
-            import boto             # NOQA
-        except ImportError:
-            raise ImportError('You need to run "pip install boto"')
+        try_import('paramiko', 'boto')
 
         from loads.deploy import aws_deploy
         master, master_id = aws_deploy(args.aws_access_key,
