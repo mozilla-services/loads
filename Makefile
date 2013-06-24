@@ -33,9 +33,8 @@ bin/sphinx-build:
 docs:  bin/sphinx-build
 	cd docs; make html
 
-test_ssh: build
-	$(BIN)/pip install nose coverage circus mock flake8
-	- TEST_SSH= $(BIN)/nosetests -s -d -v --cover-html --cover-html-dir=html --with-coverage --cover-erase --cover-package loads loads/tests
-	- $(BIN)/flake8 loads
+test_ssh: 
+	$(BIN)/pip install paramiko boto
+	@TEST_SSH= $(MAKE) test
 
 
