@@ -20,7 +20,7 @@ def start_ssh_server():
     tries = 0
     while True:
         try:
-            host = Host('0.0.0.0', 2200, 'tarek')
+            Host('0.0.0.0', 2200, 'tarek')
         except socket.error:
             tries += 1
             if tries >= 5:

@@ -6,16 +6,12 @@
 # - normal distributed run
 # - run via nosetest
 # - run with cycles / users
-from unittest2 import TestCase
-
-import atexit
 import os
-import sys
 import time
 import requests
 
-from gevent import subprocess
 
+from unittest2 import TestCase
 from loads.runner import run as start_runner
 from loads.tests.support import get_runner_args, start_process
 from loads.transport.client import Client
@@ -54,7 +50,6 @@ def start_servers():
 
     client.close()
     _RUNNING = True
-
 
 
 class FunctionalTest(TestCase):

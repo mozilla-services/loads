@@ -262,11 +262,18 @@ class SSHServer(paramiko.ServerInterface):
             except Empty:
                 pass
             else:
+                print cmd
                 try:
                     result = subprocess.check_output(cmd, shell=True)
                     chan.send(result.replace('\n', '\r\n'))
-                except subprocess.CalledProcessError:
-                    chan.send('That call failed.\r\n')
+                    chan.send_exit_status(0)
+                except subprocess.CalledProcessError, e:
+                    if e.output:
+                        output = e.output
+                    else:
+                        output = '%r failed' % cmd
+                    chan.send_stderr(output)
+                    chan.send_exit_status(e.returncode)
 
                 chan.close()
 

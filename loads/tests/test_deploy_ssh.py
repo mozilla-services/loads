@@ -20,8 +20,7 @@ class TestLoadsHost(unittest.TestCase):
     @unittest.skipIf('TRAVIS' in os.environ, 'Travis')
     def test_check_circus(self):
         endpoint = 'tcp://0.0.0.0:5555'
-        cfg = 'loads.ini'
-
+        cfg = os.path.join('conf', 'loads.ini')
         self.assertFalse(self.host.check_circus(endpoint))
 
         self.host.create_env()
