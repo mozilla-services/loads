@@ -193,8 +193,8 @@ class _SFTPServer(paramiko.SFTPServerInterface):
 
 class SSHServer(paramiko.ServerInterface):
 
-    def __init__(self, key='rsa.key', port=2200):
-        self.key = paramiko.RSAKey(filename=_RSA)
+    def __init__(self, key=_RSA, port=2200):
+        self.key = paramiko.RSAKey(filename=key)
         self.data = base64.encodestring(str(self.key))
         self.shell = Event()
         self.pub_key = paramiko.RSAKey(data=base64.decodestring(self.data))
