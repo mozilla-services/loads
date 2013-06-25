@@ -1,4 +1,5 @@
 import unittest
+import mock
 from loads.case import TestCase, TestResult
 
 
@@ -40,7 +41,15 @@ class TestTestCase(unittest.TestCase):
         self.assertRaises(ValueError, case.app.get, 'boh')
 
     def test_config_is_passed(self):
-        pass
+        test = _MyTestCase('test_one', test_result=mock.sentinel.results,
+                           config={})
+        self.assertEquals(test.config, {})
 
     def test_serverurl_is_overwrited(self):
-        pass
+        _MyTestCase.server_url = 'http://example.org'
+        try:
+            test = _MyTestCase('test_one', test_result=mock.sentinel.results,
+                               config={'server_url': 'http://notmyidea.org'})
+            self.assertEquals(test.server_url, 'http://notmyidea.org')
+        finally:
+            del _MyTestCase.server_url

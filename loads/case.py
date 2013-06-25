@@ -22,9 +22,11 @@ MAX_CON = 1000
 class TestCase(unittest.TestCase):
     def __init__(self, test_name, test_result=None, config=None):
         super(TestCase, self).__init__(test_name)
+        if config is None:
+            config = {}
         self.config = config
-        self.server_url = (config['server_url']
-                           or getattr(self, 'server_url', None))
+        self.server_url = config.get('server_url',
+                                     getattr(self, 'server_url', None))
         self._test_result = test_result
 
         self.session = Session(test=self, test_result=test_result)
