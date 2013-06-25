@@ -1,6 +1,8 @@
 language: python
 python:
     - "2.7"
+before_install:
+    - sudo apt-get install -y libevent-dev python-gevent
 install:
     - python setup.py develop
 script: make test
