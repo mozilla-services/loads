@@ -21,7 +21,7 @@ from multiprocessing import Process
 import zmq.green as zmq
 from zmq.green.eventloop import ioloop, zmqstream
 
-from loads.runner import run
+from loads.main import run
 from loads.transport import util
 from loads.util import logger, set_logger
 from loads.transport.util import (DEFAULT_BACKEND,
@@ -100,7 +100,6 @@ class Agent(object):
     def _run(self, args):
         args['slave'] = True
         args['worker_id'] = os.getpid()
-
         try:
             if args.get('test_runner', None) is not None:
                 built_args = ' '.join(['--%s %s' % (key, value)

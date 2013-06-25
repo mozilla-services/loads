@@ -12,7 +12,8 @@ import requests
 
 
 from unittest2 import TestCase
-from loads.runner import run as start_runner
+
+from loads.main import run as start_runner
 from loads.tests.support import get_runner_args, start_process
 from loads.transport.client import Client
 

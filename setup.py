@@ -39,7 +39,7 @@ setup(name='loads',
       [console_scripts]
       loads-broker = loads.transport.broker:main
       loads-agent  = loads.transport.agent:main
-      loads-runner  = loads.runner:main
+      loads-runner  = loads.main:main
       loads-deploy = loads.deploy:main
       loads-shutdown = loads.deploy:shutdown
       """)
