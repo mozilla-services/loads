@@ -9,7 +9,7 @@ from loads.deploy.host import Host
 class TestHost(unittest.TestCase):
 
     def setUp(self):
-        self.host = Host('localhost', 22, 'tarek')
+        self.host = Host('0.0.0.0', 2200, 'tarek')
         self.files = []
         self.dirs = []
 

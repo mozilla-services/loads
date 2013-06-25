@@ -8,7 +8,7 @@ from loads.deploy.ssh import LoadsHost
 class TestLoadsHost(unittest.TestCase):
 
     def setUp(self):
-        self.host = LoadsHost('localhost', 22, 'tarek')
+        self.host = LoadsHost('0.0.0.0', 2200, 'tarek')
         self.files = []
         self.dirs = []
 
