@@ -19,7 +19,7 @@ paramiko.util.log_to_file('ssh_server.log')
 _RSA = os.path.join(os.path.dirname(__file__), 'rsa.key')
 
 
-# take from https://github.com/rspivak/sftpserver
+# taken from https://github.com/rspivak/sftpserver
 class _SFTPHandle(SFTPHandle):
     def stat(self):
         try:
