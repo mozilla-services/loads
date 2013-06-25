@@ -5,6 +5,8 @@ install:
     - python setup.py develop
 script: make test
 notifications:
-    email: tarek@mozilla.com
+    email:
+        - tarek@mozilla.com
+        - alexis@mozilla.com
     irc: "irc.freenode.org#mozilla-circus"
     on_success: change
