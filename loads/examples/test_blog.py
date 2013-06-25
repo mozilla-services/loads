@@ -56,3 +56,5 @@ class TestWebSite(TestCase):
         self.app.server_url = 'http://localhost:9000'
         res = self.app.get('/auth')
         self.assertIn(user, res.body)
+        res = self.app.get('/auth')
+        self.assertIn(user, res.body)
