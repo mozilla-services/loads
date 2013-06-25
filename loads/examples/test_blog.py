@@ -8,6 +8,8 @@ from loads.case import TestCase
 
 class TestWebSite(TestCase):
 
+    server_url = 'http://not-used'
+
     def test_public(self):
         self.session.get('http://google.com')
 
@@ -49,7 +51,8 @@ class TestWebSite(TestCase):
         raise ValueError(res)
 
     def test_concurrency(self):
-        random_number = random.randint(1, 200)
-        self.session.auth = random_number
-        time.sleep(0.2)
-        self.assertEquals(self.session.auth, random_number)
+        user = 'user%s' % random.randint(1, 200)
+        self.session.auth = (user, 'X' * 10)
+        self.app.server_url = 'http://localhost:9000'
+        res = self.app.get('/auth')
+        self.assertIn(user, res.body)

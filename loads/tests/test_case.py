@@ -38,3 +38,9 @@ class TestTestCase(unittest.TestCase):
         self.assertEqual(len(results.errors), 1)
 
         self.assertRaises(ValueError, case.app.get, 'boh')
+
+    def test_config_is_passed(self):
+        pass
+
+    def test_serverurl_is_overwrited(self):
+        pass

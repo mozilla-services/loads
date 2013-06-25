@@ -117,7 +117,8 @@ class Runner(object):
             # creating the test case instance
             klass = self.test.im_class
             test = klass(test_name=self.test.__name__,
-                         test_result=self.test_result)
+                         test_result=self.test_result,
+                         config=self.args)
 
             worker_id = self.args.get('worker_id', None)
 
