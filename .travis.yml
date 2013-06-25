@@ -8,5 +8,5 @@ notifications:
     email:
         - tarek@mozilla.com
         - alexis@mozilla.com
-    irc: "irc.freenode.org#mozilla-circus"
+    irc: "irc.mozilla.org#services-dev"
     on_success: change
