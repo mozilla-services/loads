@@ -46,7 +46,10 @@ def run(args):
 
             logger.debug('Reattaching run %r' % run_id)
             started = datetime.utcfromtimestamp(started)
-            return runner.attach(run_id, started)
+            try:
+                return runner.attach(run_id, started)
+            except KeyboardInterrupt:
+                pass
         else:
             logger.debug('Summoning %d agents' % args['agents'])
 

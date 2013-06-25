@@ -49,7 +49,6 @@ class DistributedRunner(Runner):
         self.loop.add_callback(self._process_result, msg)
 
     def _process_result(self, msg):
-
         try:
             data = json.loads(msg[0])
             data_type = data.pop('data_type')

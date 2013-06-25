@@ -146,6 +146,7 @@ class Broker(object):
         # XXX here we want to check out the runs
         # and cleanup _run given the status of the run
         # on each worker
+        return
         for worker_id, (run_id, when) in workers:
 
             status_msg = ['', json.dumps({'command': 'STATUS',
