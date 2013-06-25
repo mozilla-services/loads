@@ -92,6 +92,11 @@ class FunctionalTest(TestCase):
             fqn='loads.examples.test_blog.TestWebSite.test_something',
             output=['null'], users=10, cycles=5))
 
+    def test_concurent_session_access(self):
+        start_runner(get_runner_args(
+            fqn='loads.examples.test_blog.TestWebSite.test_concurrency',
+            output=['null'], users=10))
+
 
 class DistributedFunctionalTest(TestCase):
     def setUp(self):

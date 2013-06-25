@@ -1,6 +1,7 @@
-import time
-import os
 import gevent
+import random
+import os
+import time
 
 from loads.case import TestCase
 
@@ -46,3 +47,9 @@ class TestWebSite(TestCase):
     def _test_will_error(self):
         res = self.session.get('http://localhost:9200')
         raise ValueError(res)
+
+    def test_concurrency(self):
+        random_number = random.randint(1, 200)
+        self.session.auth = random_number
+        time.sleep(0.2)
+        self.assertEquals(self.session.auth, random_number)
