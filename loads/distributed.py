@@ -21,7 +21,7 @@ class DistributedRunner(Runner):
     def __init__(self, args):
         super(DistributedRunner, self).__init__(args)
         self.ended = self.hits = 0
-        self.loop = None
+        self.loop = self.run_id = None
         self.test_result = TestResult()
 
         # socket where the results are published
@@ -36,7 +36,7 @@ class DistributedRunner(Runner):
         self.loop = ioloop.IOLoop()
         self.zstream = zmqstream.ZMQStream(self.pull, self.loop)
         self.zstream.on_recv(self._recv_result)
-        self.outputs = []
+        self.outputs = self.workers = []
 
         outputs = args.get('output', ['stdout'])
 
@@ -72,8 +72,31 @@ class DistributedRunner(Runner):
         try:
             client = Client(self.args['broker'])
             logger.debug('Calling the broker...')
-            client.run(self.args)
+            res = client.run(self.args)
+            self.run_id = res['run_id']
+            self.workers = res['workers']
             logger.debug('Waiting for results')
+            self.loop.start()
+        finally:
+            # end..
+            cb.stop()
+            self.test_result.stopTestRun()
+            self.context.destroy()
+            self.flush()
+
+    def cancel(self):
+        client = Client(self.args['broker'])
+        client.stop_run(self.run_id)
+
+    def attach(self, run_id, started):
+
+        self.test_result.startTestRun(when=started)
+
+        cb = ioloop.PeriodicCallback(self.refresh, 100, self.loop)
+        cb.start()
+
+        self.run_id = run_id
+        try:
             self.loop.start()
         finally:
             # end..

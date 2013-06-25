@@ -97,7 +97,7 @@ class Agent(object):
                                               ping_delay * 1000,
                                               io_loop=self.loop)
 
-    def _run(self, args):
+    def _run(self, args, run_id=None):
         args['slave'] = True
         args['worker_id'] = os.getpid()
         try:
@@ -114,7 +114,7 @@ class Agent(object):
             msg = 'Failed to start process ' + str(e)
             raise ExecutionError(msg)
 
-        self._processes[p.pid] = p
+        self._processes[p.pid] = p, run_id
         return p.pid
 
     def handle(self, message):
@@ -124,13 +124,18 @@ class Agent(object):
 
         if command in ('RUN', 'SIMULRUN'):
             args = data['args']
-            pid = self._run(args)
+            run_id = data.get('run_id')
+            pid = self._run(args, run_id)
             return __({'result': {'pid': pid, 'worker_id': str(os.getpid())}})
 
         elif command == 'STATUS':
             status = {}
+            run_id = data.get('run_id')
 
-            for pid, proc in self._processes.items():
+            for pid, (proc, _run_id) in self._processes.items():
+                if run_id is not None and run_id != _run_id:
+                    continue
+
                 if proc.is_alive():
                     status[pid] = 'running'
                 else:
@@ -139,8 +144,7 @@ class Agent(object):
             return __({'result': status})
         elif command == 'STOP':
             status = {}
-
-            for pid, proc in self._processes.items():
+            for pid, (proc, run_id) in self._processes.items():
                 if proc.is_alive():
                     proc.terminate()
                     del self._processes[pid]
@@ -151,7 +155,7 @@ class Agent(object):
         raise NotImplementedError()
 
     def _check_proc(self):
-        for pid, proc in self._processes.items():
+        for pid, (proc, run_id) in self._processes.items():
             if not proc.is_alive():
                 del self._processes[pid]
 

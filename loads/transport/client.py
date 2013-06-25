@@ -177,6 +177,10 @@ class Client(object):
     def stop(self, worker_id):
         return self.execute({'command': 'STOP', 'worker_id': worker_id})
 
+    def stop_run(self, run_id):
+        return self.execute({'command': 'STOPRUN', 'run_id': run_id},
+                            extract=False)
+
     def list(self):
         return self.execute({'command': 'LIST'})
 

@@ -52,7 +52,10 @@ class Runner(object):
     def __init__(self, args):
         self.args = args
         self.fqn = args['fqn']
-        self.test = resolve_name(self.fqn)
+        if self.fqn is not None:
+            self.test = resolve_name(self.fqn)
+        else:
+            self.test = None
         self.slave = 'slave' in args
         self.outputs = []
         self.stop = False

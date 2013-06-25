@@ -28,7 +28,7 @@ class BrokerDB(object):
         if len(self._buffer) == 0:
             return
         for run_id, data in self._buffer.items():
-            if data == []:
+            if data == [] or run_id is None:
                 continue
             filename = os.path.join(self.directory, run_id)
             with open(filename, 'a+') as f:

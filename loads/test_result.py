@@ -179,9 +179,12 @@ class TestResult(object):
         return float(len(self.hits)) / self.duration
 
     # These are to comply with the APIs of unittest.
-    def startTestRun(self, worker_id=None):
+    def startTestRun(self, worker_id=None, when=None):
+        if when is None:
+            when = datetime.utcnow()
+
         if worker_id is None:
-            self.start_time = datetime.utcnow()
+            self.start_time = when
 
     def stopTestRun(self, worker_id=None):
         # we don't want to start multiple time the test run
@@ -246,7 +249,11 @@ class TestResult(object):
         return tuple((str(test),) + tuple(loads_status) + (worker_id,))
 
     def _get_test(self, test, loads_status, worker_id):
-        return self.tests[self._get_key(test, loads_status, worker_id)]
+        key = self._get_key(test, loads_status, worker_id)
+        if key not in self.tests:
+            self.startTest(test, loads_status, worker_id)
+
+        return self.tests[key]
 
 
 class Hit(object):
