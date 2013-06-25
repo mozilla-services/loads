@@ -22,7 +22,7 @@ clean:
 	rm -rf $(BUILD_DIRS)
 
 test: build
-	$(BIN)/pip install nose coverage circus mock flake8
+	$(BIN)/pip install nose coverage circus mock flake8 paramiko boto
 	- $(BIN)/nosetests -s -d -v --cover-html --cover-html-dir=html --with-coverage --cover-erase --cover-package loads loads/tests
 	- $(BIN)/flake8 loads
 
@@ -32,9 +32,3 @@ bin/sphinx-build:
 
 docs:  bin/sphinx-build
 	cd docs; make html
-
-test_ssh: 
-	$(BIN)/pip install paramiko boto
-	@TEST_SSH= $(MAKE) test
-
-
