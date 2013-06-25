@@ -2,13 +2,40 @@ import unittest
 import tempfile
 import os
 import shutil
+import time
+import socket
 
 from loads.deploy.host import Host
+from loads.tests.support import start_process
+
+
+_RUNNING = False
+
+
+def start_ssh_server():
+    global _RUNNING
+    if _RUNNING:
+        return
+    start_process('loads.tests.ssh_server')
+    tries = 0
+    while True:
+        try:
+            host = Host('0.0.0.0', 2200, 'tarek')
+        except socket.error:
+            tries += 1
+            if tries >= 5:
+                raise
+            time.sleep(.1)
+        else:
+            break
+
+    _RUNNING = True
 
 
 class TestHost(unittest.TestCase):
 
     def setUp(self):
+        start_ssh_server()
         self.host = Host('0.0.0.0', 2200, 'tarek')
         self.files = []
         self.dirs = []
@@ -34,7 +61,7 @@ class TestHost(unittest.TestCase):
         self.dirs.append(dir)
         return dir
 
-    @unittest.skipIf('TEST_SSH' not in os.environ, 'no ssh')
+    @unittest.skipIf('TRAVIS' in os.environ, 'Travis')
     def test_execute_and_put(self):
         # now let's push a file
         temp = self._get_file()
@@ -49,7 +76,7 @@ class TestHost(unittest.TestCase):
         finally:
             os.remove(temp + '.newname')
 
-    @unittest.skipIf('TEST_SSH' not in os.environ, 'no ssh')
+    @unittest.skipIf('TRAVIS' in os.environ, 'Travis')
     def test_put_dir(self):
         # creating a dir with 3 files
         dir = self._get_dir()
@@ -66,7 +93,7 @@ class TestHost(unittest.TestCase):
         files.sort()
         self.assertEqual(files, ['0', '1', '2'])
 
-    @unittest.skipIf('TEST_SSH' not in os.environ, 'no ssh')
+    @unittest.skipIf('TRAVIS' in os.environ, 'Travis')
     def test_chdir(self):
         tmpdir = self._get_dir()
         host = Host('localhost', 22, 'tarek', root=tmpdir)

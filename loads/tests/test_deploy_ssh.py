@@ -3,11 +3,13 @@ import time
 import os
 
 from loads.deploy.ssh import LoadsHost
+from loads.tests.test_deploy_host import start_ssh_server
 
 
 class TestLoadsHost(unittest.TestCase):
 
     def setUp(self):
+        start_ssh_server()
         self.host = LoadsHost('0.0.0.0', 2200, 'tarek')
         self.files = []
         self.dirs = []
@@ -15,7 +17,7 @@ class TestLoadsHost(unittest.TestCase):
     def tearDown(self):
         self.host.close()
 
-    @unittest.skipIf('TEST_SSH' not in os.environ, 'no ssh')
+    @unittest.skipIf('TRAVIS' in os.environ, 'Travis')
     def test_check_circus(self):
         endpoint = 'tcp://0.0.0.0:5555'
         cfg = 'loads.ini'

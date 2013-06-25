@@ -336,11 +336,18 @@ class SSHServer(paramiko.ServerInterface):
         self.sock.close()
 
 
-if __name__ == '__main__':
+def main():
     monkey.patch_all()
     server = SSHServer()
     print 'Listening on port %d' % server.port
     try:
         server.run()
-    except KeyboardInterrupt:
+    finally:
         server.close()
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass
