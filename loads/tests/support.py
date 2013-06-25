@@ -1,9 +1,33 @@
 import functools
 import sys
 import StringIO
-
+import subprocess
+import atexit
 
 from loads.transport.util import DEFAULT_FRONTEND
+
+
+_processes = []
+
+
+def start_process(cmd):
+    devnull = open('/dev/null', 'w')
+    process = subprocess.Popen([sys.executable, '-m', cmd],
+                               stdout=devnull, stderr=devnull)
+    _processes.append(process)
+
+
+def stop_processes():
+    for proc in _processes:
+        try:
+            proc.terminate()
+        except OSError:
+            pass
+
+    _processes[:] = []
+
+
+atexit.register(stop_processes)
 
 
 def get_runner_args(fqn, users=1, cycles=1, duration=None,

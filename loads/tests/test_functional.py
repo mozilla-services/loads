@@ -6,31 +6,19 @@
 # - normal distributed run
 # - run via nosetest
 # - run with cycles / users
-from unittest2 import TestCase
-
-import atexit
 import os
-import sys
 import time
 import requests
 
-from gevent import subprocess
 
+from unittest2 import TestCase
 from loads.runner import run as start_runner
-from loads.tests.support import get_runner_args
+from loads.tests.support import get_runner_args, start_process
 from loads.transport.client import Client
 
 
 _EXAMPLES_DIR = os.path.join(os.path.dirname(__file__), os.pardir, 'examples')
 _RUNNING = False
-_processes = []
-
-
-def _start_cmd(cmd):
-    devnull = open('/dev/null', 'w')
-    process = subprocess.Popen([sys.executable, '-m', cmd],
-                               stdout=devnull, stderr=devnull)
-    _processes.append(process)
 
 
 def start_servers():
@@ -38,10 +26,10 @@ def start_servers():
     if _RUNNING:
         return
 
-    _start_cmd('loads.transport.broker')
+    start_process('loads.transport.broker')
     for x in range(3):
-        _start_cmd('loads.transport.agent')
-    _start_cmd('loads.examples.echo_server')
+        start_process('loads.transport.agent')
+    start_process('loads.examples.echo_server')
 
     # wait for the echo server to be started
     tries = 0
@@ -62,19 +50,6 @@ def start_servers():
 
     client.close()
     _RUNNING = True
-
-
-def stop_servers():
-    for proc in _processes:
-        try:
-            proc.terminate()
-        except OSError:
-            pass
-
-    _processes[:] = []
-
-
-atexit.register(stop_servers)
 
 
 class FunctionalTest(TestCase):
