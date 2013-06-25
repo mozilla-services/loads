@@ -1,7 +1,7 @@
 import unittest
 import os
 
-from loads.runner import main
+from loads.main import main
 from loads.tests.test_functional import start_servers
 from loads.tests.support import hush
 
