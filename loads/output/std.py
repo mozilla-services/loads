@@ -16,6 +16,19 @@ if sys.platform != 'win32':
         return tuple(reversed(sizebuf))
 
 
+def get_screen_relative_value(percent):
+    """Convert a percentage into a value relative to the width of the screen"""
+    if percent > 100:
+        percent = 100
+
+    if sys.platform != 'win32':
+        size = get_terminal_size()[0]
+    else:
+        size = 100
+
+    return size, int(round(percent * (size / 100.))) - 8
+
+
 class StdOutput(object):
     name = 'stdout'
     options = {'total': ('Total Number of items', int, None, False),
@@ -82,15 +95,7 @@ class StdOutput(object):
             percent = int(float(self.results.nb_finished_tests)
                           / float(self.args['total']) * 100.)
 
-        if percent > 100:
-            percent = 100
-
-        if sys.platform != 'win32':
-            size = get_terminal_size()[0]
-        else:
-            size = 100
-
-        rel_percent = int(round(percent * (size / 100.))) - 8
+        size, rel_percent = get_screen_relative_value(percent)
 
         bar = '[' + ('=' * rel_percent).ljust(size - 8) + ']'
         out = "\r%s %s%%" % (bar, str(percent).rjust(3))
