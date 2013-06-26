@@ -10,10 +10,10 @@ import os
 import time
 import requests
 
-
 from unittest2 import TestCase
 
 from loads.main import run as start_runner
+from loads.runner import Runner
 from loads.tests.support import get_runner_args, start_process
 from loads.transport.client import Client
 
@@ -67,6 +67,15 @@ class FunctionalTest(TestCase):
         start_runner(get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_something',
             output=['null'], users=10, cycles=5))
+
+    def test_concurent_session_access(self):
+        runner = Runner(get_runner_args(
+            fqn='loads.examples.test_blog.TestWebSite.test_concurrency',
+            output=['null'], users=10))
+        runner.execute()
+        assert runner.test_result.nb_success == 10
+        assert runner.test_result.nb_errors == 0
+        assert runner.test_result.nb_failures == 0
 
 
 class DistributedFunctionalTest(TestCase):

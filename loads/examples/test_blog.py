@@ -1,11 +1,14 @@
-import time
-import os
 import gevent
+import random
+import os
+import time
 
 from loads.case import TestCase
 
 
 class TestWebSite(TestCase):
+
+    server_url = 'http://not-used'
 
     def test_public(self):
         self.session.get('http://google.com')
@@ -46,3 +49,12 @@ class TestWebSite(TestCase):
     def _test_will_error(self):
         res = self.session.get('http://localhost:9200')
         raise ValueError(res)
+
+    def test_concurrency(self):
+        user = 'user%s' % random.randint(1, 200)
+        self.session.auth = (user, 'X' * 10)
+        self.app.server_url = 'http://localhost:9000'
+        res = self.app.get('/auth')
+        self.assertIn(user, res.body)
+        res = self.app.get('/auth')
+        self.assertIn(user, res.body)
