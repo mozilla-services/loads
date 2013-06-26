@@ -1,18 +1,19 @@
 import array
 import fcntl
-import math
 import sys
-import termios
 import traceback
 
 from loads.relay import ZMQRelay
 
 
-def get_terminal_size(fd=1):
-    """Get the (width, height) size tuple for the given pty fd."""
-    sizebuf = array.array('h', [0, 0])
-    fcntl.ioctl(fd, termios.TIOCGWINSZ, sizebuf, True)
-    return tuple(reversed(sizebuf))
+if sys.platform != 'win32':
+    import termios
+
+    def get_terminal_size(fd=1):
+        """Get the (width, height) size tuple for the given pty fd."""
+        sizebuf = array.array('h', [0, 0])
+        fcntl.ioctl(fd, termios.TIOCGWINSZ, sizebuf, True)
+        return tuple(reversed(sizebuf))
 
 
 class StdOutput(object):
@@ -84,7 +85,10 @@ class StdOutput(object):
         if percent > 100:
             percent = 100
 
-        size = get_terminal_size()[0]
+        if sys.platform != 'win32':
+            size = get_terminal_size()[0]
+        else:
+            size = 100
 
         rel_percent = int(round(percent * (size / 100.))) - 8
 
