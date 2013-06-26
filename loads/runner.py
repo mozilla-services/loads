@@ -95,10 +95,9 @@ class Runner(object):
 
     def _run(self, num, user):
         # creating the test case instance
-        klass = self.test.im_class
-        test = klass(test_name=self.test.__name__,
-                     test_result=self.test_result,
-                     config=self.args)
+        test = self.test.im_class(test_name=self.test.__name__,
+                                  test_result=self.test_result,
+                                  config=self.args)
 
         if self.stop:
             return
