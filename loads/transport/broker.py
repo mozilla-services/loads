@@ -24,7 +24,7 @@ from loads.transport.util import (register_ipc_file, DEFAULT_FRONTEND,
 from loads.transport.heartbeat import Heartbeat
 from loads.transport.exc import DuplicateBrokerError
 from loads.transport.client import DEFAULT_TIMEOUT_MOVF
-from loads.transport.brokerdb import BrokerDB
+from loads.db.brokerdb import BrokerDB
 
 
 DEFAULT_IOTHREADS = 1

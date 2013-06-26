@@ -4,7 +4,7 @@ import os
 import shutil
 
 from zmq.green.eventloop import ioloop
-from loads.transport.brokerdb import BrokerDB
+from loads.db.brokerdb import BrokerDB
 
 
 class TestBrokerDB(unittest.TestCase):
