@@ -1,5 +1,4 @@
 import array
-import fcntl
 import sys
 import traceback
 
@@ -12,6 +11,7 @@ def get_terminal_width(fd=1):
         return 100
 
     import termios
+    import fcntl
     sizebuf = array.array('h', [0, 0])
     fcntl.ioctl(fd, termios.TIOCGWINSZ, sizebuf, True)
     return sizebuf[1]
