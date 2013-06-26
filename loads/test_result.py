@@ -40,6 +40,9 @@ class TestResult(object):
     @property
     def duration(self):
         end = self.stop_time or datetime.utcnow()
+        if self.start_time is None:
+            return 0
+
         return (end - self.start_time).total_seconds()
 
     @property
@@ -174,8 +177,11 @@ class TestResult(object):
         rates = [t.success_rate for t in self._get_tests(test, cycle)]
         if rates:
             return sum(rates) / len(rates)
+        return 1
 
     def requests_per_second(self, url=None, cycle=None):
+        if self.duration == 0:
+            return 0
         return float(len(self.hits)) / self.duration
 
     # These are to comply with the APIs of unittest.
@@ -297,13 +303,14 @@ class Test(object):
         if self.end is not None:
             return (self.end - self.start).total_seconds()
         else:
-            return None
+            return 0
 
     @property
     def success_rate(self):
         total = self.success + len(self.failures) + len(self.errors)
         if total != 0:
             return float(self.success) / total
+        return 1  # Every of the 0 runs we had was successful
 
     def __repr__(self):
         return ('<Test %s. errors: %s, failures: %s, success: %s>'

@@ -157,10 +157,10 @@ class TestTestResult(TestCase):
         self.assertEquals(len(test_result._get_tests(name='bacon', cycle=2)),
                           1)
 
-    def test_test_success_rate_is_none(self):
+    def test_test_success_rate_when_not_started(self):
         # it should be none if no tests had been collected yet.
         test_result = TestResult()
-        self.assertEquals(None, test_result.test_success_rate())
+        self.assertEquals(1, test_result.test_success_rate())
 
     def test_test_success_rate_is_correct(self):
         test_result = TestResult()
@@ -171,6 +171,14 @@ class TestTestResult(TestCase):
         test_result.addFailure('bacon', 'A failure', loads_status)
 
         self.assertEquals(0.5, test_result.test_success_rate())
+
+    def test_duration_is_zero_if_not_started(self):
+        test_result = TestResult()
+        self.assertEquals(test_result.duration, 0)
+
+    def test_requests_per_second_if_not_started(self):
+        test_result = TestResult()
+        self.assertEquals(test_result.requests_per_second(), 0)
 
 
 class TestHits(TestCase):
@@ -203,10 +211,10 @@ class TestHits(TestCase):
 
 class TestTest(TestCase):
 
-    def test_duration_is_none_if_not_finished(self):
+    def test_duration_is_zero_if_not_finished(self):
         test = Test()
         # no end value is provided
-        self.assertEquals(test.duration, None)
+        self.assertEquals(test.duration, 0)
 
     def test_duration_is_valid(self):
         test = Test(TIME1)
@@ -215,7 +223,7 @@ class TestTest(TestCase):
 
     def test_success_rate_when_none(self):
         test = Test()
-        self.assertEquals(test.success_rate, None)
+        self.assertEquals(test.success_rate, 1)
 
     def test_success_rate_when_failures_and_success(self):
         test = Test()
