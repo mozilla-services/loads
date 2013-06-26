@@ -2,6 +2,7 @@ import unittest
 import time
 import os
 import shutil
+import json
 
 from zmq.green.eventloop import ioloop
 from loads.db.brokerdb import BrokerDB
@@ -61,15 +62,20 @@ class TestBrokerDB(unittest.TestCase):
 
         # let's check if we got the data in the file
         with open(os.path.join(self.db.directory, '1')) as f:
-            data = f.read().split('\n')
+            data = [json.loads(line) for line in f]
+        data.sort()
 
         with open(os.path.join(self.db.directory, '2')) as f:
-            data2 = f.read().split('\n')
+            data2 = [json.loads(line) for line in f]
 
-        self.assertEqual(len(data), 6)
-        self.assertEqual(len(data2), 6)
+        self.assertEqual(len(data), 5)
+        self.assertEqual(len(data2), 5)
         counts = self.db.get_counts('1')
 
         for type_ in ('addSuccess', 'stopTestRun', 'stopTest',
                       'startTest', 'startTestRun', 'add_hit'):
             self.assertEqual(counts[type_], 1)
+
+        data3 = list(self.db.get_data('1'))
+        data3.sort()
+        self.assertEqual(data3, data)

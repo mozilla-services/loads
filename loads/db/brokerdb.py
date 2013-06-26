@@ -68,7 +68,7 @@ class BrokerDB(object):
             return dict(self._counts[run_id])
 
     def get_data(self, run_id):
-        # XXX stream it?
         filename = os.path.join(self.directory, run_id)
         with open(filename) as f:
-            return f.read().split()
+            for line in f:
+                yield json.loads(line)
