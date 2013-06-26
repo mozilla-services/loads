@@ -8,6 +8,8 @@ import unittest
 
 from loads.output import (create_output, output_list, register_output,
                           StdOutput, NullOutput, FileOutput)
+from loads import output
+
 from loads.tests.support import get_tb, hush
 
 
@@ -52,11 +54,11 @@ class TestStdOutput(unittest.TestCase):
             std.flush()
         finally:
             sys.stdout.seek(0)
-            output = sys.stdout.read()
+            out = sys.stdout.read()
             sys.stdout = old
 
-        self.assertTrue('Hits: 10' in output)
-        self.assertTrue('100%' in output, output)
+        self.assertTrue('Hits: 10' in out)
+        self.assertTrue('100%' in out, out)
 
     @hush
     def test_errors_are_processed(self):
@@ -74,10 +76,10 @@ class TestStdOutput(unittest.TestCase):
         std = StdOutput(mock.sentinel.test_result, mock.sentinel.args)
         std._print_tb(errors)
         sys.stderr.seek(0)
-        output = sys.stderr.read()
+        out = sys.stderr.read()
         sys.stderr = old
 
-        self.assertTrue('Exception' in output)
+        self.assertTrue('Exception' in out)
 
     def test_empty_tb_is_not_processed(self):
         std = StdOutput(mock.sentinel.test_result, mock.sentinel.args)
@@ -89,9 +91,12 @@ class TestStdOutput(unittest.TestCase):
         std = StdOutput(mock.sentinel.test_result, mock.sentinel.args)
         std._print_tb(iter([[['foo', 'foobar', None]]]))
         sys.stderr.seek(0)
-        output = sys.stderr.read()
+        out = sys.stderr.read()
         sys.stderr = old
-        self.assertTrue('foo: foobar' in output)
+        self.assertTrue('foo: foobar' in out)
+
+    def test_relative_value(self):
+        self.assertEquals(output.std.get_screen_relative_value(23, 80), 10)
 
 
 class TestNullOutput(unittest.TestCase):
