@@ -48,7 +48,6 @@ class TestBrokerDB(unittest.TestCase):
     def test_brokerdb(self):
 
         def add_data():
-
             for line in _ONE_RUN:
                 data = dict(line)
                 data['run_id'] = '1'
@@ -69,3 +68,8 @@ class TestBrokerDB(unittest.TestCase):
 
         self.assertEqual(len(data), 6)
         self.assertEqual(len(data2), 6)
+        counts = self.db.get_counts('1')
+
+        for type_ in ('addSuccess', 'stopTestRun', 'stopTest',
+                      'startTest', 'startTestRun', 'add_hit'):
+            self.assertEqual(counts[type_], 1)

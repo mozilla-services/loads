@@ -3,6 +3,7 @@ import os
 from collections import defaultdict
 import json
 
+from gevent.queue import Queue
 from zmq.green.eventloop import ioloop
 
 
@@ -15,28 +16,56 @@ class BrokerDB(object):
         else:
             self.directory = directory
 
-        self._buffer = defaultdict(list)
+        self._buffer = defaultdict(Queue)
         self.sync_delay = sync_delay
         self._callback = ioloop.PeriodicCallback(self.flush, self.sync_delay,
                                                  loop)
         self._callback.start()
+        self._counts = defaultdict(lambda: defaultdict(int))
+        self._dirty = False
 
     def add(self, data):
-        self._buffer[data.get('run_id')].append(data)
+        run_id = data.get('run_id')
+        data_type = data.get('data_type')
+        self._counts[run_id][data_type] += 1
+        self._buffer[run_id].put(data)
+        self._dirty = True
 
     def flush(self):
-        if len(self._buffer) == 0:
+        if len(self._buffer) == 0 or not self._dirty:
             return
-        for run_id, data in self._buffer.items():
-            if data == []:
+
+        for run_id, queue in self._buffer.items():
+            # lines
+            qsize = queue.qsize()
+            if qsize == 0:
                 continue
+
             filename = os.path.join(self.directory, run_id)
+
             with open(filename, 'a+') as f:
-                f.write('\n'.join([json.dumps(item) for item in data]))
-        self._buffer.clear()
+                for i in range(qsize - 1):
+                    f.write(json.dumps(queue.get()) + '\n')
+
+            # counts
+            filename = os.path.join(self.directory, run_id + '.counts')
+            counts = dict(self._counts[run_id]).items()
+            counts.sort()
+            with open(filename, 'w') as f:
+                f.write(json.dumps(counts))
+
+        self._dirty = False
 
     def close(self):
         self._callback.stop()
+
+    def get_counts(self, run_id):
+        filename = os.path.join(self.directory, run_id + '.counts')
+        if os.path.exists(filename):
+            with open(filename) as f:
+                return dict(json.loads(f.read()))
+        else:
+            return dict(self._counts[run_id])
 
     def get_data(self, run_id):
         # XXX stream it?
