@@ -5,6 +5,8 @@ from gevent import monkey; monkey.patch_all()
 import argparse
 import random
 import os
+import base64
+import time
 
 import gevent
 import gevent.pywsgi
@@ -59,6 +61,9 @@ class EchoWebSocketApplication(object):
             environ['ws4py.app'] = self
             return self.ws(environ, start_response)
 
+        if environ['PATH_INFO'] == '/auth':
+            return self.auth(environ, start_response)
+
         return self.webapp(environ, start_response)
 
     def favicon(self, environ, start_response):
@@ -69,6 +74,13 @@ class EchoWebSocketApplication(object):
         headers = [('Content-type', 'text/plain')]
         start_response(status, headers)
         return ""
+
+    def auth(self, environ, start_response):
+        status = '200 OK'
+        headers = [('Content-type', 'text/plain')]
+        start_response(status, headers)
+        user, pwd = base64.b64decode(environ['HTTP_AUTHORIZATION'][6:]).split(':') 
+        return user
 
     def webapp(self, environ, start_response):
         """
