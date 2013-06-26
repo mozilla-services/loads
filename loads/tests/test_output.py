@@ -95,14 +95,8 @@ class TestStdOutput(unittest.TestCase):
         sys.stderr = old
         self.assertTrue('foo: foobar' in out)
 
-    @unittest.skipUnless(sys.platform != 'win32', 'win32')
     def test_relative_value(self):
-        def mocked_func():
-            return 80, 200
-
-        with mock.patch('loads.output.std.get_terminal_size', mocked_func):
-            self.assertEquals(output.std.get_screen_relative_value(23),
-                              (80, 10))
+        self.assertEquals(output.std.get_screen_relative_value(23, 80), 10)
 
 
 class TestNullOutput(unittest.TestCase):

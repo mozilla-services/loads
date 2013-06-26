@@ -6,27 +6,20 @@ import traceback
 from loads.relay import ZMQRelay
 
 
-if sys.platform != 'win32':
+def get_terminal_width(fd=1):
+    """Get the width for the given pty fd (default is TTY1)."""
+    if sys.platform == 'win32':
+        return 100
+
     import termios
-
-    def get_terminal_size(fd=1):
-        """Get the (width, height) size tuple for the given pty fd."""
-        sizebuf = array.array('h', [0, 0])
-        fcntl.ioctl(fd, termios.TIOCGWINSZ, sizebuf, True)
-        return tuple(reversed(sizebuf))
+    sizebuf = array.array('h', [0, 0])
+    fcntl.ioctl(fd, termios.TIOCGWINSZ, sizebuf, True)
+    return sizebuf[1]
 
 
-def get_screen_relative_value(percent):
+def get_screen_relative_value(percent, terminal_width):
     """Convert a percentage into a value relative to the width of the screen"""
-    if percent > 100:
-        percent = 100
-
-    if sys.platform != 'win32':
-        size = get_terminal_size()[0]
-    else:
-        size = 100
-
-    return size, int(round(percent * (size / 100.))) - 8
+    return int(round(percent * (terminal_width / 100.))) - 8
 
 
 class StdOutput(object):
@@ -39,6 +32,7 @@ class StdOutput(object):
         self.args = args
         self.current = 0
         self.starting = None
+        self._terminal_width = get_terminal_width()
 
     def flush(self):
         self._duration_progress()
@@ -95,9 +89,12 @@ class StdOutput(object):
             percent = int(float(self.results.nb_finished_tests)
                           / float(self.args['total']) * 100.)
 
-        size, rel_percent = get_screen_relative_value(percent)
+        if percent > 100:
+            percent = 100
 
-        bar = '[' + ('=' * rel_percent).ljust(size - 8) + ']'
+        rel_percent = get_screen_relative_value(percent, self._terminal_width)
+
+        bar = '[' + ('=' * rel_percent).ljust(self._terminal_width - 8) + ']'
         out = "\r%s %s%%" % (bar, str(percent).rjust(3))
         sys.stdout.write(out)
         sys.stdout.flush()
