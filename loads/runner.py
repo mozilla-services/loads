@@ -1,3 +1,5 @@
+import traceback
+
 import gevent
 
 from loads.util import resolve_name
@@ -126,6 +128,7 @@ class Runner(object):
     def _execute(self):
         """Spawn all the tests needed and wait for them to finish.
         """
+        exception = None
         try:
             from gevent import monkey
             monkey.patch_all()
@@ -150,14 +153,20 @@ class Runner(object):
             self.test_result.stopTestRun(worker_id)
         except KeyboardInterrupt:
             pass
+        except Exception as e:
+            exception = e
         finally:
             # be sure we flush the outputs that need it.
             # but do it only if we are in "normal" mode
-            if not self.slave:
-                self.flush()
-            else:
-                # in slave mode, be sure to close the zmq relay.
-                self.test_result.close()
+            try:
+                if not self.slave:
+                    self.flush()
+                else:
+                    # in slave mode, be sure to close the zmq relay.
+                    self.test_result.close()
+            finally:
+                if exception:
+                    raise exception
 
     def flush(self):
         for output in self.outputs:
