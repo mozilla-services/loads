@@ -1,3 +1,5 @@
+import traceback
+
 import gevent
 
 from loads.util import resolve_name
@@ -151,6 +153,9 @@ class Runner(object):
             self.test_result.stopTestRun(worker_id)
         except KeyboardInterrupt:
             pass
+        except Exception:
+            traceback.print_exc()
+            traceback.print_stack()
         finally:
             # be sure we flush the outputs that need it.
             # but do it only if we are in "normal" mode
