@@ -1,4 +1,5 @@
 import sys
+import random
 import traceback
 from loads.relay import ZMQRelay
 
@@ -11,15 +12,22 @@ class StdOutput(object):
     def __init__(self, test_result, args):
         self.results = test_result
         self.args = args
-        self.current = 0
+        self.pos = self.current = 0
         self.starting = None
 
     def flush(self):
-        self._duration_progress()
         write = sys.stdout.write
+        self._duration_progress()
+        write("\nDuration: %.2f seconds" % self.results.duration)
+
+        if self.args.get('attach'):
+            write('\n')
+            sys.stdout.flush()
+            sys.stderr.flush()
+            return
+
         write("\nHits: %d" % self.results.nb_hits)
         write("\nStarted: %s" % self.results.start_time)
-        write("\nDuration: %.2f seconds" % self.results.duration)
         write("\nApproximate Average RPS: %d" %
               self.results.requests_per_second())
         write("\nAverage request time: %.2fs" %
@@ -61,6 +69,17 @@ class StdOutput(object):
         self._duration_progress()
 
     def _duration_progress(self):
+        if self.args.get('attach'):
+            self.pos += 1
+            before = ' ' * self.pos
+            after = ' ' * (24 - self.pos)
+            bar = '[' + before + '=' + after + ']'
+            sys.stdout.write("\r%s" % bar)
+            sys.stdout.flush()
+            if self.pos == 24:
+                self.pos = 0
+            return
+
         duration = self.args.get('duration')
         if duration is not None:
             percent = int(float(self.results.duration)

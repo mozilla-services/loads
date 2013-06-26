@@ -21,7 +21,7 @@ from loads.transport.util import (register_ipc_file, DEFAULT_FRONTEND,
                                   DEFAULT_BACKEND, DEFAULT_HEARTBEAT,
                                   DEFAULT_REG, verify_broker,
                                   kill_ghost_brokers, DEFAULT_RECEIVER,
-                                  DEFAULT_PUBLISHER)
+                                  DEFAULT_PUBLISHER, extract_result)
 from loads.transport.heartbeat import Heartbeat
 from loads.transport.exc import DuplicateBrokerError
 from loads.transport.client import DEFAULT_TIMEOUT_MOVF
@@ -146,14 +146,11 @@ class Broker(object):
         # XXX here we want to check out the runs
         # and cleanup _run given the status of the run
         # on each worker
-        return
-        for worker_id, (run_id, when) in workers:
-
+        for worker_id, (run_id, when) in self._runs.items():
             status_msg = ['', json.dumps({'command': 'STATUS',
                                           'run_id': run_id})]
 
-            for worker_id in workers:
-                self._send_to_worker(worker_id, status_msg)
+            self._send_to_worker(worker_id, status_msg)
 
 
     def _check_worker(self, worker_id):
@@ -215,6 +212,8 @@ class Broker(object):
             res = json.dumps({'result': workers})
             self._frontstream.send_multipart(msg[:-1] + [res])
 
+            # and force a clean
+            self._clean()
             return
         elif cmd == 'GET_DATA':
             # we send back the data we have in the db
@@ -322,6 +321,11 @@ class Broker(object):
         msg = msg[1:]
         now = time.time()
 
+        # grabbing the data to update the broker status
+        #data = json.loads(extract_result(msg[-1])[-1])['result']
+        #if data.get('command') == 'STATUS':
+        #    import pdb; pdb.set_trace()
+        #print 'received from back ' + str(data)
         if worker_id in self._worker_times:
             start, stop = self._worker_times[worker_id]
             self._worker_times[worker_id] = start, now
@@ -349,7 +353,7 @@ class Broker(object):
 
         # running the cleaner
         self.cleaner = ioloop.PeriodicCallback(self._clean, 1000, self.loop)
-        self.cleaner.start()
+        #self.cleaner.start()
 
         self.started = True
         while self.started:
@@ -381,7 +385,7 @@ class Broker(object):
         self.pong.stop()
 
         logger.debug('Stopping the cleaner')
-        self.cleaner.stop()
+        #self.cleaner.stop()
 
         logger.debug('Stopping the loop')
         self.loop.stop()

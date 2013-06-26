@@ -17,6 +17,18 @@ from loads.distributed import DistributedRunner
 from loads.transport.client import Client
 
 
+
+def _detach_question(runner):
+    res = ''
+    while res not in ('s', 'd'):
+        res = raw_input('Do you want to (s)top the test or (d)etach ? ')
+        res = res.lower().strip()
+        if len(res) > 1:
+            res = res[0]
+    if res == 's':
+        runner.cancel()
+
+
 def run(args):
     is_slave = args.get('slave', False)
     has_agents = args.get('agents', None)
@@ -49,25 +61,14 @@ def run(args):
             try:
                 return runner.attach(run_id, started)
             except KeyboardInterrupt:
-                pass
+                _detach_question(runner)
         else:
             logger.debug('Summoning %d agents' % args['agents'])
 
             try:
                 return runner.execute()
             except KeyboardInterrupt:
-                # XXX two choices here: interrupt or let it continue
-                res = ''
-                while res not in ('s', 'd'):
-                    res = raw_input('Do you want to (s)top the test or (d)etach ? ')
-                    res = res.lower().strip()
-                    if len(res) > 1:
-                        res = res[0]
-
-                if res == 's':
-                    runner.cancel()
-
-                # if we're detaching we're good here
+                _detach_question(runner)
 
 
 def main(sysargs=None):

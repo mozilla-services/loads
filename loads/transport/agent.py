@@ -126,7 +126,9 @@ class Agent(object):
             args = data['args']
             run_id = data.get('run_id')
             pid = self._run(args, run_id)
-            return __({'result': {'pid': pid, 'worker_id': str(os.getpid())}})
+            return __({'result': {'pid': pid,
+                                  'worker_id': str(os.getpid()),
+                                  'command': command}})
 
         elif command == 'STATUS':
             status = {}
@@ -141,7 +143,8 @@ class Agent(object):
                 else:
                     status[pid] = 'terminated'
 
-            return __({'result': status})
+            return __({'result': {'status': status,
+                                  'command': command}})
         elif command == 'STOP':
             status = {}
             for pid, (proc, run_id) in self._processes.items():
@@ -150,7 +153,8 @@ class Agent(object):
                     del self._processes[pid]
                 status[pid] = 'terminated'
 
-            return __({'result': status})
+            return __({'result': {'status': status,
+                                  'command': command}})
 
         raise NotImplementedError()
 
