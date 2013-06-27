@@ -82,6 +82,13 @@ class FunctionalTest(TestCase):
         assert runner.test_result.nb_errors == 0
         assert runner.test_result.nb_failures == 0
 
+    def test_duration_updates_counters(self):
+        runner = Runner(get_runner_args(
+            fqn='loads.examples.test_blog.TestWebSite.test_concurrency',
+            output=['null'], duration=1.))
+        runner.execute()
+        assert runner.test_result.nb_success > 2
+
 
 class DistributedFunctionalTest(TestCase):
     def setUp(self):
