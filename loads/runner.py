@@ -110,8 +110,10 @@ class Runner(object):
                     gevent.sleep(0)
         else:
             def spawn_test():
+                cycle = 0
                 while True:
-                    loads_status = 0, user, 0, num
+                    cycle = cycle + 1
+                    loads_status = 0, user, cycle, num
                     test(loads_status=loads_status)
                     gevent.sleep(0)
 
