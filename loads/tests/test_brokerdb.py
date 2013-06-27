@@ -49,6 +49,7 @@ class TestBrokerDB(unittest.TestCase):
         self.loop.close()
 
     def test_brokerdb(self):
+        self.assertEqual(list(self.db.get_data('swwqqsw')), [])
 
         def add_data():
             for line in _ONE_RUN:
