@@ -1,5 +1,3 @@
-import traceback
-
 import gevent
 
 from loads.util import resolve_name
