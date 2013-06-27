@@ -24,7 +24,7 @@ from loads.transport.util import (register_ipc_file, DEFAULT_FRONTEND,
 from loads.transport.heartbeat import Heartbeat
 from loads.transport.exc import DuplicateBrokerError
 from loads.transport.client import DEFAULT_TIMEOUT_MOVF
-from loads.db.brokerdb import BrokerDB
+from loads.db.brokerdb import BrokerDB, DEFAULT_DBDIR
 
 
 DEFAULT_IOTHREADS = 1
@@ -46,7 +46,8 @@ class Broker(object):
                  heartbeat=DEFAULT_HEARTBEAT, register=DEFAULT_REG,
                  io_threads=DEFAULT_IOTHREADS,
                  worker_timeout=DEFAULT_TIMEOUT_MOVF,
-                 receiver=DEFAULT_RECEIVER, publisher=DEFAULT_PUBLISHER):
+                 receiver=DEFAULT_RECEIVER, publisher=DEFAULT_PUBLISHER,
+                 dbdir=DEFAULT_DBDIR):
         # before doing anything, we verify if a broker is already up and
         # running
         logger.debug('Verifying if there is a running broker')
@@ -101,7 +102,7 @@ class Broker(object):
         self._runs = {}
 
         # local DB
-        self._db = BrokerDB(self.loop)
+        self._db = BrokerDB(self.loop, dbdir)
 
     def _remove_worker(self, worker_id):
         logger.debug('%r removed' % worker_id)
@@ -384,7 +385,10 @@ def main(args=sys.argv):
                         help="Use this option to purge ghost brokers.")
 
     parser.add_argument('--logfile', dest='logfile', default='stdout',
-                        help="File to log in to .")
+                        help="File to log in to.")
+
+    parser.add_argument('--db-directory', dest='dbdir', default=DEFAULT_DBDIR,
+                        help="Database Directory.")
 
     args = parser.parse_args()
     set_logger(args.debug, logfile=args.logfile)
@@ -416,7 +420,7 @@ def main(args=sys.argv):
         broker = Broker(frontend=args.frontend, backend=args.backend,
                         heartbeat=args.heartbeat, register=args.register,
                         receiver=args.receiver, publisher=args.publisher,
-                        io_threads=args.io_threads)
+                        io_threads=args.io_threads, dbdir=args.dbdir)
     except DuplicateBrokerError, e:
         logger.info('There is already a broker running on PID %s' % e)
         logger.info('Exiting')

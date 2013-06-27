@@ -1,4 +1,3 @@
-import tempfile
 import os
 from collections import defaultdict
 import json
@@ -7,15 +6,14 @@ from gevent.queue import Queue
 from zmq.green.eventloop import ioloop
 
 
+DEFAULT_DBDIR = os.path.join('/tmp', 'loads')
+
+
 class BrokerDB(object):
     """A simple DB that's synced on disc eventually
     """
-    def __init__(self, loop, directory=None, sync_delay=250):
-        if directory is None:
-            self.directory = tempfile.mkdtemp()
-        else:
-            self.directory = directory
-
+    def __init__(self, loop, directory, sync_delay=250):
+        self.directory = directory
         self._buffer = defaultdict(Queue)
         self.sync_delay = sync_delay
         self._callback = ioloop.PeriodicCallback(self.flush, self.sync_delay,

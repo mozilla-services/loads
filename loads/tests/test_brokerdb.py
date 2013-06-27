@@ -3,6 +3,7 @@ import time
 import os
 import shutil
 import json
+import tempfile
 
 from zmq.green.eventloop import ioloop
 from loads.db.brokerdb import BrokerDB
@@ -39,7 +40,8 @@ class TestBrokerDB(unittest.TestCase):
 
     def setUp(self):
         self.loop = ioloop.IOLoop()
-        self.db = BrokerDB(self.loop)
+        self.tmp = tempfile.mkdtemp()
+        self.db = BrokerDB(self.loop, self.tmp)
 
     def tearDown(self):
         shutil.rmtree(self.db.directory)
