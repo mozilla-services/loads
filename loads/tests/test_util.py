@@ -11,7 +11,7 @@ import gevent
 import loads
 from loads import util
 from loads.util import (resolve_name, set_logger, logger, dns_resolve,
-                        DateTimeJSONEncoder)
+                        DateTimeJSONEncoder, try_import)
 from loads.transport.util import (register_ipc_file, _cleanup_ipc_files, send,
                                   TimeoutError, recv, decode_params,
                                   dump_stacks)
@@ -135,3 +135,9 @@ class TestUtil(unittest.TestCase):
         self.assertEquals(encoder.encode(date), '"2013-05-30T18:35:11.550482"')
         self.assertEquals(encoder.encode(delta), '12.126509')
         self.assertRaises(TypeError, encoder.encode, gevent.socket)
+
+    def test_try_import(self):
+        try_import("loads")
+        try_import("loads.case", "loads.tests")
+        with self.assertRaises(ImportError):
+            try_import("loads.nonexistent1", "loads.nonexistent2")

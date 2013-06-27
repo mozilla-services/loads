@@ -170,7 +170,7 @@ def get_quantiles(data, quantiles):
     return [_get_quantile(q, data_len) for q in quantiles]
 
 
-def try_import(packages):
+def try_import(*packages):
     for package in packages:
         try:
             __import__(package)
