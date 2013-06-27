@@ -49,6 +49,11 @@ def start_servers():
     while len(client.list()) != 3:
         time.sleep(.1)
 
+    # control that the broker is responsive
+    client.ping()
+    for wid in client.list():
+        assert client.status(wid) == {}
+
     client.close()
     _RUNNING = True
 

@@ -67,6 +67,9 @@ class BrokerDB(object):
 
     def get_data(self, run_id):
         filename = os.path.join(self.directory, run_id)
-        with open(filename) as f:
-            for line in f:
-                yield json.loads(line)
+        if not os.path.exists(filename):
+            raise StopIteration()
+        else:
+            with open(filename) as f:
+                for line in f:
+                    yield json.loads(line)
