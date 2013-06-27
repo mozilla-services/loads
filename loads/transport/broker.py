@@ -181,7 +181,7 @@ class Broker(object):
         elif cmd == 'GET_DATA':
             # we send back the data we have in the db
             # XXX stream ?
-            db_data = self._db.get_data(data['run_id'])
+            db_data = list(self._db.get_data(data['run_id']))
             res = json.dumps({'result': db_data})
             self._frontstream.send_multipart(msg[:-1] + [res])
             return
