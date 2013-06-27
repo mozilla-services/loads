@@ -14,6 +14,9 @@ class BrokerDB(object):
     """
     def __init__(self, loop, directory, sync_delay=250):
         self.directory = directory
+        if not os.path.exists(self.directory):
+            os.makedirs(self.directory)
+
         self._buffer = defaultdict(Queue)
         self.sync_delay = sync_delay
         self._callback = ioloop.PeriodicCallback(self.flush, self.sync_delay,
