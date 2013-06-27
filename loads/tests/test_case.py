@@ -53,3 +53,12 @@ class TestTestCase(unittest.TestCase):
             self.assertEquals(test.server_url, 'http://notmyidea.org')
         finally:
             del _MyTestCase.server_url
+
+    def test_serverurl_is_not_overwrited_by_none(self):
+        _MyTestCase.server_url = 'http://example.org'
+        try:
+            test = _MyTestCase('test_one', test_result=mock.sentinel.results,
+                               config={'server_url': None})
+            self.assertEquals(test.server_url, 'http://example.org')
+        finally:
+            del _MyTestCase.server_url
