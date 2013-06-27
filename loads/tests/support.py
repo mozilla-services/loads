@@ -46,7 +46,7 @@ def get_runner_args(fqn, users=1, cycles=1, duration=None,
             'output': output}
 
     if duration is not None:
-        args['duration'] = str(duration)
+        args['duration'] = float(duration)
     else:
         args['cycles'] = str(cycles)
 
