@@ -22,7 +22,7 @@ clean:
 	rm -rf $(BUILD_DIRS)
 
 test: build
-	$(BIN)/pip install nose coverage circus mock flake8 paramiko boto
+	$(BIN)/pip install nose coverage circus mock flake8 paramiko boto unittest2
 	- $(BIN)/nosetests -s -d -v --cover-html --cover-html-dir=html --with-coverage --cover-erase --cover-package loads loads/tests
 	- $(BIN)/flake8 loads
 
