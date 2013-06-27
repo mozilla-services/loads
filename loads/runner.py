@@ -109,19 +109,18 @@ class Runner(object):
                     test(loads_status=loads_status)
                     gevent.sleep(0)
         else:
-            # duration-based
-            timeout = gevent.Timeout(self.duration)
-            timeout.start()
-            try:
-                while True and not self.stop:
+            def spawn_test():
+                while True:
                     loads_status = 0, user, 0, num
                     test(loads_status=loads_status)
                     gevent.sleep(0)
+
+            spawned_test = gevent.spawn(spawn_test)
+            timer = gevent.Timeout(self.duration).start()
+            try:
+                spawned_test.join(timeout=timer)
             except (gevent.Timeout, KeyboardInterrupt):
                 pass
-            finally:
-                self.stop = True
-                timeout.cancel()
 
     def _execute(self):
         """Spawn all the tests needed and wait for them to finish.
