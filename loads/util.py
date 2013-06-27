@@ -171,8 +171,12 @@ def get_quantiles(data, quantiles):
 
 
 def try_import(*packages):
+    failed_packages = []
     for package in packages:
         try:
             __import__(package)
         except ImportError:
-            raise ImportError('You need to run pip install "%s"' % package)
+            failed_packages.append(package)
+    if failed_packages:
+        failed_packages = " ".join(failed_packages)
+        raise ImportError('You need to run "pip install %s"' % failed_packages)
