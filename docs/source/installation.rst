@@ -6,7 +6,9 @@ Installation
 Prerequisites
 -------------
 
-Loads uses ZeroMQ and Gevent, so you need to have libzmq and libev on
+**Loads** is developed and tested with Python 2.7.
+
+**Loads** uses ZeroMQ and Gevent, so you need to have libzmq and libev on
 your system.
 
 Under Debuntu::
