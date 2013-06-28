@@ -39,13 +39,6 @@ class StdOutput(object):
         write = sys.stdout.write
         self._duration_progress()
         write("\nDuration: %.2f seconds" % self.results.duration)
-
-        if self.args.get('attach'):
-            write('\n')
-            sys.stdout.flush()
-            sys.stderr.flush()
-            return
-
         write("\nHits: %d" % self.results.nb_hits)
         write("\nStarted: %s" % self.results.start_time)
         write("\nApproximate Average RPS: %d" %
@@ -89,17 +82,6 @@ class StdOutput(object):
         self._duration_progress()
 
     def _duration_progress(self):
-        if self.args.get('attach'):
-            self.pos += 1
-            before = ' ' * self.pos
-            after = ' ' * (24 - self.pos)
-            bar = '[' + before + '=' + after + ']'
-            sys.stdout.write("\r%s" % bar)
-            sys.stdout.flush()
-            if self.pos == 24:
-                self.pos = 0
-            return
-
         duration = self.args.get('duration')
         if duration is not None:
             percent = int(float(self.results.duration)

@@ -56,10 +56,13 @@ def run(args):
                 # we need to pick one
                 raise NotImplementedError()
 
+            counts = client.get_counts(run_id)
+            metadata = client.get_metadata(run_id)
+
             logger.debug('Reattaching run %r' % run_id)
             started = datetime.utcfromtimestamp(started)
             try:
-                return runner.attach(run_id, started)
+                return runner.attach(run_id, started, counts, metadata)
             except KeyboardInterrupt:
                 _detach_question(runner)
         else:

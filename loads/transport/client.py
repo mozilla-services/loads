@@ -170,6 +170,13 @@ class Client(object):
     def get_data(self, run_id):
         return self.execute({'command': 'GET_DATA', 'run_id': run_id},
                             extract=False)
+    def get_counts(self, run_id):
+        return self.execute({'command': 'GET_COUNTS', 'run_id': run_id},
+                            extract=False)
+
+    def get_metadata(self, run_id):
+        return self.execute({'command': 'GET_METADATA', 'run_id': run_id},
+                            extract=False)
 
     def status(self, run_id):
         return self.execute({'command': 'STATUS', 'run_id': run_id})

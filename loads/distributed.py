@@ -6,7 +6,7 @@ from zmq.green.eventloop import ioloop, zmqstream
 from loads.runner import Runner
 from loads.transport.util import DEFAULT_PUBLISHER
 from loads.util import logger
-from loads.test_result import TestResult
+from loads.test_result import TestResult, LazyTestResult
 from loads.transport.client import Client
 
 
@@ -19,10 +19,10 @@ class DistributedRunner(Runner):
     in turn sent to the local test_result object.
     """
     def __init__(self, args):
+        self._test_result = None
         super(DistributedRunner, self).__init__(args)
         self.ended = self.hits = 0
         self.loop = self.run_id = None
-        self.test_result = TestResult()
 
         # socket where the results are published
         self.context = zmq.Context()
@@ -42,6 +42,20 @@ class DistributedRunner(Runner):
 
         for output in outputs:
             self.register_output(output)
+
+    @property
+    def test_result(self):
+        if self._test_result is None:
+            if self.args.get('attach', False):
+                self._test_result = LazyTestResult(args=self.args)
+            else:
+                self._test_result = TestResult(args=self.args)
+
+        return self._test_result
+
+    @test_result.setter
+    def test_result(self, value):
+        pass
 
     def _recv_result(self, msg):
         """When we receive some data from zeromq, send it to the test_result
@@ -87,9 +101,13 @@ class DistributedRunner(Runner):
         client = Client(self.args['broker'])
         client.stop_run(self.run_id)
 
-    def attach(self, run_id, started):
-
+    def attach(self, run_id, started, counts, args):
+        ## XXX add apis
+        self.test_result.args = args
         self.test_result.startTestRun(when=started)
+        self.test_result.set_counts(counts)
+        for output in self.outputs:
+            output.args = args
 
         cb = ioloop.PeriodicCallback(self.refresh, 100, self.loop)
         cb.start()

@@ -24,6 +24,18 @@ class BrokerDB(object):
         self._callback.start()
         self._counts = defaultdict(lambda: defaultdict(int))
         self._dirty = False
+        self._metadata = defaultdict(dict)
+
+    def save_metadata(self, run_id, metadata):
+        self._metadata[run_id] = metadata
+
+    def get_metadata(self, run_id):
+        filename = os.path.join(self.directory, run_id + '.metadata')
+        if os.path.exists(filename):
+            with open(filename) as f:
+                return dict(json.loads(f.read()))
+        else:
+            return self._metadata[run_id]
 
     def add(self, data):
         run_id = data.get('run_id')
@@ -54,6 +66,11 @@ class BrokerDB(object):
             counts.sort()
             with open(filename, 'w') as f:
                 f.write(json.dumps(counts))
+
+            # metadata
+            filename = os.path.join(self.directory, run_id + '.metadata')
+            with open(filename, 'w') as f:
+                f.write(json.dumps(self._metadata[run_id]))
 
         self._dirty = False
 

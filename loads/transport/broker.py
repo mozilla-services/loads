@@ -223,6 +223,16 @@ class Broker(object):
             res = json.dumps({'result': db_data})
             self._frontstream.send_multipart(msg[:-1] + [res])
             return
+        elif cmd == 'GET_COUNTS':
+            counts = self._db.get_counts(data['run_id'])
+            res = json.dumps({'result': counts})
+            self._frontstream.send_multipart(msg[:-1] + [res])
+            return
+        elif cmd == 'GET_METADATA':
+            metadata = self._db.get_metadata(data['run_id'])
+            res = json.dumps({'result': metadata})
+            self._frontstream.send_multipart(msg[:-1] + [res])
+            return
 
         # other commands below this point are for workers
         if tentative == 3:
@@ -264,6 +274,9 @@ class Broker(object):
             # send to every worker with the run_id
             data['run_id'] = run_id
             msg[2] = json.dumps(data)
+
+            # save the tests metadata in the db
+            self._db.save_metadata(run_id, data['args'])
 
             for worker_id in workers:
                 self._send_to_worker(worker_id, msg)

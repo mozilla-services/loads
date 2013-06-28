@@ -1,7 +1,7 @@
 import itertools
+from collections import defaultdict
 
 from datetime import datetime, timedelta
-
 from loads.util import get_quantiles
 
 
@@ -260,6 +260,52 @@ class TestResult(object):
             self.startTest(test, loads_status, worker_id)
 
         return self.tests[key]
+
+
+class LazyTestResult(TestResult):
+    def __init__(self, config=None, args=None):
+        super(LazyTestResult, self).__init__(config, args)
+        self.counts = defaultdict(int)
+
+    def set_counts(self, counts):
+        for key, value in counts.items():
+            self.counts[key] = value
+
+    @property
+    def nb_finished_tests(self):
+        return self.counts['stopTest']
+
+    @property
+    def nb_hits(self):
+        return self.counts['add_hit']
+
+    @property
+    def nb_failures(self):
+        return self.counts['addFailure']
+
+    @property
+    def nb_errors(self):
+        return self.counts['addError']
+
+    @property
+    def nb_success(self):
+        return self.counts['addSuccess']
+
+    @property
+    def errors(self):
+        raise NotImplementedError()
+
+    @property
+    def failures(self):
+        raise NotImplementedError()
+
+    @property
+    def urls(self):
+        raise NotImplementedError()
+
+    @property
+    def nb_tests(self):
+        return self.counts['startTest']
 
 
 class Hit(object):
