@@ -2,8 +2,10 @@ language: python
 python:
     - "2.7"
 before_install:
-    - sudo apt-get install -y libevent-dev python-gevent
+    - sudo apt-get install -y libev-dev 
 install:
+    - pip install cython --use-mirrors
+    - pip install https://github.com/surfly/gevent/archive/master.zip --use-mirrors
     - python setup.py develop
 script: make test
 notifications:

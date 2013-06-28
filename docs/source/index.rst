@@ -9,9 +9,7 @@ Welcome to Loads's documentation!
 
 **Loads** is a framework for load testing an HTTP service.
 
-Installation::
-
-    $ bin/pip install loads
+Its installation is explained in :ref:`installation`.
 
 
 **Loads** works like Funkload: load tests are classical
@@ -59,6 +57,7 @@ More documentation
 .. toctree::
    :maxdepth: 2
 
+   installation
    guide
    internals
    zmq-api

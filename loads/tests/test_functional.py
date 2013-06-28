@@ -10,10 +10,10 @@ import os
 import time
 import requests
 
-
-from unittest2 import TestCase
+from unittest2 import TestCase, skipIf
 
 from loads.main import run as start_runner
+from loads.runner import Runner
 from loads.tests.support import get_runner_args, start_process
 from loads.transport.client import Client
 
@@ -49,6 +49,11 @@ def start_servers():
     while len(client.list()) != 3:
         time.sleep(.1)
 
+    # control that the broker is responsive
+    client.ping()
+    for wid in client.list():
+        assert client.status(wid) == {}
+
     client.close()
     _RUNNING = True
 
@@ -58,15 +63,35 @@ class FunctionalTest(TestCase):
     def setUp(self):
         start_servers()
 
+    @skipIf('TRAVIS' in os.environ, 'Travis')
     def test_normal_run(self):
         start_runner(get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_something',
             output=['null']))
 
+    @skipIf('TRAVIS' in os.environ, 'Travis')
     def test_normal_run_with_users_and_cycles(self):
         start_runner(get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_something',
             output=['null'], users=10, cycles=5))
+
+    @skipIf('TRAVIS' in os.environ, 'Travis')
+    def test_concurent_session_access(self):
+        runner = Runner(get_runner_args(
+            fqn='loads.examples.test_blog.TestWebSite.test_concurrency',
+            output=['null'], users=10))
+        runner.execute()
+        assert runner.test_result.nb_success == 10
+        assert runner.test_result.nb_errors == 0
+        assert runner.test_result.nb_failures == 0
+
+    @skipIf('TRAVIS' in os.environ, 'Travis')
+    def test_duration_updates_counters(self):
+        runner = Runner(get_runner_args(
+            fqn='loads.examples.test_blog.TestWebSite.test_concurrency',
+            output=['null'], duration=1.))
+        runner.execute()
+        assert runner.test_result.nb_success > 2
 
 
 class DistributedFunctionalTest(TestCase):
@@ -74,6 +99,7 @@ class DistributedFunctionalTest(TestCase):
         start_servers()
         self.client = Client()
 
+    @skipIf('TRAVIS' in os.environ, 'Travis')
     def test_distributed_run(self):
         start_runner(get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_something',
@@ -85,6 +111,7 @@ class DistributedFunctionalTest(TestCase):
         data = self.client.get_data(runs.keys()[0])
         self.assertTrue(len(data) > 100)
 
+    @skipIf('TRAVIS' in os.environ, 'Travis')
     def test_distributed_run_duration(self):
         args = get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_something',

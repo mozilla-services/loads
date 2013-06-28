@@ -167,7 +167,7 @@ def main(sysargs=None):
         # second pass !
         config = Config(args.config)
         config_args = config.scan_args(parser, strip_prefixes=['loads'])
-        args = parser.parse_args(args=sysargs+config_args)
+        args = parser.parse_args(args=sysargs + config_args)
 
     if args.quiet and 'stdout' in args.output:
         args.output.remove('stdout')

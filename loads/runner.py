@@ -96,7 +96,12 @@ class Runner(object):
         finally:
             self.running = False
 
-    def _run(self, num, test, user):
+    def _run(self, num, user):
+        # creating the test case instance
+        test = self.test.im_class(test_name=self.test.__name__,
+                                  test_result=self.test_result,
+                                  config=self.args)
+
         if self.stop:
             return
 
@@ -107,35 +112,31 @@ class Runner(object):
                     test(loads_status=loads_status)
                     gevent.sleep(0)
         else:
-            # duration-based
-            timeout = gevent.Timeout(self.duration)
-            timeout.start()
-            try:
-                while True and not self.stop:
-                    loads_status = 0, user, 0, num
+            def spawn_test():
+                cycle = 0
+                while True:
+                    cycle = cycle + 1
+                    loads_status = 0, user, cycle, num
                     test(loads_status=loads_status)
                     gevent.sleep(0)
+
+            spawned_test = gevent.spawn(spawn_test)
+            timer = gevent.Timeout(self.duration).start()
+            try:
+                spawned_test.join(timeout=timer)
             except (gevent.Timeout, KeyboardInterrupt):
                 pass
-            finally:
-                self.stop = True
-                timeout.cancel()
 
     def _execute(self):
         """Spawn all the tests needed and wait for them to finish.
         """
+        exception = None
         try:
             from gevent import monkey
             monkey.patch_all()
 
             if not hasattr(self.test, 'im_class'):
                 raise ValueError(self.test)
-
-            # creating the test case instance
-            klass = self.test.im_class
-            ob = klass(test_name=self.test.__name__,
-                       test_result=self.test_result,
-                       server_url=self.args.get('server_url'))
 
             worker_id = self.args.get('worker_id', None)
 
@@ -146,7 +147,7 @@ class Runner(object):
                 if self.stop:
                     break
 
-                group = [gevent.spawn(self._run, i, ob, user)
+                group = [gevent.spawn(self._run, i, user)
                          for i in range(user)]
                 gevent.joinall(group)
 
@@ -154,14 +155,20 @@ class Runner(object):
             self.test_result.stopTestRun(worker_id)
         except KeyboardInterrupt:
             pass
+        except Exception as e:
+            exception = e
         finally:
             # be sure we flush the outputs that need it.
             # but do it only if we are in "normal" mode
-            if not self.slave:
-                self.flush()
-            else:
-                # in slave mode, be sure to close the zmq relay.
-                self.test_result.close()
+            try:
+                if not self.slave:
+                    self.flush()
+                else:
+                    # in slave mode, be sure to close the zmq relay.
+                    self.test_result.close()
+            finally:
+                if exception:
+                    raise exception
 
     def flush(self):
         for output in self.outputs:
