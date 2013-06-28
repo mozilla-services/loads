@@ -28,8 +28,8 @@ clean:
 
 test: build
 	$(BIN)/pip install nose coverage circus mock flake8 paramiko boto unittest2
-	- $(BIN)/nosetests -s -d -v --cover-html --cover-html-dir=html --with-coverage --cover-erase --cover-package loads loads/tests
-	- $(BIN)/flake8 loads
+	$(BIN)/flake8 loads
+	$(BIN)/nosetests -s -d -v --cover-html --cover-html-dir=html --with-coverage --cover-erase --cover-package loads loads/tests
 
 bin/sphinx-build:
 	bin/pip install Sphinx
