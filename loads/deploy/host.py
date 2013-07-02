@@ -42,9 +42,10 @@ class Host(object):
         sftp = paramiko.SFTPClient.from_transport(self.client.get_transport())
         self.sftp = sftp
         self.root = root
-        self.curdir = root
+        self.curdir = None
         if self.root is not '/tmp':
             self.execute('mkdir -p %s' % self.root)
+        self.curdir = root
 
     def chdir(self, dir):
         self.curdir = os.path.join(self.root, dir)
