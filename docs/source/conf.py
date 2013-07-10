@@ -9,7 +9,12 @@ release = '0.1'
 exclude_patterns = []
 pygments_style = 'sphinx'
 
-html_theme = 'default'
+import mozilla_sphinx_theme
+import os
+
+html_theme_path = [os.path.dirname(mozilla_sphinx_theme.__file__)]
+
+html_theme = 'mozilla'
 html_static_path = ['_static']
 htmlhelp_basename = 'Loadsdoc'
 
