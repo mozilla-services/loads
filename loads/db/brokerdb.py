@@ -33,7 +33,7 @@ class BrokerDB(object):
         filename = os.path.join(self.directory, run_id + '-metadata.json')
         if os.path.exists(filename):
             with open(filename) as f:
-                return dict(json.loads(f.read()))
+                return json.load(f)
         else:
             return self._metadata[run_id]
 
@@ -58,19 +58,19 @@ class BrokerDB(object):
 
             with open(filename, 'a+') as f:
                 for i in range(qsize - 1):
-                    f.write(json.dumps(queue.get()) + '\n')
+                    json.dump(queue.get() + '\n', f)
 
             # counts
             filename = os.path.join(self.directory, run_id + '-counts.json')
             counts = dict(self._counts[run_id]).items()
             counts.sort()
             with open(filename, 'w') as f:
-                f.write(json.dumps(counts))
+                json.dump(counts, f)
 
             # metadata
             filename = os.path.join(self.directory, run_id + '-metadata.json')
             with open(filename, 'w') as f:
-                f.write(json.dumps(self._metadata[run_id]))
+                json.dump(self._metadata[run_id], f)
 
         self._dirty = False
 
@@ -81,7 +81,7 @@ class BrokerDB(object):
         filename = os.path.join(self.directory, run_id + '-counts.json')
         if os.path.exists(filename):
             with open(filename) as f:
-                return dict(json.loads(f.read()))
+                return json.load(f)
         else:
             return dict(self._counts[run_id])
 
