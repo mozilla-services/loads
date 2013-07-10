@@ -36,7 +36,8 @@ class DistributedRunner(Runner):
         self.loop = ioloop.IOLoop()
         self.zstream = zmqstream.ZMQStream(self.pull, self.loop)
         self.zstream.on_recv(self._recv_result)
-        self.outputs = self.workers = []
+        self.outputs = []
+        self.workers = []
 
         outputs = args.get('output', ['stdout'])
 
