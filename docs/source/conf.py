@@ -7,7 +7,6 @@ copyright = u'2013, Mozilla Services'
 version = '0.1'
 release = '0.1'
 exclude_patterns = []
-pygments_style = 'sphinx'
 
 import mozilla_sphinx_theme
 import os

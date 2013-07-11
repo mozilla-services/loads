@@ -43,13 +43,21 @@ class TestCase(unittest.TestCase):
         else:
             self.app = FakeTestApp()
 
+        self._ws = []
+
     def defaultTestResult(self):
         return TestResult()
 
     def create_ws(self, url, callback, protocols=None, extensions=None):
         from loads.websockets import create_ws
-        return create_ws(url, callback, self._test_result, protocols,
-                         extensions)
+        ws = create_ws(url, callback, self._test_result, protocols, extensions)
+        self._ws.append(ws)
+        return ws
+
+    def tearDown(self):
+        for ws in self._ws:
+            if ws._th.dead:
+                ws._th.get()  # re-raise any exception swallowed
 
     def run(self, result=None, loads_status=None):
         if (loads_status is not None
