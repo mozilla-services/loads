@@ -17,7 +17,7 @@ class LoadsHost(Host):
                '--force-yes install %s')
 
         for package in packages:
-            self.execute(cmd % package,  ignore_error=True)
+            self.execute(cmd % package, ignore_error=True)
 
     def check_circus(self, endpoint):
         cmd = 'cd %s;' % self.venv
