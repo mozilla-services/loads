@@ -5,7 +5,7 @@ from loads.deploy.host import Host, ExecuteError
 class LoadsHost(Host):
 
     def __init__(self, host, port, user, password=None, root='/tmp',
-                 key=None, venv='loads'):
+                 key=None, venv='loads-venv'):
         Host.__init__(self, host, port, user, password, root, key)
         self.venv = os.path.join(root, venv)
 
@@ -30,17 +30,18 @@ class LoadsHost(Host):
 
     def create_env(self):
         # deploying the latest Loads repo - if needed
-        check = '[ -d "loads" ] && echo 1 || echo 0'
+        check = '[ -d "%s" ] && echo 1 || echo 0' % self.venv
         res = self.execute(check, prefixed=False)[0].strip()
         if res == '0':
-            cmd = 'git clone https://github.com/mozilla-services/loads'
+            cmd = 'git clone https://github.com/mozilla-services/loads '
+            cmd += self.venv
             self.execute(cmd)
         else:
-            cmd = 'cd loads; git pull'
+            cmd = 'cd %s; git pull' % self.venv
             self.execute(cmd)
 
         # changing directory
-        self.chdir('loads')
+        self.chdir(self.venv)
 
         # building the virtualenv in a dedicated tmp file
         locations = ('/usr/bin', '/usr/local/bin')
