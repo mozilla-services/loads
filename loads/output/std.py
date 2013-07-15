@@ -1,6 +1,5 @@
 import array
 import sys
-import random
 import traceback
 
 from loads.relay import ZMQRelay

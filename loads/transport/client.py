@@ -170,6 +170,7 @@ class Client(object):
     def get_data(self, run_id):
         return self.execute({'command': 'GET_DATA', 'run_id': run_id},
                             extract=False)
+
     def get_counts(self, run_id):
         return self.execute({'command': 'GET_COUNTS', 'run_id': run_id},
                             extract=False)

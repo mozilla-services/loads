@@ -21,7 +21,7 @@ from loads.transport.util import (register_ipc_file, DEFAULT_FRONTEND,
                                   DEFAULT_BACKEND, DEFAULT_HEARTBEAT,
                                   DEFAULT_REG, verify_broker,
                                   kill_ghost_brokers, DEFAULT_RECEIVER,
-                                  DEFAULT_PUBLISHER, extract_result)
+                                  DEFAULT_PUBLISHER)
 from loads.transport.heartbeat import Heartbeat
 from loads.transport.exc import DuplicateBrokerError
 from loads.transport.client import DEFAULT_TIMEOUT_MOVF
@@ -152,7 +152,6 @@ class Broker(object):
                                           'run_id': run_id})]
 
             self._send_to_worker(worker_id, status_msg)
-
 
     def _check_worker(self, worker_id):
         # box-specific, will do better later XXX

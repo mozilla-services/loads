@@ -17,7 +17,6 @@ from loads.distributed import DistributedRunner
 from loads.transport.client import Client
 
 
-
 def _detach_question(runner):
     res = ''
     while res not in ('s', 'd'):
@@ -189,7 +188,6 @@ def main(sysargs=None):
     if args.fqn is None and not args.attach:
         parser.print_usage()
         sys.exit(0)
-
 
     # deploy on amazon
     if args.aws:
