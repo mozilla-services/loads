@@ -9,17 +9,17 @@ Prerequisites
 **Loads** is developed and tested with Python 2.7.
 
 **Loads** uses ZeroMQ and Gevent, so you need to have libzmq and libev on
-your system.
+your system. You also need the Python headers.
 
 Under Debuntu::
 
-    $ sudo apt-get install libev-dev libzmq-dev
+    $ sudo apt-get install libev-dev libzmq-dev python-dev
 
 And under Mac OS X, using Brew::
 
     $ brew install libev
     $ brew install zeromq
-
+    $ brew install python
 
 Make sure you have a C compiler, and then pip::
 
