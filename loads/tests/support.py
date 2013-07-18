@@ -1,3 +1,4 @@
+import os
 import functools
 import sys
 import StringIO
@@ -87,11 +88,30 @@ def stop_clusters():
         cl.stop()
 
 
+_files = []
+
+
+def rm_onexit(path):
+    _files.append(path)
+
+
+def cleanup_files():
+    for _file in _files:
+        if os.path.exists(_file):
+            os.remove(_file)
+
+
 atexit.register(stop_clusters)
+atexit.register(cleanup_files)
 
 
 def get_cluster(timeout=5., movf=1., ovf=1, **kw):
     logger.debug('getting cluster')
+    rm_onexit('/tmp/f-tests-cluster')
+    rm_onexit('/tmp/b-tests-cluster')
+    rm_onexit('/tmp/h-tests-cluster')
+    rm_onexit('/tmp/r-tests-cluster')
+
     front = 'ipc:///tmp/f-tests-cluster'
     back = 'ipc:///tmp/b-tests-cluster'
     hb = 'ipc:///tmp/h-tests-cluster'
