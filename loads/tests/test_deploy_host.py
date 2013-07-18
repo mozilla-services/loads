@@ -16,6 +16,7 @@ def start_ssh_server():
     global _RUNNING
     if _RUNNING:
         return
+
     start_process('loads.tests.ssh_server')
     tries = 0
     while True:
@@ -25,7 +26,7 @@ def start_ssh_server():
             tries += 1
             if tries >= 5:
                 raise
-            time.sleep(.1)
+            time.sleep(.2)
         else:
             break
 

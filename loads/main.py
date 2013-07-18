@@ -3,6 +3,7 @@ import sys
 import logging
 import traceback
 import os
+from datetime import datetime
 
 from konfig import Config
 
@@ -13,18 +14,63 @@ from loads.transport.util import (DEFAULT_FRONTEND, DEFAULT_RECEIVER,
                                   DEFAULT_PUBLISHER)
 from loads.runner import Runner
 from loads.distributed import DistributedRunner
+from loads.transport.client import Client
+
+
+def _detach_question(runner):
+    res = ''
+    while res not in ('s', 'd'):
+        res = raw_input('Do you want to (s)top the test or (d)etach ? ')
+        res = res.lower().strip()
+        if len(res) > 1:
+            res = res[0]
+    if res == 's':
+        runner.cancel()
 
 
 def run(args):
-    if args.get('agents') is None or args.get('slave'):
+    is_slave = args.get('slave', False)
+    has_agents = args.get('agents', None)
+    attach = args.get('attach', False)
+    if not attach and (is_slave or not has_agents):
         try:
             return Runner(args).execute()
         except Exception:
             print traceback.format_exc()
             raise
     else:
-        logger.debug('Summoning %d agents' % args['agents'])
-        return DistributedRunner(args).execute()
+        runner = DistributedRunner(args)
+
+        if attach:
+            # find out what's running
+            client = Client(args['broker'])
+            runs = client.list_runs()
+
+            if len(runs) == 0:
+                raise ValueError("Nothing is running")
+            elif len(runs) == 1:
+                run_id, run_data = runs.items()[0]
+                __, started = run_data[-1]
+            else:
+                # we need to pick one
+                raise NotImplementedError()
+
+            counts = client.get_counts(run_id)
+            metadata = client.get_metadata(run_id)
+
+            logger.debug('Reattaching run %r' % run_id)
+            started = datetime.utcfromtimestamp(started)
+            try:
+                return runner.attach(run_id, started, counts, metadata)
+            except KeyboardInterrupt:
+                _detach_question(runner)
+        else:
+            logger.debug('Summoning %d agents' % args['agents'])
+
+            try:
+                return runner.execute()
+            except KeyboardInterrupt:
+                _detach_question(runner)
 
 
 def main(sysargs=None):
@@ -100,6 +146,9 @@ def main(sysargs=None):
     parser.add_argument('--aws-test-dir', help='Test dir to embark',
                         default=None)
 
+    parser.add_argument('--attach', help='Reattach to a run',
+                        action='store_true', default=False)
+
     # per-output options
     for output in output_list():
         for option, value in output.options.items():
@@ -136,7 +185,7 @@ def main(sysargs=None):
         print(__version__)
         sys.exit(0)
 
-    if args.fqn is None:
+    if args.fqn is None and not args.attach:
         parser.print_usage()
         sys.exit(0)
 

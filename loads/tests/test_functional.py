@@ -16,6 +16,7 @@ from loads.main import run as start_runner
 from loads.runner import Runner
 from loads.tests.support import get_runner_args, start_process
 from loads.transport.client import Client
+from loads.transport.util import DEFAULT_FRONTEND
 
 
 _EXAMPLES_DIR = os.path.join(os.path.dirname(__file__), os.pardir, 'examples')
@@ -39,7 +40,7 @@ def start_servers():
             requests.get('http://0.0.0.0:9000')
             break
         except requests.ConnectionError:
-            time.sleep(.3)
+            time.sleep(.5)
             tries += 1
             if tries > 3:
                 raise
@@ -52,7 +53,8 @@ def start_servers():
     # control that the broker is responsive
     client.ping()
     for wid in client.list():
-        assert client.status(wid) == {}
+        status = client.status(wid)['status']
+        assert status == {}, status
 
     client.close()
     _RUNNING = True
@@ -122,6 +124,46 @@ class DistributedFunctionalTest(TestCase):
 
         start_runner(args)
         time.sleep(1.)
+        runs = self.client.list_runs()
+        try:
+            data = self.client.get_data(runs.keys()[0])
+        except Exception:
+            data = self.client.get_data(runs.keys()[0])
+        self.assertTrue(len(data) > 10)
+
+    @skipIf('TRAVIS' in os.environ, 'Travis')
+    def test_distributed_detach(self):
+        args = get_runner_args(
+            fqn='loads.examples.test_blog.TestWebSite.test_something',
+            agents=1,
+            #output=['null'],
+            users=10,
+            duration=2)
+
+        # simulate a ctrl+c
+        def _recv(self, msg):
+            raise KeyboardInterrupt
+
+        from loads.distributed import DistributedRunner
+        old = DistributedRunner._recv_result
+        DistributedRunner._recv_result = _recv
+
+        # simulate a 'detach' answer
+        def _raw_input(msg):
+            return 'd'
+
+        from loads import main
+        main.raw_input = _raw_input
+
+        # start the runner
+        start_runner(args)
+        time.sleep(1.)
+
+        # now reattach the console
+        DistributedRunner._recv_result = old
+        start_runner({'attach': True, 'broker': DEFAULT_FRONTEND,
+                      'output': ['null']})
+
         runs = self.client.list_runs()
         try:
             data = self.client.get_data(runs.keys()[0])

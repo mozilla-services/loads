@@ -30,16 +30,16 @@ class StdOutput(object):
     def __init__(self, test_result, args):
         self.results = test_result
         self.args = args
-        self.current = 0
+        self.pos = self.current = 0
         self.starting = None
         self._terminal_width = get_terminal_width()
 
     def flush(self):
-        self._duration_progress()
         write = sys.stdout.write
+        self._duration_progress()
+        write("\nDuration: %.2f seconds" % self.results.duration)
         write("\nHits: %d" % self.results.nb_hits)
         write("\nStarted: %s" % self.results.start_time)
-        write("\nDuration: %.2f seconds" % self.results.duration)
         write("\nApproximate Average RPS: %d" %
               self.results.requests_per_second())
         write("\nAverage request time: %.2fs" %
