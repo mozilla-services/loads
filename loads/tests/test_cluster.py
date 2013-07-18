@@ -79,6 +79,6 @@ class TestCluster(unittest.TestCase):
         while res == {}:
             res = client.stop(worker_id)
 
-        self.assertEqual(res.values(), ['terminated'])
+        self.assertEqual(res['status'].values(), ['terminated'])
 
         # todo: plug the zmq streamer and test it
