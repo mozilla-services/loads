@@ -366,7 +366,7 @@ class Broker(object):
 
         # running the cleaner
         self.cleaner = ioloop.PeriodicCallback(self._clean, 1000, self.loop)
-        #self.cleaner.start()
+        self.cleaner.start()
 
         self.started = True
         while self.started:
@@ -398,7 +398,7 @@ class Broker(object):
         self.pong.stop()
 
         logger.debug('Stopping the cleaner')
-        #self.cleaner.stop()
+        self.cleaner.stop()
 
         logger.debug('Stopping the loop')
         self.loop.stop()
