@@ -263,49 +263,32 @@ class TestResult(object):
 
 
 class LazyTestResult(TestResult):
+
+    properties = {'nb_finished_tests': 'stopTest',
+                  'nb_hits': 'add_hit',
+                  'nb_failures': 'addFailure',
+                  'nb_errors': 'addError',
+                  'nb_success': 'addSuccess',
+                  'nb_tests': 'startTest'}
+
+    not_implemented = ('errors', 'failures', 'urls')
+
     def __init__(self, config=None, args=None):
         super(LazyTestResult, self).__init__(config, args)
         self.counts = defaultdict(int)
 
+    def __getattr_(self, name):
+        if name in self.not_implemented:
+            raise NotImplementedError()
+
+        if name in self.properties:
+            return self.counts[self.properties[name]]
+
+        raise AttributeError(name)
+
     def set_counts(self, counts):
         for key, value in counts:
             self.counts[key] = value
-
-    @property
-    def nb_finished_tests(self):
-        return self.counts['stopTest']
-
-    @property
-    def nb_hits(self):
-        return self.counts['add_hit']
-
-    @property
-    def nb_failures(self):
-        return self.counts['addFailure']
-
-    @property
-    def nb_errors(self):
-        return self.counts['addError']
-
-    @property
-    def nb_success(self):
-        return self.counts['addSuccess']
-
-    @property
-    def errors(self):
-        raise NotImplementedError()
-
-    @property
-    def failures(self):
-        raise NotImplementedError()
-
-    @property
-    def urls(self):
-        raise NotImplementedError()
-
-    @property
-    def nb_tests(self):
-        return self.counts['startTest']
 
 
 class Hit(object):

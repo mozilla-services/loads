@@ -99,7 +99,6 @@ class DistributedRunner(Runner):
         client.stop_run(self.run_id)
 
     def attach(self, run_id, started, counts, args):
-        ## XXX add apis
         self.test_result.args = args
         self.test_result.startTestRun(when=started)
         self.test_result.set_counts(counts)
@@ -113,7 +112,7 @@ class DistributedRunner(Runner):
         try:
             self.loop.start()
         finally:
-            # end..
+            # end
             cb.stop()
             self.test_result.stopTestRun()
             self.context.destroy()
