@@ -49,8 +49,8 @@ def run(args):
             if len(runs) == 0:
                 raise ValueError("Nothing is running")
             elif len(runs) == 1:
-                run_id = runs.keys()[0]
-                started = runs.values()[0][-1][-1]
+                run_id, run_data = runs.items()[0]
+                __, started = run_data[-1]
             else:
                 # we need to pick one
                 raise NotImplementedError()
