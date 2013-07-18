@@ -54,10 +54,6 @@ class DistributedRunner(Runner):
 
         return self._test_result
 
-    @test_result.setter
-    def test_result(self, value):
-        pass
-
     def _recv_result(self, msg):
         """When we receive some data from zeromq, send it to the test_result
            for later use."""
