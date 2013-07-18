@@ -7,10 +7,11 @@ import traceback
 import argparse
 import os
 import time
-import psutil
 import json
 from uuid import uuid4
 from collections import defaultdict
+
+import psutil
 
 import zmq.green as zmq
 from zmq.green.eventloop import ioloop, zmqstream
@@ -106,9 +107,12 @@ class Broker(object):
 
     def _remove_worker(self, worker_id):
         logger.debug('%r removed' % worker_id)
-        self._workers.remove(worker_id)
+        if worker_id in self._workers:
+            self._workers.remove(worker_id)
+
         if worker_id in self._worker_times:
             del self._worker_times[worker_id]
+
         if worker_id in self._runs:
             del self._runs[worker_id]
 
@@ -120,7 +124,8 @@ class Broker(object):
         data = json.loads(msg[0])
         worker_id = str(data.get('worker_id'))
         if worker_id in self._runs:
-            data['run_id'] = self._runs[worker_id]
+            data['run_id'], data['started'] = self._runs[worker_id]
+
         self._db.add(data)
 
     def _handle_reg(self, msg):
@@ -133,18 +138,30 @@ class Broker(object):
                 self._remove_worker(msg[1])
 
     def _associate(self, run_id, workers):
+        when = time.time()
+
         for worker_id in workers:
-            self._runs[worker_id] = run_id
+            self._runs[worker_id] = run_id, when
+
+    def _clean(self):
+        # XXX here we want to check out the runs
+        # and cleanup _run given the status of the run
+        # on each worker
+        for worker_id, (run_id, when) in self._runs.items():
+            status_msg = ['', json.dumps({'command': 'STATUS',
+                                          'run_id': run_id})]
+
+            self._send_to_worker(worker_id, status_msg)
 
     def _check_worker(self, worker_id):
         # box-specific, will do better later XXX
         exists = psutil.pid_exists(int(worker_id))
         if not exists:
             logger.debug('The worker %r is gone' % worker_id)
+            self._remove_worker(worker_id)
             return False
 
         if worker_id in self._worker_times:
-
             start, stop = self._worker_times[worker_id]
             if stop is not None:
                 duration = start - stop
@@ -172,17 +189,47 @@ class Broker(object):
             return
         elif cmd == 'LISTRUNS':
             runs = defaultdict(list)
-            for worker_id, run_id in self._runs.items():
-                runs[run_id].append(worker_id)
+            for worker_id, (run_id, when) in self._runs.items():
+                runs[run_id].append((worker_id, when))
             res = json.dumps({'result': runs})
             self._frontstream.send_multipart(msg[:-1] + [res])
             return
+        elif cmd == 'STOPRUN':
+            workers = []
+            run_id = data['run_id']
+            for worker_id, (_run_id, when) in self._runs.items():
+                if run_id != _run_id:
+                    continue
+                workers.append(worker_id)
 
+            # now we have a list of workers to stop
+            stop_msg = msg[:-1] + [json.dumps({'command': 'STOP'})]
+
+            for worker_id in workers:
+                self._send_to_worker(worker_id, stop_msg)
+
+            # we give back the list of workers we stopped
+            res = json.dumps({'result': workers})
+            self._frontstream.send_multipart(msg[:-1] + [res])
+
+            # and force a clean
+            self._clean()
+            return
         elif cmd == 'GET_DATA':
             # we send back the data we have in the db
             # XXX stream ?
             db_data = list(self._db.get_data(data['run_id']))
             res = json.dumps({'result': db_data})
+            self._frontstream.send_multipart(msg[:-1] + [res])
+            return
+        elif cmd == 'GET_COUNTS':
+            counts = self._db.get_counts(data['run_id'])
+            res = json.dumps({'result': counts})
+            self._frontstream.send_multipart(msg[:-1] + [res])
+            return
+        elif cmd == 'GET_METADATA':
+            metadata = self._db.get_metadata(data['run_id'])
+            res = json.dumps({'result': metadata})
             self._frontstream.send_multipart(msg[:-1] + [res])
             return
 
@@ -215,9 +262,7 @@ class Broker(object):
 
             while len(workers) < data['agents']:
                 worker_id = random.choice(available)
-                if not self._check_worker(worker_id):
-                    self._remove_worker(worker_id)
-                else:
+                if self._check_worker(worker_id):
                     workers.append(worker_id)
                     available.remove(worker_id)
 
@@ -225,7 +270,13 @@ class Broker(object):
             run_id = str(uuid4())
             self._associate(run_id, workers)
 
-            # send to every worker
+            # send to every worker with the run_id
+            data['run_id'] = run_id
+            msg[2] = json.dumps(data)
+
+            # save the tests metadata in the db
+            self._db.save_metadata(run_id, data['args'])
+
             for worker_id in workers:
                 self._send_to_worker(worker_id, msg)
 
@@ -241,9 +292,7 @@ class Broker(object):
 
             while not found_worker and len(self._workers) > 0:
                 worker_id = random.choice(self._workers)
-                if not self._check_worker(worker_id):
-                    self._remove_worker(worker_id)
-                else:
+                if self._check_worker(worker_id):
                     found_worker = True
 
             if not found_worker:
@@ -285,6 +334,11 @@ class Broker(object):
         msg = msg[1:]
         now = time.time()
 
+        # grabbing the data to update the broker status
+        #data = json.loads(extract_result(msg[-1])[-1])['result']
+        #if data.get('command') == 'STATUS':
+        #    import pdb; pdb.set_trace()
+        #print 'received from back ' + str(data)
         if worker_id in self._worker_times:
             start, stop = self._worker_times[worker_id]
             self._worker_times[worker_id] = start, now
@@ -309,6 +363,10 @@ class Broker(object):
 
         # running the heartbeat
         self.pong.start()
+
+        # running the cleaner
+        self.cleaner = ioloop.PeriodicCallback(self._clean, 1000, self.loop)
+        self.cleaner.start()
 
         self.started = True
         while self.started:
@@ -335,10 +393,16 @@ class Broker(object):
             return
 
         self._backstream.flush()
+
         logger.debug('Stopping the heartbeat')
         self.pong.stop()
+
+        logger.debug('Stopping the cleaner')
+        self.cleaner.stop()
+
         logger.debug('Stopping the loop')
         self.loop.stop()
+
         self.started = False
         self.context.destroy(0)
 

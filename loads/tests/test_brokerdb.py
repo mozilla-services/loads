@@ -77,7 +77,7 @@ class TestBrokerDB(unittest.TestCase):
 
         for type_ in ('addSuccess', 'stopTestRun', 'stopTest',
                       'startTest', 'startTestRun', 'add_hit'):
-            self.assertEqual(counts[type_], 1)
+            self.assertEqual(dict(counts)[type_], 1)
 
         data3 = list(self.db.get_data('1'))
         data3.sort()

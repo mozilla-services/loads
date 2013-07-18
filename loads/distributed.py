@@ -6,7 +6,7 @@ from zmq.green.eventloop import ioloop, zmqstream
 from loads.runner import Runner
 from loads.transport.util import DEFAULT_PUBLISHER
 from loads.util import logger
-from loads.test_result import TestResult
+from loads.test_result import TestResult, LazyTestResult
 from loads.transport.client import Client
 
 
@@ -21,8 +21,8 @@ class DistributedRunner(Runner):
     def __init__(self, args):
         super(DistributedRunner, self).__init__(args)
         self.ended = self.hits = 0
-        self.loop = None
-        self.test_result = TestResult()
+        self.loop = self.run_id = None
+        self._test_result = None
 
         # socket where the results are published
         self.context = zmq.Context()
@@ -37,11 +37,22 @@ class DistributedRunner(Runner):
         self.zstream = zmqstream.ZMQStream(self.pull, self.loop)
         self.zstream.on_recv(self._recv_result)
         self.outputs = []
+        self.workers = []
 
         outputs = args.get('output', ['stdout'])
 
         for output in outputs:
             self.register_output(output)
+
+    @property
+    def test_result(self):
+        if self._test_result is None:
+            if self.args.get('attach', False):
+                self._test_result = LazyTestResult(args=self.args)
+            else:
+                self._test_result = TestResult(args=self.args)
+
+        return self._test_result
 
     def _recv_result(self, msg):
         """When we receive some data from zeromq, send it to the test_result
@@ -71,11 +82,37 @@ class DistributedRunner(Runner):
         try:
             client = Client(self.args['broker'])
             logger.debug('Calling the broker...')
-            client.run(self.args)
+            res = client.run(self.args)
+            self.run_id = res['run_id']
+            self.workers = res['workers']
             logger.debug('Waiting for results')
             self.loop.start()
         finally:
             # end..
+            cb.stop()
+            self.test_result.stopTestRun()
+            self.context.destroy()
+            self.flush()
+
+    def cancel(self):
+        client = Client(self.args['broker'])
+        client.stop_run(self.run_id)
+
+    def attach(self, run_id, started, counts, args):
+        self.test_result.args = args
+        self.test_result.startTestRun(when=started)
+        self.test_result.set_counts(counts)
+        for output in self.outputs:
+            output.args = args
+
+        cb = ioloop.PeriodicCallback(self.refresh, 100, self.loop)
+        cb.start()
+
+        self.run_id = run_id
+        try:
+            self.loop.start()
+        finally:
+            # end
             cb.stop()
             self.test_result.stopTestRun()
             self.context.destroy()

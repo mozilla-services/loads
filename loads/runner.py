@@ -51,8 +51,11 @@ class Runner(object):
     """
     def __init__(self, args):
         self.args = args
-        self.fqn = args['fqn']
-        self.test = resolve_name(self.fqn)
+        self.fqn = args.get('fqn')
+        if self.fqn is not None:
+            self.test = resolve_name(self.fqn)
+        else:
+            self.test = None
         self.slave = 'slave' in args
         self.outputs = []
         self.stop = False
@@ -67,15 +70,19 @@ class Runner(object):
 
         # If we are in slave mode, set the test_result to a 0mq relay
         if self.slave:
-            self.test_result = ZMQRelay(self.args)
+            self._test_result = ZMQRelay(self.args)
 
         # The normal behavior is to collect the results locally.
         else:
-            self.test_result = TestResult(args=self.args)
+            self._test_result = TestResult(args=self.args)
 
         if not self.slave:
             for output in self.args.get('output', ['stdout']):
                 self.register_output(output)
+
+    @property
+    def test_result(self):
+        return self._test_result
 
     def register_output(self, output_name):
         output = create_output(output_name, self.test_result, self.args)
