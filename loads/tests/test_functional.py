@@ -39,7 +39,7 @@ def start_servers():
             requests.get('http://0.0.0.0:9000')
             break
         except requests.ConnectionError:
-            time.sleep(.3)
+            time.sleep(.5)
             tries += 1
             if tries > 3:
                 raise
@@ -52,7 +52,8 @@ def start_servers():
     # control that the broker is responsive
     client.ping()
     for wid in client.list():
-        assert client.status(wid) == {}
+        status = client.status(wid)['status']
+        assert status == {}, status
 
     client.close()
     _RUNNING = True
