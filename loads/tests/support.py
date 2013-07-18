@@ -3,9 +3,11 @@ import sys
 import StringIO
 import subprocess
 import atexit
+import time
 
 from loads.transport.util import DEFAULT_FRONTEND
-
+from loads.transport import get_cluster as getcl, client
+from loads.util import logger
 
 _processes = []
 
@@ -75,3 +77,41 @@ def hush(func):
             sys.stdout = old_stdout
             sys.stderr = old_stderr
     return _silent
+
+
+_clusters = []
+
+
+def stop_clusters():
+    for cl in _clusters:
+        cl.stop()
+
+
+atexit.register(stop_clusters)
+
+
+def get_cluster(timeout=5., movf=1., ovf=1, **kw):
+    logger.debug('getting cluster')
+    front = 'ipc:///tmp/f-tests-cluster'
+    back = 'ipc:///tmp/b-tests-cluster'
+    hb = 'ipc:///tmp/h-tests-cluster'
+    reg = 'ipc:///tmp/r-tests-cluster'
+    cl = getcl(frontend=front, backend=back, heartbeat=hb,
+               register=reg,
+               numprocesses=1, background=True, debug=False,
+               timeout=movf, **kw)
+
+    cl.start()
+    time.sleep(1.)  # stabilization
+    _clusters.append(cl)
+    logger.debug('cluster ready')
+    cli = client.Pool(size=3, frontend=front, debug=True,
+                      timeout=timeout,
+                      timeout_max_overflow=movf,
+                      timeout_overflows=ovf)
+    workers = cli.list()
+    while len(workers) != 1:
+        time.sleep(1.)
+        workers = cli.list()
+
+    return cli, cl
