@@ -19,10 +19,10 @@ class DistributedRunner(Runner):
     in turn sent to the local test_result object.
     """
     def __init__(self, args):
-        self._test_result = None
         super(DistributedRunner, self).__init__(args)
         self.ended = self.hits = 0
         self.loop = self.run_id = None
+        self._test_result = None
 
         # socket where the results are published
         self.context = zmq.Context()

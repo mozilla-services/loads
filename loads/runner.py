@@ -51,7 +51,7 @@ class Runner(object):
     """
     def __init__(self, args):
         self.args = args
-        self.fqn = args['fqn']
+        self.fqn = args.get('fqn')
         if self.fqn is not None:
             self.test = resolve_name(self.fqn)
         else:

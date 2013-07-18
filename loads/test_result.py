@@ -268,7 +268,7 @@ class LazyTestResult(TestResult):
         self.counts = defaultdict(int)
 
     def set_counts(self, counts):
-        for key, value in counts.items():
+        for key, value in counts:
             self.counts[key] = value
 
     @property
