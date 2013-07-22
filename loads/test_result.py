@@ -74,18 +74,18 @@ class TestResult(object):
     def nb_tests(self):
         return len(self.tests)
 
-    def _get_hits(self, url=None, hit=None):
+    def _get_hits(self, url=None, series=None):
         """Filters the hits with the given parameters.
 
         :param url:
             The url you want to filter with. Only the hits targetting this URL
             will be returned.
 
-        :param hit:
-            Only the hits done during this hit will be returned.
+        :param series:
+            Only the hits done during this series will be returned.
         """
         def _filter(_hit):
-            if hit is not None and _hit.hit != hit:
+            if series is not None and _hit.series != series:
                 return False
 
             if url is not None and _hit.url != url:
@@ -95,14 +95,14 @@ class TestResult(object):
 
         return filter(_filter, self.hits)
 
-    def _get_tests(self, name=None, hit=None, finished=None, user=None):
+    def _get_tests(self, name=None, series=None, finished=None, user=None):
         """Filters the tests with the given parameters.
 
         :param name:
             The name of the test you want to filter on.
 
-        :param hit:
-            The hit key you want to filter on.
+        :param series:
+            The series key you want to filter on.
 
         :param finished:
             Return only the finished or unfinished tests
@@ -113,7 +113,7 @@ class TestResult(object):
         def _filter(test):
             if name is not None and test.name != name:
                 return False
-            if hit is not None and test.hit != hit:
+            if series is not None and test.series != series:
                 return False
             if finished is not None and test.finished != finished:
                 return False
@@ -121,32 +121,32 @@ class TestResult(object):
 
         return filter(_filter, self.tests.values())
 
-    def average_request_time(self, url=None, hit=None):
+    def average_request_time(self, url=None, series=None):
         """Computes the average time a request takes (in ms)
 
         :param url:
             The url we want to know the average request time. Could be
             `None` if you want to get the overall average time of a request.
-        :param hit:
-            You can filter by the hit, to only know the average request time
-            during a particular hit.
+        :param series:
+            You can filter by the series, to only know the average request time
+            during a particular series.
         """
         elapsed = [total_seconds(h.elapsed)
-                   for h in self._get_hits(url, hit)]
+                   for h in self._get_hits(url, series)]
 
         if elapsed:
             return float(sum(elapsed)) / len(elapsed)
         else:
             return 0
 
-    def get_request_time_quantiles(self, url=None, hit=None):
+    def get_request_time_quantiles(self, url=None, series=None):
         elapsed = [total_seconds(h.elapsed)
-                   for h in self._get_hits(url=url, hit=hit)]
+                   for h in self._get_hits(url=url, series=series)]
 
         # XXX Cache these results, they might be long to compute.
         return get_quantiles(elapsed, (0, 0.1, 0.5, 0.9, 1))
 
-    def hits_success_rate(self, url=None, hit=None):
+    def hits_success_rate(self, url=None, series=None):
         """Returns the success rate for the filtered hits.
 
         (A success is a hit with a status code of 2XX or 3XX).
@@ -154,7 +154,7 @@ class TestResult(object):
         :param url: the url to filter on.
         :param hit: the hit to filter on.
         """
-        hits = list(self._get_hits(url, hit))
+        hits = list(self._get_hits(url, series))
         success = [h for h in hits if 200 <= h.status < 400]
 
         if hits:
@@ -166,14 +166,14 @@ class TestResult(object):
         delta = self.stop_time - self.start_time
         return self.nb_tests / total_seconds(delta)
 
-    def average_test_duration(self, test=None, hit=None):
-        durations = [t.duration for t in self._get_tests(test, hit)
+    def average_test_duration(self, test=None, series=None):
+        durations = [t.duration for t in self._get_tests(test, series)
                      if t is not None]
         if durations:
             return float(sum(durations)) / len(durations)
 
-    def test_success_rate(self, test=None, hit=None):
-        rates = [t.success_rate for t in self._get_tests(test, hit)]
+    def test_success_rate(self, test=None, series=None):
+        rates = [t.success_rate for t in self._get_tests(test, series)]
         if rates:
             return sum(rates) / len(rates)
         return 1
@@ -307,7 +307,7 @@ class Hit(object):
         self.elapsed = elapsed
 
         loads_status = loads_status or (None, None, None, None)
-        (self.hit, self.user, self.current_hit,
+        (self.series, self.user, self.current_hit,
          self.current_user) = loads_status
 
         self.worker_id = worker_id
