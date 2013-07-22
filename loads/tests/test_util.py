@@ -2,7 +2,7 @@ from tempfile import mkstemp
 import datetime
 import mock
 import os
-import unittest
+import unittest2 as unittest
 import sys
 
 import zmq

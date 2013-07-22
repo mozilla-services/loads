@@ -1,0 +1,9 @@
+nose
+circus
+flake8
+paramiko
+boto
+mock
+unittest2
+cython
+https://github.com/surfly/gevent/archive/1.0rc2.tar.gz

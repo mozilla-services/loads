@@ -35,12 +35,18 @@ def set_logger(debug=False, name='loads', logfile='stdout'):
     logger_.addHandler(ch)
 
 
+def total_seconds(td):
+    # works for 2.7 and 2.6
+    diff = (td.seconds + td.days * 24 * 3600) * 10 ** 6
+    return (td.microseconds + diff) / float(10 ** 6)
+
+
 class DateTimeJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, datetime.datetime):
             return obj.isoformat()
         elif isinstance(obj, datetime.timedelta):
-            return obj.total_seconds()
+            return total_seconds(obj)
         else:
             return super(DateTimeJSONEncoder, self).default(obj)
 
