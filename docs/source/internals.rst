@@ -38,8 +38,8 @@ What happens during a non-distributed run
    there is a need to disambiguate the calls, a loads_status object is passed
    along.
 
-   It contains data about the cycles, the total number of users, the current
-   user and the current cycle.
+   It contains data about the hits, the total number of users, the current
+   user and the current hit.
 
 7. Each time a call is made to the test_result object to add data, it notifies
    its list of observers to be sure they are up to date. This is helpful to

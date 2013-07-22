@@ -33,7 +33,7 @@ def stop_processes():
 atexit.register(stop_processes)
 
 
-def get_runner_args(fqn, users=1, cycles=1, duration=None,
+def get_runner_args(fqn, users=1, hits=1, duration=None,
                     agents=None,
                     broker=DEFAULT_FRONTEND, test_runner=None,
                     server_url='http://localhost:9000',
@@ -51,7 +51,7 @@ def get_runner_args(fqn, users=1, cycles=1, duration=None,
     if duration is not None:
         args['duration'] = float(duration)
     else:
-        args['cycles'] = str(cycles)
+        args['hits'] = str(hits)
 
     return args
 
