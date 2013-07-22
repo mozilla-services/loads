@@ -63,7 +63,7 @@ Now, try to run it using 100 virtual users (-u), each of them running the test
 
 Congrats, you've just sent a load of 1000 hits, using 100 concurrent threads.
 
-Now let's run a series 10, 20 then 30 users, each one running 20 hits::
+Now let's run a series of 10, 20 then 30 users, each one running 20 hits::
 
     $ bin/loads-runner loads.examples.test_blog.TestWebSite.test_something --hits 20 -u 10:20:30
 
