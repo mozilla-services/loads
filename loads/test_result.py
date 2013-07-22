@@ -2,7 +2,7 @@ import itertools
 from collections import defaultdict
 
 from datetime import datetime, timedelta
-from loads.util import get_quantiles
+from loads.util import get_quantiles, total_seconds
 
 
 class TestResult(object):
@@ -43,7 +43,7 @@ class TestResult(object):
         if self.start_time is None:
             return 0
 
-        return (end - self.start_time).total_seconds()
+        return total_seconds(end - self.start_time)
 
     @property
     def nb_failures(self):
@@ -132,7 +132,7 @@ class TestResult(object):
             You can filter by the cycle, to only know the average request time
             during a particular cycle.
         """
-        elapsed = [h.elapsed.total_seconds()
+        elapsed = [total_seconds(h.elapsed)
                    for h in self._get_hits(url, cycle)]
 
         if elapsed:
@@ -141,7 +141,7 @@ class TestResult(object):
             return 0
 
     def get_request_time_quantiles(self, url=None, cycle=None):
-        elapsed = [h.elapsed.total_seconds()
+        elapsed = [total_seconds(h.elapsed)
                    for h in self._get_hits(url=url, cycle=cycle)]
 
         # XXX Cache these results, they might be long to compute.
@@ -164,8 +164,8 @@ class TestResult(object):
             return 0
 
     def tests_per_second(self):
-        return (self.nb_tests /
-                (self.stop_time - self.start_time).total_seconds())
+        delta = self.stop_time - self.start_time
+        return self.nb_tests / total_seconds(delta)
 
     def average_test_duration(self, test=None, cycle=None):
         durations = [t.duration for t in self._get_tests(test, cycle)
@@ -337,7 +337,7 @@ class Test(object):
     @property
     def duration(self):
         if self.end is not None:
-            return (self.end - self.start).total_seconds()
+            return total_seconds(self.end - self.start)
         else:
             return 0
 

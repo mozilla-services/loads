@@ -264,7 +264,13 @@ class SSHServer(paramiko.ServerInterface):
             else:
                 print cmd
                 try:
-                    result = subprocess.check_output(cmd, shell=True)
+                    if hasattr(subprocess, 'check_output'):
+                        result = subprocess.check_output(cmd, shell=True)
+                    else:
+                        result = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                                  shell=True)
+                        result = result.communicate()[0]
+
                     chan.send(result.replace('\n', '\r\n'))
                     chan.send_exit_status(0)
                 except subprocess.CalledProcessError, e:
