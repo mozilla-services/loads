@@ -152,7 +152,7 @@ class TestTestResult(TestCase):
         test_result = TestResult()
 
         test_result.tests['bacon', 1] = Test(name='bacon', series=1)
-        test_result.tests['bacon', 2] = Test(name='bacon',series=2)
+        test_result.tests['bacon', 2] = Test(name='bacon', series=2)
         test_result.tests['spam', 2] = Test(name='spam', series=2)
 
         self.assertEquals(len(test_result._get_tests(name='bacon', series=2)),
