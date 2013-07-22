@@ -1,0 +1,9 @@
+:concrete.mozilla.org NOTICE AUTH :*** Looking up your hostname...
+:concrete.mozilla.org NOTICE AUTH :*** Found your hostname (cached)
+:concrete.mozilla.org 001 loads :Welcome to the Mozilla IRC Network loads!loads@some.ip
+:concrete.mozilla.org 002 loads :Your host is concrete.mozilla.org, running version Unreal3.2.8
+:concrete.mozilla.org 376 loads :End of /MOTD command.
+:concrete.mozilla.org 332 loads #services-dev :Services team technical discussion -- enter the chamber and be blessed.
+:concrete.mozilla.org 333 loads #services-dev joe 1328040340
+:concrete.mozilla.org 353 loads = #services-dev :loads bill sarah
+:concrete.mozilla.org 366 loads #services-dev :End of /NAMES list.
