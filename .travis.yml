@@ -7,7 +7,7 @@ before_install:
 install:
     - pip install -r test-requirements.txt --use-mirrors
     - python setup.py develop
-script: flake8 circus && nosetests -sv loads/tests
+script: flake8 loads && nosetests -sv loads/tests
 notifications:
     email:
         - tarek@mozilla.com
