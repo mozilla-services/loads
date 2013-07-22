@@ -119,6 +119,9 @@ def main(sysargs=None):
     parser.add_argument('--zmq-publisher', default=DEFAULT_PUBLISHER,
                         help='Socket where the results are published.')
 
+    parser.add_argument('--observer', action='append',
+                        help='Callable that will receive the final results.')
+
     outputs = [st.name for st in output_list()]
     outputs.sort()
 

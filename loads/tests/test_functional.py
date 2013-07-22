@@ -20,6 +20,15 @@ from loads.transport.util import DEFAULT_FRONTEND
 
 
 _EXAMPLES_DIR = os.path.join(os.path.dirname(__file__), os.pardir, 'examples')
+_RESULTS = []
+
+
+def observer(results, conf):
+    _RESULTS.append(results)
+
+
+def observer_fail(results, conf):
+    raise ValueError("Boom")
 
 
 def start_servers():
@@ -99,6 +108,18 @@ class FunctionalTest(TestCase):
         runner.execute()
         nb_success = runner.test_result.nb_success
         assert nb_success > 2, nb_success
+
+    def test_observer(self):
+        runner = Runner(get_runner_args(
+            fqn='loads.examples.test_blog.TestWebSite.test_concurrency',
+            output=['null'], duration=1.,
+            observers=['loads.tests.test_functional.observer',
+                       'loads.tests.test_functional.observer_fail']))
+
+        runner.execute()
+        assert _RESULTS[0].nb_success > 2
+
+>>>>>>> added the observer option
 
     def test_distributed_run(self):
         start_runner(get_runner_args(
