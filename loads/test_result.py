@@ -74,36 +74,35 @@ class TestResult(object):
     def nb_tests(self):
         return len(self.tests)
 
-    def _get_hits(self, url=None, cycle=None):
+    def _get_hits(self, url=None, series=None):
         """Filters the hits with the given parameters.
 
         :param url:
             The url you want to filter with. Only the hits targetting this URL
             will be returned.
 
-        :param cycle:
-            Only the hits done during this cycle will be returned.
+        :param series:
+            Only the hits done during this series will be returned.
         """
-
-        def _filter(hit):
-            if cycle is not None and hit.cycle != cycle:
+        def _filter(_hit):
+            if series is not None and _hit.series != series:
                 return False
 
-            if url is not None and hit.url != url:
+            if url is not None and _hit.url != url:
                 return False
 
             return True
 
         return filter(_filter, self.hits)
 
-    def _get_tests(self, name=None, cycle=None, finished=None, user=None):
+    def _get_tests(self, name=None, series=None, finished=None, user=None):
         """Filters the tests with the given parameters.
 
         :param name:
             The name of the test you want to filter on.
 
-        :param cycle:
-            The cycle key you want to filter on.
+        :param series:
+            The series key you want to filter on.
 
         :param finished:
             Return only the finished or unfinished tests
@@ -114,7 +113,7 @@ class TestResult(object):
         def _filter(test):
             if name is not None and test.name != name:
                 return False
-            if cycle is not None and test.cycle != cycle:
+            if series is not None and test.series != series:
                 return False
             if finished is not None and test.finished != finished:
                 return False
@@ -122,40 +121,40 @@ class TestResult(object):
 
         return filter(_filter, self.tests.values())
 
-    def average_request_time(self, url=None, cycle=None):
+    def average_request_time(self, url=None, series=None):
         """Computes the average time a request takes (in ms)
 
         :param url:
             The url we want to know the average request time. Could be
             `None` if you want to get the overall average time of a request.
-        :param cycle:
-            You can filter by the cycle, to only know the average request time
-            during a particular cycle.
+        :param series:
+            You can filter by the series, to only know the average request time
+            during a particular series.
         """
         elapsed = [total_seconds(h.elapsed)
-                   for h in self._get_hits(url, cycle)]
+                   for h in self._get_hits(url, series)]
 
         if elapsed:
             return float(sum(elapsed)) / len(elapsed)
         else:
             return 0
 
-    def get_request_time_quantiles(self, url=None, cycle=None):
+    def get_request_time_quantiles(self, url=None, series=None):
         elapsed = [total_seconds(h.elapsed)
-                   for h in self._get_hits(url=url, cycle=cycle)]
+                   for h in self._get_hits(url=url, series=series)]
 
         # XXX Cache these results, they might be long to compute.
         return get_quantiles(elapsed, (0, 0.1, 0.5, 0.9, 1))
 
-    def hits_success_rate(self, url=None, cycle=None):
+    def hits_success_rate(self, url=None, series=None):
         """Returns the success rate for the filtered hits.
 
         (A success is a hit with a status code of 2XX or 3XX).
 
         :param url: the url to filter on.
-        :param cycle: the cycle to filter on.
+        :param hit: the hit to filter on.
         """
-        hits = list(self._get_hits(url, cycle))
+        hits = list(self._get_hits(url, series))
         success = [h for h in hits if 200 <= h.status < 400]
 
         if hits:
@@ -167,19 +166,19 @@ class TestResult(object):
         delta = self.stop_time - self.start_time
         return self.nb_tests / total_seconds(delta)
 
-    def average_test_duration(self, test=None, cycle=None):
-        durations = [t.duration for t in self._get_tests(test, cycle)
+    def average_test_duration(self, test=None, series=None):
+        durations = [t.duration for t in self._get_tests(test, series)
                      if t is not None]
         if durations:
             return float(sum(durations)) / len(durations)
 
-    def test_success_rate(self, test=None, cycle=None):
-        rates = [t.success_rate for t in self._get_tests(test, cycle)]
+    def test_success_rate(self, test=None, series=None):
+        rates = [t.success_rate for t in self._get_tests(test, series)]
         if rates:
             return sum(rates) / len(rates)
         return 1
 
-    def requests_per_second(self, url=None, cycle=None):
+    def requests_per_second(self, url=None, hit=None):
         if self.duration == 0:
             return 0
         return float(len(self.hits)) / self.duration
@@ -198,13 +197,13 @@ class TestResult(object):
             self.stop_time = datetime.utcnow()
 
     def startTest(self, test, loads_status, worker_id=None):
-        cycle, user, current_cycle, current_user = loads_status
-        t = Test(name=test, cycle=cycle, user=user)
+        hit, user, current_hit, current_user = loads_status
+        t = Test(name=test, hit=hit, user=user)
         key = self._get_key(test, loads_status, worker_id)
         self.tests[key] = t
 
     def stopTest(self, test, loads_status, worker_id=None):
-        cycle, user, current_cycle, current_user = loads_status
+        hit, user, current_hit, current_user = loads_status
         t = self._get_test(test, loads_status, worker_id)
         t.end = datetime.utcnow()
 
@@ -308,7 +307,7 @@ class Hit(object):
         self.elapsed = elapsed
 
         loads_status = loads_status or (None, None, None, None)
-        (self.cycle, self.user, self.current_cycle,
+        (self.series, self.user, self.current_hit,
          self.current_user) = loads_status
 
         self.worker_id = worker_id
@@ -321,7 +320,7 @@ class Test(object):
         self.start = start or datetime.utcnow()
         self.end = None
         self.name = None
-        self.cycle = None
+        self.hit = None
         self.user = None
 
         self.failures = []

@@ -5,7 +5,7 @@
 # - normal local run
 # - normal distributed run
 # - run via nosetest
-# - run with cycles / users
+# - run with hits / users
 import os
 import time
 import requests
@@ -42,7 +42,7 @@ def start_servers():
         except requests.ConnectionError:
             time.sleep(.5)
             tries += 1
-            if tries > 3:
+            if tries > 5:
                 raise
 
     # wait for the broker to be up with 3 slaves.
@@ -72,10 +72,10 @@ class FunctionalTest(TestCase):
             output=['null']))
 
     @skipIf('TRAVIS' in os.environ, 'Travis')
-    def test_normal_run_with_users_and_cycles(self):
+    def test_normal_run_with_users_and_hits(self):
         start_runner(get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_something',
-            output=['null'], users=10, cycles=5))
+            output=['null'], users=10, hits=5))
 
     @skipIf('TRAVIS' in os.environ, 'Travis')
     def test_concurent_session_access(self):
@@ -107,7 +107,7 @@ class DistributedFunctionalTest(TestCase):
             fqn='loads.examples.test_blog.TestWebSite.test_something',
             agents=2,
             output=['null'],
-            users=1, cycles=10))
+            users=1, hits=10))
 
         runs = self.client.list_runs()
         data = self.client.get_data(runs.keys()[0])

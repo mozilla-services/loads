@@ -12,10 +12,11 @@ _3 = timedelta(seconds=3)
 class TestTestResult(TestCase):
 
     def _get_data(self, url='http://notmyidea.org', method='GET',
-                  status=200, started=None, elapsed=None, cycle=1, user=1,
-                  current_cycle=1, current_user=1):
+                  status=200, started=None, elapsed=None, series=1, user=1,
+                  current_hit=1, current_user=1):
         started = started or TIME1
-        loads_status = (cycle, user, current_cycle, current_user)
+        loads_status = series, user, current_hit, current_user
+
         return {'elapsed': elapsed or 0.2000,
                 'started': started,
                 'status': status,
@@ -60,24 +61,24 @@ class TestTestResult(TestCase):
         avg = test_result.average_request_time('http://another-one')
         self.assertEquals(avg, 3.0)
 
-    def test_average_request_time_with_cycle_filtering(self):
+    def test_average_request_time_with_series_filtering(self):
         test_result = TestResult()
-        test_result.add_hit(**self._get_data(elapsed=_1, cycle=1))
-        test_result.add_hit(**self._get_data(elapsed=_3, cycle=2))
-        test_result.add_hit(**self._get_data(elapsed=_2, cycle=3))
-        test_result.add_hit(**self._get_data(elapsed=_3, cycle=3))
+        test_result.add_hit(**self._get_data(elapsed=_1, series=1))
+        test_result.add_hit(**self._get_data(elapsed=_3, series=2))
+        test_result.add_hit(**self._get_data(elapsed=_2, series=3))
+        test_result.add_hit(**self._get_data(elapsed=_3, series=3))
 
-        avg = test_result.average_request_time(cycle=3)
+        avg = test_result.average_request_time(series=3)
         self.assertEquals(avg, 2.5)
 
         # try adding another filter on the URL
-        test_result.add_hit(**self._get_data(elapsed=_3, cycle=3,
+        test_result.add_hit(**self._get_data(elapsed=_3, series=3,
                                              url='http://another-one'))
-        avg = test_result.average_request_time(cycle=3,
+        avg = test_result.average_request_time(series=3,
                                                url='http://notmyidea.org')
         self.assertEquals(avg, 2.5)
 
-        self.assertEquals(test_result.average_request_time(cycle=3),
+        self.assertEquals(test_result.average_request_time(series=3),
                           2.6666666666666665)
 
     def test_average_request_time_when_no_data(self):
@@ -96,10 +97,10 @@ class TestTestResult(TestCase):
         test_result = TestResult()
         for x in range(4):
             test_result.add_hit(**self._get_data(status=200))
-        test_result.add_hit(**self._get_data(status=400, cycle=2))
+        test_result.add_hit(**self._get_data(status=400, series=2))
 
         self.assertEquals(test_result.hits_success_rate(), 0.8)
-        self.assertEquals(test_result.hits_success_rate(cycle=1), 1)
+        self.assertEquals(test_result.hits_success_rate(series=1), 1)
 
     def test_requests_per_second(self):
         test_result = TestResult()
@@ -129,32 +130,32 @@ class TestTestResult(TestCase):
         test_result.stop_time = TIME2
         self.assertTrue(0.16 < test_result.tests_per_second() < 0.17)
 
-    def test_get_tests_filters_cycles(self):
+    def test_get_tests_filters_series(self):
         test_result = TestResult()
 
-        test_result.tests['bacon', 1] = Test(name='bacon', cycle=1)
-        test_result.tests['egg', 1] = Test(name='egg', cycle=1)
-        test_result.tests['spam', 2] = Test(name='spam', cycle=2)
+        test_result.tests['bacon', 1] = Test(name='bacon', series=1)
+        test_result.tests['egg', 1] = Test(name='egg', series=1)
+        test_result.tests['spam', 2] = Test(name='spam', series=2)
 
-        self.assertEquals(len(test_result._get_tests(cycle=1)), 2)
+        self.assertEquals(len(test_result._get_tests(series=1)), 2)
 
     def test_get_tests_filters_names(self):
         test_result = TestResult()
 
-        test_result.tests['bacon', 1] = Test(name='bacon', cycle=1)
-        test_result.tests['bacon', 2] = Test(name='bacon', cycle=2)
-        test_result.tests['spam', 2] = Test(name='spam', cycle=2)
+        test_result.tests['bacon', 1] = Test(name='bacon', series=1)
+        test_result.tests['bacon', 2] = Test(name='bacon', series=2)
+        test_result.tests['spam', 2] = Test(name='spam', series=2)
 
         self.assertEquals(len(test_result._get_tests(name='bacon')), 2)
 
     def test_get_tests_filters_by_both_fields(self):
         test_result = TestResult()
 
-        test_result.tests['bacon', 1] = Test(name='bacon', cycle=1)
-        test_result.tests['bacon', 2] = Test(name='bacon', cycle=2)
-        test_result.tests['spam', 2] = Test(name='spam', cycle=2)
+        test_result.tests['bacon', 1] = Test(name='bacon', series=1)
+        test_result.tests['bacon', 2] = Test(name='bacon', series=2)
+        test_result.tests['spam', 2] = Test(name='spam', series=2)
 
-        self.assertEquals(len(test_result._get_tests(name='bacon', cycle=2)),
+        self.assertEquals(len(test_result._get_tests(name='bacon', series=2)),
                           1)
 
     def test_test_success_rate_when_not_started(self):
@@ -191,9 +192,9 @@ class TestHits(TestCase):
                 started=started,
                 elapsed=0.0,
                 loads_status=None)
-        self.assertEquals(h.cycle, None)
+        self.assertEquals(h.series, None)
         self.assertEquals(h.user, None)
-        self.assertEquals(h.cycle, None)
+        self.assertEquals(h.current_hit, None)
 
     def test_loads_status_extract_values(self):
         started = None
@@ -204,9 +205,9 @@ class TestHits(TestCase):
                 elapsed=0.0,
                 loads_status=(1, 2, 3, 4))
 
-        self.assertEquals(h.cycle, 1)
+        self.assertEquals(h.series, 1)
         self.assertEquals(h.user, 2)
-        self.assertEquals(h.current_cycle, 3)
+        self.assertEquals(h.current_hit, 3)
 
 
 class TestTest(TestCase):
