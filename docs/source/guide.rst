@@ -100,8 +100,6 @@ write a test that uses a web socket against it::
 
             self.assertEqual(results, ['something', 'happened'])
 
-XXX I'm actually unsure about the API we expose to test websockets. We should
-have a look at how others do it
 
 
 Using Loads with WebTest
@@ -151,9 +149,9 @@ Install Circus::
     $ bin/pip install circus
 
 And run it against the provided **loads.ini** configuration file that's
-located in the Loads source repository::
+located in the Loads source repository in **conf**::
 
-    $ bin/circusd --daemon loads.ini
+    $ bin/circusd --daemon conf/loads.ini
 
 Here is the content of the `loads.ini` file::
 
@@ -184,10 +182,58 @@ Let's use them now, with the **agents** option::
 Congrats, you have just sent 6000 hits from 5 different agents.
 
 
-Running on Amazon
-------------------
+Detach mode
+~~~~~~~~~~~
+
+When you are running in distributed mode a long test, you might want to detach
+the console and come back later to check your load test.
+
+You can simply hit Ctrl+C in order to do this. **Loads** will ask you if
+you want to detach the console and continue the test, or simply stop it::
+
+
+    [                                            ]   0%
+    Duration: 2.04 seconds
+    Hits: 964
+    Started: 2013-07-22 07:12:30.139814
+    Approximate Average RPS: 473
+    Average request time: 0.00s
+    Opened web sockets: 0
+    Bytes received via web sockets : 0
+
+    Success: 964
+    Errors: 0
+    Failures: 0
+
+    Do you want to (s)top the test or (d)etach ? d
+
+
+Then you can use **--attach** to reattach the console::
+
+    $ bin/loads-runner --attach
+    [                                       ]   4%
+    Duration: 43.68 seconds
+    Hits: 19233
+    Started: 2013-07-22 07:12:30.144859
+    Approximate Average RPS: 0
+    Average request time: 0.00s
+    Opened web sockets: 0
+    Bytes received via web sockets : 0
+
+    Success: 0
+    Errors: 0
+    Failures: 0
+
+    Do you want to (s)top the test or (d)etach ? s
+
+
+Running on Amazon Web Services
+------------------------------
+
+Running **Loads** on AWS requires you to have a dedicated AMI and security
+group
+
+**Loads** uses **boto** in order to provision new micro instances that will
+be used as nodes to run the tests.
 
 XXX
-
-
-
