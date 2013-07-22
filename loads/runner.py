@@ -41,10 +41,17 @@ def _compute_arguments(args):
 
 def _compute_observers(args):
     """Reads the arguments and returns an observers list"""
+    def _resolver(name):
+        try:
+            return resolve_name('loads.observers.%s' % name)
+        except ImportError:
+            return resolve_name(name)
+
     observers = args.get('observer')
     if observers is None:
         return []
-    return [resolve_name(observer) for observer in observers]
+
+    return [_resolver(observer) for observer in observers]
 
 
 class Runner(object):
