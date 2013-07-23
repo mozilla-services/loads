@@ -222,7 +222,7 @@ class SSHServer(paramiko.ServerInterface):
         return paramiko.AUTH_SUCCESSFUL
 
     def get_allowed_auths(self, username):
-        return 'password,publickey'
+        return 'none'
 
     def check_channel_shell_request(self, channel):
         self.shell.set()
