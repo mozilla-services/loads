@@ -10,7 +10,7 @@ class TestLoadsHost(unittest.TestCase):
 
     def setUp(self):
         start_ssh_server()
-        self.host = LoadsHost('0.0.0.0', 2200, 'tarek')
+        self.host = LoadsHost('0.0.0.0', 2200, 'tarek', 'xx')
         self.files = []
         self.dirs = []
 
@@ -26,7 +26,6 @@ class TestLoadsHost(unittest.TestCase):
         self.host.create_env()
         self.host.start_circus(cfg)
         time.sleep(.2)
-
         self.assertTrue(self.host.check_circus(endpoint))
         self.host.stop_circus()
         time.sleep(.2)

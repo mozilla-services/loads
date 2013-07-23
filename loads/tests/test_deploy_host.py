@@ -21,7 +21,7 @@ def start_ssh_server():
     tries = 0
     while True:
         try:
-            Host('0.0.0.0', 2200, 'tarek')
+            Host('0.0.0.0', 2200, 'tarek', 'xxx')
         except socket.error:
             tries += 1
             if tries >= 5:
@@ -35,31 +35,35 @@ def start_ssh_server():
 
 class TestHost(unittest.TestCase):
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         start_ssh_server()
-        self.host = Host('0.0.0.0', 2200, 'tarek')
-        self.files = []
-        self.dirs = []
+        cls.host = Host('0.0.0.0', 2200, 'tarek', 'xx')
+        cls.files = []
+        cls.dirs = []
 
-    def tearDown(self):
-        self.host.close()
-        for dir in self.dirs:
+    @classmethod
+    def tearDownClass(cls):
+        cls.host.close()
+        for dir in cls.dirs:
             if os.path.exists(dir):
                 shutil.rmtree(dir)
 
-        for file in self.files:
+        for file in cls.files:
             if os.path.exists(file):
                 os.remove(file)
 
-    def _get_file(self):
+    @classmethod
+    def _get_file(cls):
         fd, temp = tempfile.mkstemp()
         os.close(fd)
-        self.files.append(temp)
+        cls.files.append(temp)
         return temp
 
-    def _get_dir(self):
+    @classmethod
+    def _get_dir(cls):
         dir = tempfile.mkdtemp()
-        self.dirs.append(dir)
+        cls.dirs.append(dir)
         return dir
 
     @unittest.skipIf('TRAVIS' in os.environ, 'Travis')
@@ -97,7 +101,8 @@ class TestHost(unittest.TestCase):
     @unittest.skipIf('TRAVIS' in os.environ, 'Travis')
     def test_chdir(self):
         tmpdir = self._get_dir()
-        host = Host('localhost', 22, 'tarek', root=tmpdir)
+        host = Host('localhost', 2200, 'tarek', '',
+                    root=tmpdir)
         host.execute('mkdir subdir')
         host.chdir('subdir')
         host.execute('touch file')
