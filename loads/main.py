@@ -87,9 +87,9 @@ def main(sysargs=None):
     parser.add_argument('-u', '--users', help='Number of virtual users',
                         type=str, default='1')
 
-    # loads works with cycles or duration
+    # loads works with hits or duration
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('-c', '--cycles', help='Number of cycles per users',
+    group.add_argument('--hits', help='Number of hits per users',
                        type=str, default=None)
     group.add_argument('-d', '--duration', help='Duration of the test (s)',
                        type=int, default=None)

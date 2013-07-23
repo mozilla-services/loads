@@ -9,22 +9,22 @@ from loads.output import create_output
 def _compute_arguments(args):
     """
     Read the given :param args: and builds up the total number of runs, the
-    number of cycles, duration, users and agents to use.
+    number of hits, duration, users and agents to use.
 
-    Returns a tuple of (total, cycles, duration, users, agents).
+    Returns a tuple of (total, hits, duration, users, agents).
     """
     users = args.get('users', '1')
     if isinstance(users, str):
         users = users.split(':')
     users = [int(user) for user in users]
-    cycles = args.get('cycles')
+    hits = args.get('hits')
     duration = args.get('duration')
-    if duration is None and cycles is None:
-        cycles = '1'
+    if duration is None and hits is None:
+        hits = '1'
 
-    if cycles is not None:
-        if not isinstance(cycles, list):
-            cycles = [int(cycle) for cycle in cycles.split(':')]
+    if hits is not None:
+        if not isinstance(hits, list):
+            hits = [int(hit) for hit in hits.split(':')]
 
     agents = args.get('agents', 1)
 
@@ -32,11 +32,11 @@ def _compute_arguments(args):
     total = 0
     if duration is None:
         for user in users:
-            total += sum([cycle * user for cycle in cycles])
+            total += sum([hit * user for hit in hits])
         if agents is not None:
             total *= agents
 
-    return total, cycles, duration, users, agents
+    return total, hits, duration, users, agents
 
 
 class Runner(object):
@@ -60,10 +60,10 @@ class Runner(object):
         self.outputs = []
         self.stop = False
 
-        (self.total, self.cycles,
+        (self.total, self.hits,
          self.duration, self.users, self.agents) = _compute_arguments(args)
 
-        self.args['cycles'] = self.cycles
+        self.args['hits'] = self.hits
         self.args['users'] = self.users
         self.args['agents'] = self.agents
         self.args['total'] = self.total
@@ -110,17 +110,17 @@ class Runner(object):
             return
 
         if self.duration is None:
-            for cycle in self.cycles:
-                for current_cycle in range(cycle):
-                    loads_status = cycle, user, current_cycle + 1, num
+            for hit in self.hits:
+                for current_hit in range(hit):
+                    loads_status = hit, user, current_hit + 1, num
                     test(loads_status=loads_status)
                     gevent.sleep(0)
         else:
             def spawn_test():
-                cycle = 0
+                hit = 0
                 while True:
-                    cycle = cycle + 1
-                    loads_status = 0, user, cycle, num
+                    hit = hit + 1
+                    loads_status = 0, user, hit, num
                     test(loads_status=loads_status)
                     gevent.sleep(0)
 
