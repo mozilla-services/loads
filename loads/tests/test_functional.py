@@ -138,7 +138,7 @@ class DistributedFunctionalTest(TestCase):
             agents=1,
             #output=['null'],
             users=10,
-            duration=2)
+            duration=3)
 
         # simulate a ctrl+c
         def _recv(self, msg):
