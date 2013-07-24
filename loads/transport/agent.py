@@ -121,7 +121,6 @@ class Agent(object):
         # we get the message from the broker here
         data = message.data
         command = data['command']
-
         if command == 'RUN':
             args = data['args']
             run_id = data.get('run_id')
@@ -130,7 +129,7 @@ class Agent(object):
                                   'worker_id': str(os.getpid()),
                                   'command': command}})
 
-        elif command == 'STATUS':
+        elif command in ('STATUS', '_STATUS'):
             status = {}
             run_id = data.get('run_id')
 
