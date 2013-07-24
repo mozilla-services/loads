@@ -16,7 +16,8 @@ def get_cluster(numprocesses=5, frontend=DEFAULT_FRONTEND,
                 working_dir='.', logfile='stdout',
                 debug=False, background=False, worker_params=None,
                 timeout=DEFAULT_TIMEOUT_MOVF, max_age=DEFAULT_MAX_AGE,
-                max_age_delta=DEFAULT_MAX_AGE_DELTA):
+                max_age_delta=DEFAULT_MAX_AGE_DELTA,
+                wait=True):
     """Runs a Loads cluster.
 
     Options:
@@ -92,7 +93,7 @@ def get_cluster(numprocesses=5, frontend=DEFAULT_FRONTEND,
 
     # give a chance to all processes to start
     # XXX this should be in Circus
-    if background:
+    if background and wait:
         start = time.clock()
         while time.clock() - start < 5:
             statuses = [status == 'active' for status in
