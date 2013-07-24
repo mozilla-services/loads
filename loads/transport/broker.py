@@ -21,7 +21,8 @@ from loads.transport.util import (register_ipc_file, DEFAULT_FRONTEND,
                                   DEFAULT_BACKEND, DEFAULT_HEARTBEAT,
                                   DEFAULT_REG, verify_broker,
                                   kill_ghost_brokers, DEFAULT_RECEIVER,
-                                  DEFAULT_PUBLISHER)
+                                  DEFAULT_PUBLISHER,
+                                  extract_result)
 from loads.transport.heartbeat import Heartbeat
 from loads.transport.exc import DuplicateBrokerError
 from loads.transport.client import DEFAULT_TIMEOUT_MOVF
@@ -148,7 +149,7 @@ class Broker(object):
         # and cleanup _run given the status of the run
         # on each worker
         for worker_id, (run_id, when) in self._runs.items():
-            status_msg = ['', json.dumps({'command': 'STATUS',
+            status_msg = ['', json.dumps({'command': '_STATUS',
                                           'run_id': run_id})]
 
             self._send_to_worker(worker_id, status_msg)
@@ -182,7 +183,6 @@ class Broker(object):
         # this is used as a health check
         data = json.loads(msg[2])
         cmd = data['command']
-
         if cmd == 'PING':
             res = json.dumps({'result': os.getpid()})
             self._frontstream.send_multipart(msg[:-1] + [res])
@@ -335,16 +335,24 @@ class Broker(object):
         now = time.time()
 
         # grabbing the data to update the broker status
-        #data = json.loads(extract_result(msg[-1])[-1])['result']
-        #if data.get('command') == 'STATUS':
-        #    import pdb; pdb.set_trace()
-        #print 'received from back ' + str(data)
-        if worker_id in self._worker_times:
-            start, stop = self._worker_times[worker_id]
-            self._worker_times[worker_id] = start, now
-        else:
-            self._worker_times[worker_id] = now, now
+        data = json.loads(extract_result(msg[-1])[-1])['result']
+        if data.get('command') == '_STATUS':
+            statuses = data['status'].values()
+            if 'running' not in statuses:
+                # ended
+                if worker_id in self._worker_times:
+                    del self._worker_times[worker_id]
 
+                if worker_id in self._runs:
+                    del self._runs[worker_id]
+            else:
+                # not over
+                if worker_id in self._worker_times:
+                    start, stop = self._worker_times[worker_id]
+                    self._worker_times[worker_id] = start, now
+                else:
+                    self._worker_times[worker_id] = now, now
+            return
         try:
             self._frontstream.send_multipart(msg)
         except Exception, e:
@@ -365,7 +373,7 @@ class Broker(object):
         self.pong.start()
 
         # running the cleaner
-        self.cleaner = ioloop.PeriodicCallback(self._clean, 1000, self.loop)
+        self.cleaner = ioloop.PeriodicCallback(self._clean, 2500, self.loop)
         self.cleaner.start()
 
         self.started = True
