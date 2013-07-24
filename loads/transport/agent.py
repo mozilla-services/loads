@@ -14,14 +14,12 @@ import logging
 import threading
 import random
 import json
-import functools
 import subprocess
-from multiprocessing import Process
+import shlex
 
 import zmq.green as zmq
 from zmq.green.eventloop import ioloop, zmqstream
 
-from loads.main import run
 from loads.transport import util
 from loads.util import logger, set_logger
 from loads.transport.util import (DEFAULT_BACKEND,
@@ -108,8 +106,11 @@ class Agent(object):
                 test_runner_args = map(str, [args['test_runner']] + built_args)
                 p = subprocess.call(test_runner_args)
             else:
-                p = Process(target=functools.partial(run, args))
-                p.start()
+                cmd = 'from loads.main import run;'
+                cmd += 'run(%s)' % str(args)
+                cmd = sys.executable + ' -c "%s"' % cmd
+                cmd = shlex.split(cmd)
+                p = subprocess.Popen(cmd)
         except Exception, e:
             msg = 'Failed to start process ' + str(e)
             raise ExecutionError(msg)
@@ -121,7 +122,6 @@ class Agent(object):
         # we get the message from the broker here
         data = message.data
         command = data['command']
-
         if command == 'RUN':
             args = data['args']
             run_id = data.get('run_id')
@@ -130,7 +130,7 @@ class Agent(object):
                                   'worker_id': str(os.getpid()),
                                   'command': command}})
 
-        elif command == 'STATUS':
+        elif command in ('STATUS', '_STATUS'):
             status = {}
             run_id = data.get('run_id')
 
@@ -138,7 +138,7 @@ class Agent(object):
                 if run_id is not None and run_id != _run_id:
                     continue
 
-                if proc.is_alive():
+                if proc.poll() is None:
                     status[pid] = 'running'
                 else:
                     status[pid] = 'terminated'
@@ -148,7 +148,7 @@ class Agent(object):
         elif command == 'STOP':
             status = {}
             for pid, (proc, run_id) in self._processes.items():
-                if proc.is_alive():
+                if proc.poll() is None:
                     proc.terminate()
                     del self._processes[pid]
                 status[pid] = 'terminated'
@@ -160,7 +160,7 @@ class Agent(object):
 
     def _check_proc(self):
         for pid, (proc, run_id) in self._processes.items():
-            if not proc.is_alive():
+            if not proc.poll() is None:
                 del self._processes[pid]
 
     def _handle_recv_back(self, msg):
