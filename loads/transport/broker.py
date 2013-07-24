@@ -352,7 +352,7 @@ class Broker(object):
                     self._worker_times[worker_id] = start, now
                 else:
                     self._worker_times[worker_id] = now, now
-
+            return
         try:
             self._frontstream.send_multipart(msg)
         except Exception, e:
