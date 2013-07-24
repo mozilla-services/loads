@@ -24,15 +24,16 @@ def start_ssh_server():
             Host('0.0.0.0', 2200, 'tarek', 'xxx')
         except socket.error:
             tries += 1
-            if tries >= 5:
+            if tries >= 10:
                 raise
-            time.sleep(.2)
+            time.sleep(.1)
         else:
             break
 
     _RUNNING = True
 
 
+@unittest.skipIf('TRAVIS' in os.environ, 'Travis')
 class TestHost(unittest.TestCase):
 
     @classmethod
@@ -66,7 +67,6 @@ class TestHost(unittest.TestCase):
         cls.dirs.append(dir)
         return dir
 
-    @unittest.skipIf('TRAVIS' in os.environ, 'Travis')
     def test_execute_and_put(self):
         # now let's push a file
         temp = self._get_file()
@@ -81,7 +81,6 @@ class TestHost(unittest.TestCase):
         finally:
             os.remove(temp + '.newname')
 
-    @unittest.skipIf('TRAVIS' in os.environ, 'Travis')
     def test_put_dir(self):
         # creating a dir with 3 files
         dir = self._get_dir()
@@ -98,7 +97,6 @@ class TestHost(unittest.TestCase):
         files.sort()
         self.assertEqual(files, ['0', '1', '2'])
 
-    @unittest.skipIf('TRAVIS' in os.environ, 'Travis')
     def test_chdir(self):
         tmpdir = self._get_dir()
         host = Host('localhost', 2200, 'tarek', '',

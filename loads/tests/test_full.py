@@ -4,9 +4,11 @@ import gevent
 import subprocess
 import sys
 
+import requests
+import webtest
+
 from loads.case import TestCase
 from loads.tests.support import hush
-import webtest
 
 
 _HERE = os.path.dirname(__file__)
@@ -18,15 +20,27 @@ class TestWebSite(TestCase):
 
     server_url = 'http://localhost:9000'
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         devnull = open('/dev/null', 'w')
-        self._server = subprocess.Popen(_SERVER, stdout=devnull,
-                                        stderr=devnull)
-        time.sleep(.5)
+        cls._server = subprocess.Popen(_SERVER, stdout=devnull,
+                                       stderr=devnull)
+        # wait for the echo server to be started
+        tries = 0
+        while True:
+            try:
+                requests.get(cls.server_url)
+                break
+            except requests.ConnectionError:
+                time.sleep(.1)
+                tries += 1
+                if tries > 20:
+                    raise
 
-    def tearDown(self):
-        self._server.terminate()
-        self._server.wait()
+    @classmethod
+    def tearDownClass(cls):
+        cls._server.terminate()
+        cls._server.wait()
 
     @hush
     def test_something(self):

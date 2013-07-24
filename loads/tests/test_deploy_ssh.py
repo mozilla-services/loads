@@ -6,6 +6,7 @@ from loads.deploy.ssh import LoadsHost
 from loads.tests.test_deploy_host import start_ssh_server
 
 
+@unittest.skipIf('TRAVIS' in os.environ or 'LONG' not in os.environ, 'Travis')
 class TestLoadsHost(unittest.TestCase):
 
     def setUp(self):
@@ -17,7 +18,6 @@ class TestLoadsHost(unittest.TestCase):
     def tearDown(self):
         self.host.close()
 
-    @unittest.skipIf('TRAVIS' in os.environ, 'Travis')
     def test_check_circus(self):
         endpoint = 'tcp://0.0.0.0:5555'
         cfg = os.path.join('conf', 'loads.ini')

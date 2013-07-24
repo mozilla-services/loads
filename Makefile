@@ -33,7 +33,7 @@ test:
 coverage: build build_extras
 	$(BIN)/pip install nose coverage circus mock flake8 paramiko boto unittest2
 	$(BIN)/flake8 loads
-	$(BIN)/nosetests -s -d -v --cover-html --cover-html-dir=html --with-coverage --cover-erase --cover-package loads loads/tests
+	LONG=1 $(BIN)/nosetests -s -d -v --cover-html --cover-html-dir=html --with-coverage --cover-erase --cover-package loads loads/tests
 
 bin/sphinx-build:
 	bin/pip install Sphinx

@@ -55,7 +55,7 @@ def run(args):
                 # we need to pick one
                 raise NotImplementedError()
 
-            counts = client.get_counts(run_id)
+            counts = client.get_counts(run_id).items()
             metadata = client.get_metadata(run_id)
 
             logger.debug('Reattaching run %r' % run_id)

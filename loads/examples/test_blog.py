@@ -55,6 +55,7 @@ class TestWebSite(TestCase):
         self.session.auth = (user, 'X' * 10)
         self.app.server_url = 'http://localhost:9000'
         res = self.app.get('/auth')
-        self.assertIn(user, res.body)
+        # don't use assertIn so this works with 2.6
+        self.assertTrue(user in res.body)
         res = self.app.get('/auth')
-        self.assertIn(user, res.body)
+        self.assertTrue(user in res.body)
