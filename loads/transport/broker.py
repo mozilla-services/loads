@@ -250,7 +250,7 @@ class Broker(object):
             # we return a list of worker ids and their status
             self._send_json(msg[:-1], {'result': self._workers})
             return
-        elif cmd == 'SIMULRUN':
+        elif cmd == 'RUN':
             if data['agents'] > len(self._workers):
                 self._send_json(msg[:-1], {'error': 'Not enough agents'})
                 return

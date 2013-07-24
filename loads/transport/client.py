@@ -157,7 +157,7 @@ class Client(object):
 
             raise ExecutionError(msg)
 
-        return self.execute({'command': 'SIMULRUN',
+        return self.execute({'command': 'RUN',
                              'async': async,
                              'agents': agents_needed,
                              'args': args})
