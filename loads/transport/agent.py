@@ -122,7 +122,7 @@ class Agent(object):
         data = message.data
         command = data['command']
 
-        if command in ('RUN', 'SIMULRUN'):
+        if command == 'RUN':
             args = data['args']
             run_id = data.get('run_id')
             pid = self._run(args, run_id)
