@@ -30,7 +30,7 @@ class TestCluster(unittest.TestCase):
 
     @hush
     def test_success(self):
-        client, cluster = get_cluster()
+        client, cluster = get_cluster(wait=False)
         self.cluster = cluster
         job = {'fqn': 'loads.tests.jobs.SomeTests.test_one'}
         res = client.run(job)

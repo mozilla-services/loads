@@ -18,6 +18,13 @@ def start_process(cmd):
     process = subprocess.Popen([sys.executable, '-m', cmd],
                                stdout=devnull, stderr=devnull)
     _processes.append(process)
+    return process
+
+
+def stop_process(proc):
+    proc.terminate()
+    if proc in _processes:
+        _processes.remove(proc)
 
 
 def stop_processes():
@@ -122,7 +129,8 @@ def get_cluster(timeout=5., movf=1., ovf=1, **kw):
                timeout=movf, **kw)
 
     cl.start()
-    time.sleep(1.)  # stabilization
+    # wait for all the processes to be started
+    time.sleep(.2)
     _clusters.append(cl)
     logger.debug('cluster ready')
     cli = client.Pool(size=3, frontend=front, debug=True,
