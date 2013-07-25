@@ -57,7 +57,7 @@ class BrokerDB(object):
             filename = os.path.join(self.directory, run_id)
 
             with open(filename, 'a+') as f:
-                for i in range(qsize - 1):
+                for i in range(qsize):
                     line = queue.get()
                     f.write(json.dumps(line) + '\n')
 
