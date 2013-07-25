@@ -67,7 +67,7 @@ class BrokerController(object):
         # we want to run the same command on several agents
         # provisionning them
         workers = []
-        available = list(self._workers)
+        available = [wid for wid in self._workers if wid not in self._runs]
 
         while len(workers) < num:
             worker_id = random.choice(available)
