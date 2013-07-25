@@ -179,8 +179,8 @@ class Client(object):
         return self.execute({'command': 'GET_METADATA', 'run_id': run_id},
                             extract=False)
 
-    def status(self, run_id):
-        return self.execute({'command': 'STATUS', 'run_id': run_id})
+    def status(self, worker_id):
+        return self.execute({'command': 'STATUS', 'worker_id': worker_id})
 
     def stop(self, worker_id):
         return self.execute({'command': 'STOP', 'worker_id': worker_id})
