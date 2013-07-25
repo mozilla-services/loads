@@ -152,13 +152,14 @@ class BrokerController(object):
         return self._db.flush()
 
     def _check_worker(self, worker_id):
-        # box-specific, will do better later XXX
-        exists = psutil.pid_exists(int(worker_id))
-        if not exists:
-            logger.debug('The worker %r is gone' % worker_id)
-            self._remove_worker(worker_id)
-            return False
-
+        # XXX we'll want workers to register themselves
+        # again after each heartbeat
+        #
+        # The broker will removing idling workers
+        # just before sending a hearbeat.
+        #
+        # That will let us make sure a dead worker on
+        # a distant box is removed
         if worker_id in self._worker_times:
             start, stop = self._worker_times[worker_id]
             if stop is not None:
