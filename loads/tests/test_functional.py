@@ -119,8 +119,6 @@ class FunctionalTest(TestCase):
         runner.execute()
         assert _RESULTS[0].nb_success > 2
 
->>>>>>> added the observer option
-
     def test_distributed_run(self):
         start_runner(get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_something',
