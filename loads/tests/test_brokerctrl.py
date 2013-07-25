@@ -1,4 +1,7 @@
 import unittest
+import tempfile
+import shutil
+
 import psutil
 from zmq.green.eventloop import ioloop
 from loads.transport.brokerctrl import BrokerController, NotEnoughWorkersError
@@ -18,15 +21,17 @@ class FakeBroker(object):
 class TestBrokerController(unittest.TestCase):
 
     def setUp(self):
+        self.dbdir = tempfile.mkdtemp()
         loop = ioloop.IOLoop()
         broker = FakeBroker()
-        self.ctrl = BrokerController(broker, loop)
+        self.ctrl = BrokerController(broker, loop, dbdir=self.dbdir)
         self.old_exists = psutil.pid_exists
         psutil.pid_exists = lambda pid: True
 
     def tearDown(self):
         psutil.pid_exists = self.old_exists
         Stream.msgs[:] = []
+        shutil.rmtree(self.dbdir)
 
     def test_registration(self):
         self.ctrl.register_worker('1')
@@ -64,3 +69,27 @@ class TestBrokerController(unittest.TestCase):
         self.ctrl.stop_run('run2', ['somemsg'])
 
         self.assertEqual(len(Stream.msgs), 5)
+
+    def test_db_access(self):
+        self.ctrl.register_worker('1')
+        self.ctrl.reserve_workers(1, 'run')
+
+        # metadata
+        data = {'some': 'data'}
+        self.ctrl.save_metadata('run', data)
+        self.assertEqual(self.ctrl.get_metadata('run'), data)
+
+        # data
+        self.ctrl.save_data('run', data)
+        self.ctrl.flush_db()
+
+        # we get extra keys
+        self.assertTrue('workers' in data)
+        self.assertEqual(data['workers'].keys(), ['1'])
+        self.assertEqual(data['run_id'], 'run')
+
+        back = self.ctrl.get_data('run')
+        self.assertTrue(back[0]['some'], 'data')
+
+        back2 = self.ctrl.get_data('run')
+        self.assertEqual(back, back2)

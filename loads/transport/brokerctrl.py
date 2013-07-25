@@ -131,10 +131,15 @@ class BrokerController(object):
     def get_metadata(self, run_id):
         return self._db.get_metadata(run_id)
 
-    def save_data(self, worker_id, data):
-        if worker_id in self._runs:
-            data['run_id'], data['started'] = self._runs[worker_id]
+    def save_data(self, run_id, data):
+        data['run_id'] = run_id
+        workers = {}
+        for worker_id, (_run_id, started) in self._runs.items():
+            if _run_id != run_id:
+                continue
+            workers[worker_id] = started
 
+        data['workers'] = workers
         self._db.add(data)
 
     def get_data(self, run_id):
@@ -142,6 +147,9 @@ class BrokerController(object):
 
     def get_counts(self, run_id):
         return self._db.get_counts(run_id)
+
+    def flush_db(self):
+        return self._db.flush()
 
     def _check_worker(self, worker_id):
         # box-specific, will do better later XXX
