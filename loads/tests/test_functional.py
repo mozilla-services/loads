@@ -129,7 +129,7 @@ class FunctionalTest(TestCase):
 
         start_runner(args)
         runs = self.client.list_runs()
-        for i in range(5):
+        for i in range(10):
             data = self.client.get_data(runs.keys()[0])
             if len(data) > 0:
                 return
@@ -192,16 +192,16 @@ class FunctionalTest(TestCase):
         args = get_runner_args(
             fqn='test_here.TestWebSite.test_something',
             agents=1,
-            users=10,
-            duration=2,
+            users=1,
+            hits=1,
             test_dir=test_dir,
             include_file=['test_here.*'])
 
         start_runner(args)
-
-        runs = self.client.list_runs()
         data = []
-        for i in range(10):
+
+        for i in range(20):
+            runs = self.client.list_runs()
             data = self.client.get_data(runs.keys()[0])
             if len(data) > 0:
                 break
