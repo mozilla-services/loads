@@ -118,35 +118,7 @@ class Runner(object):
         sys.path.insert(0, 'deps')
 
     def execute(self):
-
-        test_dir = self.args.get('test_dir')
-        if test_dir is not None:
-            includes = self.args.get('include_file', [])
-
-            # grab the files, if any
-            files = []
-            for include in includes:
-                for file_ in os.listdir('.'):
-                    if fnmatch.fnmatch(file_, include):
-                        files.append(file_)
-
-            for file_ in files:
-                print 'Copying %r' % file_
-                shutil.copyfile(file_, os.path.join(test_dir, file_))
-
-            # change to execution directory if asked
-            if not os.path.exists(test_dir):
-                os.makedirs(test_dir)
-            old_dir = os.getcwd()
-            os.chdir(test_dir)
-
-        # deploy python deps if asked
-        python_deps = self.args.get('python_dep', [])
-        if python_deps != []:
-            self._deploy_python_deps(python_deps)
-
-        # resolve the name now
-        self._resolve_name()
+        old_location = os.getcwd()
         self.running = True
         try:
             self._execute()
@@ -156,8 +128,7 @@ class Runner(object):
             return 0
         finally:
             self.running = False
-            if test_dir is not None:
-                os.chdir(old_dir)
+            os.chdir(old_location)
 
     def _run(self, num, user):
         # creating the test case instance
@@ -193,6 +164,37 @@ class Runner(object):
     def _execute(self):
         """Spawn all the tests needed and wait for them to finish.
         """
+        test_dir = self.args.get('test_dir')
+        if test_dir is not None:
+            os.makedirs(test_dir)
+
+            includes = self.args.get('include_file', [])
+
+            # grab the files, if any
+            files = []
+            for include in includes:
+                for file_ in os.listdir('.'):
+                    if fnmatch.fnmatch(file_, include):
+                        files.append(file_)
+
+            for file_ in files:
+                print 'Copying %r' % file_
+                shutil.copyfile(file_, os.path.join(test_dir, file_))
+
+            # change to execution directory if asked
+            if not os.path.exists(test_dir):
+                os.makedirs(test_dir)
+            old_dir = os.getcwd()
+            os.chdir(test_dir)
+
+        # deploy python deps if asked
+        python_deps = self.args.get('python_dep', [])
+        if python_deps != []:
+            self._deploy_python_deps(python_deps)
+
+        # resolve the name now
+        self._resolve_name()
+
         exception = None
         try:
             from gevent import monkey
