@@ -6,18 +6,11 @@ import time
 import socket
 
 from loads.deploy.host import Host
-from loads.tests.support import start_process
-
-
-_RUNNING = False
+from loads.tests.support import start_process, stop_process
 
 
 def start_ssh_server():
-    global _RUNNING
-    if _RUNNING:
-        return
-
-    start_process('loads.tests.ssh_server')
+    process = start_process('loads.tests.ssh_server')
     tries = 0
     while True:
         try:
@@ -30,7 +23,7 @@ def start_ssh_server():
         else:
             break
 
-    _RUNNING = True
+    return process
 
 
 @unittest.skipIf('TRAVIS' in os.environ, 'Travis')
@@ -38,7 +31,7 @@ class TestHost(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        start_ssh_server()
+        cls.ssh = start_ssh_server()
         cls.host = Host('0.0.0.0', 2200, 'tarek', 'xx')
         cls.files = []
         cls.dirs = []
@@ -53,6 +46,7 @@ class TestHost(unittest.TestCase):
         for file in cls.files:
             if os.path.exists(file):
                 os.remove(file)
+        stop_process(cls.ssh)
 
     @classmethod
     def _get_file(cls):
@@ -99,9 +93,7 @@ class TestHost(unittest.TestCase):
 
     def test_chdir(self):
         tmpdir = self._get_dir()
-        host = Host('localhost', 2200, 'tarek', '',
-                    root=tmpdir)
-        host.execute('mkdir subdir')
-        host.chdir('subdir')
-        host.execute('touch file')
+        self.host.execute('mkdir subdir')
+        self.host.chdir('subdir')
+        self.host.execute('touch file')
         self.assertTrue(os.path.join(tmpdir, 'subdir', 'file'))
