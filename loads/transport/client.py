@@ -5,6 +5,7 @@ import errno
 import contextlib
 import json
 import zlib
+import os
 
 import zmq
 
@@ -171,10 +172,18 @@ class Client(object):
         for file_ in glob(includes):
             print 'Passing %r' % file_
             # no stream XXX
-            with open(file_) as f:
-                data = zlib.compress(f.read()).decode('latin1')
+            if os.path.isdir(file_):
+                for root, dirs, _files in os.walk(file_):
+                    for f in _files:
+                        fullname = os.path.join(root, f)
+                        with open(fullname) as f:
+                            data = zlib.compress(f.read()).decode('latin1')
+                        files[fullname] = data
+            else:
+                with open(file_) as f:
+                    data = zlib.compress(f.read()).decode('latin1')
 
-            files[file_] = data
+                files[file_] = data
 
         cmd['files'] = files
         return self.execute(cmd)
