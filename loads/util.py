@@ -8,6 +8,7 @@ import sys
 import tempfile
 import urlparse
 import math
+import fnmatch
 
 from gevent.socket import gethostbyname
 
@@ -186,3 +187,10 @@ def try_import(*packages):
     if failed_packages:
         failed_packages = " ".join(failed_packages)
         raise ImportError('You need to run "pip install %s"' % failed_packages)
+
+
+def glob(patterns, location='.'):
+    for pattern in patterns:
+        for file_ in os.listdir(location):
+            if fnmatch.fnmatch(file_, pattern):
+                yield os.path.join(location, file_)

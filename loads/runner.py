@@ -2,10 +2,9 @@ import os
 import gevent
 import subprocess
 import sys
-import fnmatch
 import shutil
 
-from loads.util import resolve_name
+from loads.util import resolve_name, glob
 from loads.test_result import TestResult
 from loads.relay import ZMQRelay
 from loads.output import create_output
@@ -166,25 +165,19 @@ class Runner(object):
         """
         test_dir = self.args.get('test_dir')
         if test_dir is not None:
-            os.makedirs(test_dir)
-
-            includes = self.args.get('include_file', [])
+            if not os.path.exists(test_dir):
+                os.makedirs(test_dir)
 
             # grab the files, if any
-            files = []
-            for include in includes:
-                for file_ in os.listdir('.'):
-                    if fnmatch.fnmatch(file_, include):
-                        files.append(file_)
+            includes = self.args.get('include_file', [])
 
-            for file_ in files:
+            for file_ in glob(includes):
                 print 'Copying %r' % file_
                 shutil.copyfile(file_, os.path.join(test_dir, file_))
 
             # change to execution directory if asked
             if not os.path.exists(test_dir):
                 os.makedirs(test_dir)
-            old_dir = os.getcwd()
             os.chdir(test_dir)
 
         # deploy python deps if asked

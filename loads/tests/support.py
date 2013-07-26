@@ -44,7 +44,14 @@ def get_runner_args(fqn, users=1, hits=1, duration=None,
                     agents=None,
                     broker=DEFAULT_FRONTEND, test_runner=None,
                     server_url='http://localhost:9000',
-                    zmq_endpoint='tcp://127.0.0.1:5558', output=['null']):
+                    zmq_endpoint='tcp://127.0.0.1:5558', output=['null'],
+                    test_dir=None, include_file=None, python_dep=None):
+
+    if include_file is None:
+        include_file = []
+
+    if python_dep is None:
+        python_dep = []
 
     args = {'fqn': fqn,
             'users': str(users),
@@ -53,7 +60,10 @@ def get_runner_args(fqn, users=1, hits=1, duration=None,
             'test_runner': test_runner,
             'server_url': server_url,
             'zmq_endpoint': zmq_endpoint,
-            'output': output}
+            'output': output,
+            'test_dir': test_dir,
+            'include_file': include_file,
+            'python_dep': python_dep}
 
     if duration is not None:
         args['duration'] = float(duration)

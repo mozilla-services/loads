@@ -9,12 +9,15 @@
 import os
 import time
 import requests
+import tempfile
+import shutil
 
 from unittest2 import TestCase, skipIf
 
 from loads.main import run as start_runner
 from loads.runner import Runner
-from loads.tests.support import get_runner_args, start_process, stop_process
+from loads.tests.support import (get_runner_args, start_process, stop_process,
+                                 hush)
 from loads.transport.client import Client
 from loads.transport.util import DEFAULT_FRONTEND
 
@@ -66,11 +69,16 @@ class FunctionalTest(TestCase):
     def setUpClass(cls):
         cls.procs = start_servers()
         cls.client = Client()
+        cls.location = os.getcwd()
+        cls.dirs = []
 
     @classmethod
     def tearDownClass(cls):
         for proc in cls.procs:
             stop_process(proc)
+        os.chdir(cls.location)
+        for dir in cls.dirs:
+            shutil.rmtree(dir)
 
     def test_normal_run(self):
         start_runner(get_runner_args(
@@ -169,3 +177,38 @@ class FunctionalTest(TestCase):
             time.sleep(.1)
 
         raise AssertionError('No data back')
+
+    @classmethod
+    def _get_dir(self):
+        dir = tempfile.mkdtemp()
+        self.dirs.append(dir)
+        return dir
+
+    @hush
+    def test_file_copy_test_file(self):
+        test_dir = self._get_dir()
+        os.chdir(os.path.dirname(__file__))
+
+        args = get_runner_args(
+            fqn='test_here.TestWebSite.test_something',
+            agents=1,
+            users=10,
+            duration=2,
+            test_dir=test_dir,
+            include_file=['test_here.*'])
+
+        start_runner(args)
+
+        runs = self.client.list_runs()
+        data = []
+        for i in range(10):
+            data = self.client.get_data(runs.keys()[0])
+            if len(data) > 0:
+                break
+            time.sleep(.1)
+
+        # check that we got in the dir
+        self.assertTrue('test_here.py' in os.listdir(test_dir))
+
+        if data == []:
+            raise AssertionError('No data back')

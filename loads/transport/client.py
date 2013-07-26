@@ -4,12 +4,13 @@ from collections import defaultdict
 import errno
 import contextlib
 import json
+import zlib
 
 import zmq
 
 from loads.transport.exc import TimeoutError, ExecutionError, NoWorkerError
 from loads.transport.message import Message
-from loads.util import logger
+from loads.util import logger, glob
 from loads.transport.util import (send, recv, DEFAULT_FRONTEND,
                                   extract_result, timed, DEFAULT_TIMEOUT,
                                   DEFAULT_TIMEOUT_MOVF,
@@ -157,10 +158,26 @@ class Client(object):
 
             raise ExecutionError(msg)
 
-        return self.execute({'command': 'RUN',
-                             'async': async,
-                             'agents': agents_needed,
-                             'args': args})
+        # let's copy over some files if we need
+        includes = args.get('include_file', [])
+
+        cmd = {'command': 'RUN',
+               'async': async,
+               'agents': agents_needed,
+               'args': args}
+
+        files = {}
+
+        for file_ in glob(includes):
+            print 'Passing %r' % file_
+            # no stream XXX
+            with open(file_) as f:
+                data = zlib.compress(f.read()).decode('latin1')
+
+            files[file_] = data
+
+        cmd['files'] = files
+        return self.execute(cmd)
 
     def ping(self, timeout=None, log_exceptions=True):
         return self.execute({'command': 'PING'}, extract=False,
