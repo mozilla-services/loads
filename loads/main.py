@@ -93,6 +93,10 @@ def main(sysargs=None):
     parser.add_argument('--python-dep', help='Python dep to install',
                         action='append', default=[])
 
+    parser.add_argument('--include-file',
+                        help='File(s) to include - glob-style',
+                        action='append', default=[])
+
     # loads works with hits or duration
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--hits', help='Number of hits per users',

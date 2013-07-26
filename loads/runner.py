@@ -2,6 +2,8 @@ import os
 import gevent
 import subprocess
 import sys
+import fnmatch
+import shutil
 
 from loads.util import resolve_name
 from loads.test_result import TestResult
@@ -116,9 +118,23 @@ class Runner(object):
         sys.path.insert(0, 'deps')
 
     def execute(self):
-        # change to execution directory if asked
+
         test_dir = self.args.get('test_dir')
         if test_dir is not None:
+            includes = self.args.get('include_file', [])
+
+            # grab the files, if any
+            files = []
+            for include in includes:
+                for file_ in os.listdir('.'):
+                    if fnmatch.fnmatch(file_, include):
+                        files.append(file_)
+
+            for file_ in files:
+                print 'Copying %r' % file_
+                shutil.copyfile(file_, os.path.join(test_dir, file_))
+
+            # change to execution directory if asked
             if not os.path.exists(test_dir):
                 os.makedirs(test_dir)
             old_dir = os.getcwd()
