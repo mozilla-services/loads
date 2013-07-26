@@ -1,4 +1,7 @@
+import os
 import gevent
+import subprocess
+import sys
 
 from loads.util import resolve_name
 from loads.test_result import TestResult
@@ -52,10 +55,7 @@ class Runner(object):
     def __init__(self, args):
         self.args = args
         self.fqn = args.get('fqn')
-        if self.fqn is not None:
-            self.test = resolve_name(self.fqn)
-        else:
-            self.test = None
+        self.test = None
         self.slave = 'slave' in args
         self.outputs = []
         self.stop = False
@@ -80,6 +80,10 @@ class Runner(object):
             for output in self.args.get('output', ['stdout']):
                 self.register_output(output)
 
+    def _resolve_name(self):
+        if self.fqn is not None:
+            self.test = resolve_name(self.fqn)
+
     @property
     def test_result(self):
         return self._test_result
@@ -89,7 +93,44 @@ class Runner(object):
         self.outputs.append(output)
         self.test_result.add_observer(output)
 
+    def _deploy_python_deps(self, deps):
+        # XXX pip hack to avoid uninstall
+        nil = "lambda *args, **kw: None"
+        code = ["from pip.req import InstallRequirement",
+                "InstallRequirement.uninstall = %s" % nil,
+                "InstallRequirement.commit_uninstall = %s" % nil,
+                "import pip", "pip.main()"]
+
+        cmd = [sys.executable, '-c', '"%s"' % ';'.join(code),
+               'install', '-t', 'deps', '-I']
+
+        for dep in deps:
+            print 'Deploying %r in %r' % (dep, os.getcwd())
+            process = subprocess.Popen(' '.join(cmd + [dep]), shell=True,
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE)
+            stdout, stderr = process.communicate()
+            if process.returncode != 0:
+                raise Exception(stderr)
+
+        sys.path.insert(0, 'deps')
+
     def execute(self):
+        # change to execution directory if asked
+        test_dir = self.args.get('test_dir')
+        if test_dir is not None:
+            if not os.path.exists(test_dir):
+                os.makedirs(test_dir)
+            old_dir = os.getcwd()
+            os.chdir(test_dir)
+
+        # deploy python deps if asked
+        python_deps = self.args.get('python_dep', [])
+        if python_deps != []:
+            self._deploy_python_deps(python_deps)
+
+        # resolve the name now
+        self._resolve_name()
         self.running = True
         try:
             self._execute()
@@ -99,6 +140,8 @@ class Runner(object):
             return 0
         finally:
             self.running = False
+            if test_dir is not None:
+                os.chdir(old_dir)
 
     def _run(self, num, user):
         # creating the test case instance
