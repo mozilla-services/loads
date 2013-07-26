@@ -173,7 +173,13 @@ class Runner(object):
 
             for file_ in glob(includes):
                 print 'Copying %r' % file_
-                shutil.copyfile(file_, os.path.join(test_dir, file_))
+                target = os.path.join(test_dir, file_)
+                if os.path.isdir(file_):
+                    if os.path.exists(target):
+                        shutil.rmtree(target)
+                    shutil.copytree(file_, target)
+                else:
+                    shutil.copyfile(file_, target)
 
             # change to execution directory if asked
             if not os.path.exists(test_dir):
