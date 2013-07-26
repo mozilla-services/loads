@@ -93,7 +93,6 @@ class TestHost(unittest.TestCase):
 
     def test_chdir(self):
         tmpdir = self._get_dir()
-        self.host.execute('mkdir subdir')
-        self.host.chdir('subdir')
+        self.host.chdir(tmpdir)
         self.host.execute('touch file')
-        self.assertTrue(os.path.join(tmpdir, 'subdir', 'file'))
+        self.assertTrue(os.path.join(tmpdir, 'file'))

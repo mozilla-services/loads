@@ -117,11 +117,10 @@ class FunctionalTest(TestCase):
             agents=1,
             #output=['null'],
             users=10,
-            duration=1)
+            duration=2)
 
         start_runner(args)
         runs = self.client.list_runs()
-
         for i in range(5):
             data = self.client.get_data(runs.keys()[0])
             if len(data) > 0:

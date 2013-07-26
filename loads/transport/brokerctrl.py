@@ -1,5 +1,4 @@
 import random
-import psutil
 import time
 import sys
 import traceback
@@ -131,15 +130,15 @@ class BrokerController(object):
     def get_metadata(self, run_id):
         return self._db.get_metadata(run_id)
 
-    def save_data(self, run_id, data):
-        data['run_id'] = run_id
-        workers = {}
-        for worker_id, (_run_id, started) in self._runs.items():
-            if _run_id != run_id:
+    def save_data(self, worker_id, data):
+        # we are savinf data by worker ids.
+        # we need to find out what is the run_id
+        for _worker_id, (run_id, started) in self._runs.items():
+            if _worker_id != worker_id:
                 continue
-            workers[worker_id] = started
-
-        data['workers'] = workers
+            data['run_id'] = run_id
+            data['started'] = started
+            break
         self._db.add(data)
 
     def get_data(self, run_id):

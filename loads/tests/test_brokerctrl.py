@@ -79,13 +79,11 @@ class TestBrokerController(unittest.TestCase):
         self.ctrl.save_metadata('run', data)
         self.assertEqual(self.ctrl.get_metadata('run'), data)
 
-        # data
-        self.ctrl.save_data('run', data)
+        # save data by worker
+        self.ctrl.save_data('1', data)
         self.ctrl.flush_db()
 
-        # we get extra keys
-        self.assertTrue('workers' in data)
-        self.assertEqual(data['workers'].keys(), ['1'])
+        # we get extra run_id key, set for us
         self.assertEqual(data['run_id'], 'run')
 
         back = self.ctrl.get_data('run')
