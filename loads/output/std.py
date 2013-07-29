@@ -71,7 +71,8 @@ class StdOutput(object):
         else:
             name = exc_class.__name__
         sys.stderr.write("\n%s: %s" % (name, exc))
-        if tb is not None:
+
+        if tb not in (None, ''):   # XXX fix this
             sys.stderr.write("\n Traceback: \n")
             traceback.print_tb(tb, sys.stderr)
 
