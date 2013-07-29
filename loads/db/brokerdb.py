@@ -28,10 +28,14 @@ class BrokerDB(object):
 
     def save_metadata(self, run_id, metadata):
         self._metadata[run_id] = metadata
+        self._dirty = True
 
     def get_metadata(self, run_id):
         self.flush()
         filename = os.path.join(self.directory, run_id + '-metadata.json')
+        if not os.path.exists(filename):
+            return {}
+
         with open(filename) as f:
             return json.load(f)
 
@@ -43,7 +47,17 @@ class BrokerDB(object):
         self._dirty = True
 
     def flush(self):
-        if len(self._buffer) == 0 or not self._dirty:
+        if not self._dirty:
+            return
+
+        # saving metadata files
+        for run_id in self._metadata:
+            # metadata
+            filename = os.path.join(self.directory, run_id + '-metadata.json')
+            with open(filename, 'w') as f:
+                json.dump(self._metadata[run_id], f)
+
+        if len(self._buffer) == 0:
             return
 
         for run_id, queue in self._buffer.items():
@@ -66,11 +80,6 @@ class BrokerDB(object):
             with open(filename, 'w') as f:
                 json.dump(counts, f)
 
-            # metadata
-            filename = os.path.join(self.directory, run_id + '-metadata.json')
-            with open(filename, 'w') as f:
-                json.dump(self._metadata[run_id], f)
-
         self._dirty = False
 
     def close(self):
@@ -79,12 +88,20 @@ class BrokerDB(object):
     def get_counts(self, run_id):
         self.flush()
         filename = os.path.join(self.directory, run_id + '-counts.json')
+
+        if not os.path.exists(filename):
+            return {}
+
         with open(filename) as f:
             return json.load(f)
 
     def get_data(self, run_id):
         self.flush()
         filename = os.path.join(self.directory, run_id)
+
+        if not os.path.exists(filename):
+            raise StopIteration()
+
         with open(filename) as f:
             for line in f:
                 yield json.loads(line)
