@@ -23,11 +23,12 @@ from loads.transport.util import DEFAULT_FRONTEND
 
 
 _EXAMPLES_DIR = os.path.join(os.path.dirname(__file__), os.pardir, 'examples')
-_RESULTS = []
+_RESULTS = os.path.join(os.path.dirname(__file__), 'observers')
 
 
 def observer(results, conf):
-    _RESULTS.append(results)
+    with open(_RESULTS, 'a+') as f:
+        f.write(str(results) + '\n')
 
 
 def observer_fail(results, conf):
@@ -88,6 +89,8 @@ class FunctionalTest(TestCase):
         os.chdir(cls.location)
         for dir in cls.dirs:
             shutil.rmtree(dir)
+        if os.path.exists(_RESULTS):
+            os.remove(_RESULTS)
 
     def test_normal_run(self):
         start_runner(get_runner_args(
@@ -117,15 +120,28 @@ class FunctionalTest(TestCase):
         nb_success = runner.test_result.nb_success
         assert nb_success > 2, nb_success
 
-    def test_observer(self):
+    def _test_observer(self):
         runner = Runner(get_runner_args(
-            fqn='loads.examples.test_blog.TestWebSite.test_concurrency',
-            output=['null'], duration=1.,
-            observers=['loads.tests.test_functional.observer',
-                       'loads.tests.test_functional.observer_fail']))
+            fqn='loads.examples.test_blog.TestWebSite.test_something',
+            #output=['null'],
+            users=1,
+            hits=5,
+            agents=1,
+            observer=['loads.tests.test_functional.observer',
+                      'loads.tests.test_functional.observer_fail']))
 
         runner.execute()
-        assert _RESULTS[0].nb_success > 2
+
+        # waiting for around 3 s max
+        wait = 0
+        while not os.path.exists(_RESULTS) and wait < 30:
+            time.sleep(.1)
+            wait += 1
+
+        with open(_RESULTS) as f:
+            data = f.readlines()
+
+        assert len(data) > 2000, data
 
     def test_distributed_run(self):
         start_runner(get_runner_args(
