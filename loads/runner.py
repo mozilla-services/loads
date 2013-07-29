@@ -165,6 +165,8 @@ class Runner(object):
         """
         test_dir = self.args.get('test_dir')
         if test_dir is not None:
+            test_dir = test_dir + '-%d' % os.getpid()
+
             if not os.path.exists(test_dir):
                 os.makedirs(test_dir)
 
