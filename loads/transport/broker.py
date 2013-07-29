@@ -54,9 +54,16 @@ class Broker(object):
             logger.debug('Ooops, we have a running broker on that socket')
             raise DuplicateBrokerError(pid)
 
+        self.endpoints = {'frontend': frontend,
+                          'backend': backend,
+                          'heartbeat': heartbeat,
+                          'register': register,
+                          'receiver': receiver,
+                          'publisher': publisher}
+
         logger.debug('Initializing the broker.')
 
-        for endpoint in (frontend, backend, heartbeat):
+        for endpoint in self.endpoints.values():
             if endpoint.startswith('ipc'):
                 register_ipc_file(endpoint)
 
@@ -123,7 +130,9 @@ class Broker(object):
         data = json.loads(msg[2])
         cmd = data['command']
         if cmd == 'PING':
-            res = json.dumps({'result': os.getpid()})
+            res = {'result': {'pid': os.getpid(),
+                              'endpoints': self.endpoints}}
+            res = json.dumps(res)
             self._frontstream.send_multipart(msg[:-1] + [res])
             return
         elif cmd == 'LISTRUNS':

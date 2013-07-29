@@ -84,7 +84,7 @@ class BrokerDB(object):
             with open(filename) as f:
                 return json.load(f)
         else:
-            return dict(self._counts[run_id])
+            return self._counts[run_id]
 
     def get_data(self, run_id):
         filename = os.path.join(self.directory, run_id)

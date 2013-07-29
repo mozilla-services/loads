@@ -198,8 +198,13 @@ class Client(object):
                             extract=False)
 
     def get_counts(self, run_id):
-        return self.execute({'command': 'GET_COUNTS', 'run_id': run_id},
-                            extract=False)
+        res = self.execute({'command': 'GET_COUNTS', 'run_id': run_id},
+                           extract=False)
+        # XXX why ?
+        if isinstance(res, dict):
+            return res.items()
+
+        return res
 
     def get_metadata(self, run_id):
         return self.execute({'command': 'GET_METADATA', 'run_id': run_id},

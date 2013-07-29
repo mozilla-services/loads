@@ -5,7 +5,7 @@ from zmq.green.eventloop import ioloop, zmqstream
 
 from loads.runner import Runner
 from loads.transport.util import DEFAULT_PUBLISHER
-from loads.util import logger
+from loads.util import logger, split_endpoint
 from loads.test_result import TestResult, LazyTestResult
 from loads.transport.client import Client
 
@@ -30,12 +30,11 @@ class DistributedRunner(Runner):
         self.pull.setsockopt(zmq.SUBSCRIBE, '')
         self.pull.set_hwm(8096 * 10)
         self.pull.setsockopt(zmq.LINGER, -1)
-        self.pull.connect(self.args.get('zmq_publisher', DEFAULT_PUBLISHER))
+        self.zmq_publisher = None
+        self.zstream = None
 
         # io loop
         self.loop = ioloop.IOLoop()
-        self.zstream = zmqstream.ZMQStream(self.pull, self.loop)
-        self.zstream.on_recv(self._recv_result)
         self.outputs = []
         self.workers = []
 
@@ -81,6 +80,37 @@ class DistributedRunner(Runner):
         cb.start()
         try:
             client = Client(self.args['broker'])
+
+            if self.zmq_publisher is None:
+                zmq_publisher = self.args.get('zmq_publisher')
+                if zmq_publisher in (None, DEFAULT_PUBLISHER):
+                    # if this option is not provided by the command line,
+                    # we ask the broker about it
+                    res = client.ping()
+                    endpoint = res['endpoints']['publisher']
+                    if endpoint.startswith('ipc'):
+                        # IPC - lets hope we're on the same box
+                        zmq_publisher = endpoint
+                    elif endpoint.startswith('tcp'):
+                        # TCP, let's see what IP & port we have
+                        splitted = split_endpoint(endpoint)
+                        if splitted['ip'] == '0.0.0.0':
+                            # let's use the broker ip
+                            broker = self.args['broker']
+                            broker_ip = split_endpoint(broker)['ip']
+                            zmq_publisher = 'tcp://%s:%d' % (broker_ip,
+                                                             splitted['port'])
+                        else:
+                            # let's use the original ip
+                            zmq_publisher = endpoint
+                    else:
+                        zmq_publisher = DEFAULT_PUBLISHER
+
+                self.pull.connect(zmq_publisher)
+                self.zstream = zmqstream.ZMQStream(self.pull, self.loop)
+                self.zstream.on_recv(self._recv_result)
+                self.zmq_publisher = zmq_publisher
+
             logger.debug('Calling the broker...')
             res = client.run(self.args)
             self.run_id = res['run_id']

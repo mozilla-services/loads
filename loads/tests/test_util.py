@@ -11,7 +11,7 @@ import gevent
 import loads
 from loads import util
 from loads.util import (resolve_name, set_logger, logger, dns_resolve,
-                        DateTimeJSONEncoder, try_import)
+                        DateTimeJSONEncoder, try_import, split_endpoint)
 from loads.transport.util import (register_ipc_file, _cleanup_ipc_files, send,
                                   TimeoutError, recv, decode_params,
                                   dump_stacks)
@@ -127,6 +127,19 @@ class TestUtil(unittest.TestCase):
 
         self.assertEqual(res, ('http://0.0.0.0:80', 'example.com', '0.0.0.0'))
         self.assertEqual(res, res2)
+
+    def test_split_endpoint(self):
+        res = split_endpoint('tcp://12.22.33.45:12334')
+        self.assertEqual(res['scheme'], 'tcp')
+        self.assertEqual(res['ip'], '12.22.33.45')
+        self.assertEqual(res['port'], 12334)
+
+        res = split_endpoint('ipc:///here/it/is')
+        self.assertEqual(res['scheme'], 'ipc')
+        self.assertEqual(res['path'], '/here/it/is')
+
+        self.assertRaises(NotImplementedError, split_endpoint,
+                          'wat://ddf:ff:f')
 
     def test_datetime_json_encoder(self):
         encoder = DateTimeJSONEncoder()

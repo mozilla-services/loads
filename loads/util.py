@@ -55,6 +55,27 @@ class DateTimeJSONEncoder(json.JSONEncoder):
 _CACHE = {}
 
 
+def split_endpoint(endpoint):
+    """Returns the scheme, the location, and maybe the port.
+    """
+    res = {}
+    parts = urlparse.urlparse(endpoint)
+    res['scheme'] = parts.scheme
+
+    if parts.scheme == 'tcp':
+        netloc = parts.netloc.rsplit(':')
+        if len(netloc) == 1:
+            netloc.append('80')
+        res['ip'] = netloc[0]
+        res['port'] = int(netloc[1])
+    elif parts.scheme == 'ipc':
+        res['path'] = parts.path
+    else:
+        raise NotImplementedError()
+
+    return res
+
+
 def dns_resolve(url):
     if url in _CACHE:
         return _CACHE[url]
