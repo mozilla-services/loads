@@ -199,6 +199,7 @@ class Broker(object):
 
             # save the tests metadata in the db
             self.ctrl.save_metadata(run_id, data['args'])
+            self.ctrl.flush_db()
 
             for worker_id in workers:
                 self.ctrl.send_to_worker(worker_id, msg)
