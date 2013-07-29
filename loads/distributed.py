@@ -123,7 +123,6 @@ class DistributedRunner(Runner):
             self.test_result.stopTestRun()
             self.context.destroy()
             self.flush()
-            self.test_ended()
 
     def cancel(self):
         client = Client(self.args['broker'])

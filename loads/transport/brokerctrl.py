@@ -4,14 +4,30 @@ import sys
 import traceback
 import json
 from collections import defaultdict
+import datetime
 
 from loads.db.brokerdb import BrokerDB, DEFAULT_DBDIR
 from loads.transport.client import DEFAULT_TIMEOUT_MOVF
-from loads.util import logger
+from loads.util import logger, resolve_name
+from loads.test_result import LazyTestResult
 
 
 class NotEnoughWorkersError(Exception):
     pass
+
+
+def _compute_observers(observers):
+    """Reads the arguments and returns an observers list"""
+    def _resolver(name):
+        try:
+            return resolve_name('loads.observers.%s' % name)
+        except ImportError:
+            return resolve_name(name)
+
+    if observers is None:
+        return []
+
+    return [_resolver(observer) for observer in observers]
 
 
 class BrokerController(object):
@@ -112,7 +128,15 @@ class BrokerController(object):
                 del self._worker_times[worker_id]
 
             if worker_id in self._runs:
+                run_id, when = self._runs[worker_id]
                 del self._runs[worker_id]
+
+                # is the whole run over ?
+                running = [run_id_ for (run_id_, when_) in self._runs.values()]
+
+                # we want to tell the world if the run has ended
+                if run_id not in running:
+                    self.test_ended(run_id)
         else:
             # not over
             if worker_id in self._worker_times:
@@ -191,3 +215,35 @@ class BrokerController(object):
 
         self.clean()
         return workers
+
+    #
+    # Observers
+    #
+    def test_ended(self, run_id):
+        # we want to ping all observers that things are done
+        # for a given test.
+
+        # get the list of observers
+        args = self.get_metadata(run_id)
+        observers = _compute_observers(args.get('observer'))
+
+        if observers == []:
+            return
+
+        # rebuild the test result instance
+        test_result = LazyTestResult(args=args)
+        test_result.args = args
+
+        data = self.get_data(run_id)
+        started = datetime.datetime.utcfromtimestamp(data[0]['started'])
+
+        test_result.startTestRun(when=started)
+        test_result.set_counts(self.get_counts(run_id))
+
+        # for each observer we call it with the test results
+        for observer in observers:
+            try:
+                observer(test_result, args)
+            except Exception:
+                # the observer code failed. We want to log it
+                logger.error('%r failed' % observer)

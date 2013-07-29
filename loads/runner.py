@@ -4,7 +4,7 @@ import subprocess
 import sys
 import shutil
 
-from loads.util import resolve_name, logger, glob
+from loads.util import resolve_name, glob
 from loads.test_result import TestResult
 from loads.relay import ZMQRelay
 from loads.output import create_output
@@ -41,21 +41,6 @@ def _compute_arguments(args):
             total *= agents
 
     return total, hits, duration, users, agents
-
-
-def _compute_observers(args):
-    """Reads the arguments and returns an observers list"""
-    def _resolver(name):
-        try:
-            return resolve_name('loads.observers.%s' % name)
-        except ImportError:
-            return resolve_name(name)
-
-    observers = args.get('observer')
-    if observers is None:
-        return []
-
-    return [_resolver(observer) for observer in observers]
 
 
 class Runner(object):
@@ -95,9 +80,6 @@ class Runner(object):
         if not self.slave:
             for output in self.args.get('output', ['stdout']):
                 self.register_output(output)
-
-        # We can have observers that will get pinged when the tests are over
-        self.observers = _compute_observers(args)
 
     def _resolve_name(self):
         if self.fqn is not None:
@@ -248,7 +230,6 @@ class Runner(object):
                 else:
                     # in slave mode, be sure to close the zmq relay.
                     self.test_result.close()
-                self.test_ended()
             finally:
                 if exception:
                     raise exception
@@ -267,12 +248,3 @@ class Runner(object):
         self.refresh()
         if not self.stop:
             gevent.spawn_later(.1, self._grefresh)
-
-    def test_ended(self):
-        # we want to ping all observers that things are done
-        for observer in self.observers:
-            try:
-                observer(self.test_result, self.args)
-            except Exception:
-                # the observer code failed. We want to log it
-                logger.error('%r failed' % observer)

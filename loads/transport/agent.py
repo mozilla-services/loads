@@ -131,7 +131,7 @@ class Agent(object):
                     dirname = os.path.dirname(filename)
                     if not os.path.exists(dirname):
                         os.makedirs(dirname)
-                        
+
                     with open(filename, 'w') as f:
                         file_data = file_data.encode('latin1')
                         f.write(zlib.decompress(file_data))
