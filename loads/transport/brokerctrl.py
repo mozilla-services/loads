@@ -222,7 +222,6 @@ class BrokerController(object):
     def test_ended(self, run_id):
         # we want to ping all observers that things are done
         # for a given test.
-
         # get the list of observers
         args = self.get_metadata(run_id)
         observers = _compute_observers(args.get('observer'))

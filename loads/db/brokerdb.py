@@ -30,12 +30,10 @@ class BrokerDB(object):
         self._metadata[run_id] = metadata
 
     def get_metadata(self, run_id):
+        self.flush()
         filename = os.path.join(self.directory, run_id + '-metadata.json')
-        if os.path.exists(filename):
-            with open(filename) as f:
-                return json.load(f)
-        else:
-            return self._metadata[run_id]
+        with open(filename) as f:
+            return json.load(f)
 
     def add(self, data):
         run_id = data.get('run_id')
@@ -79,18 +77,14 @@ class BrokerDB(object):
         self._callback.stop()
 
     def get_counts(self, run_id):
+        self.flush()
         filename = os.path.join(self.directory, run_id + '-counts.json')
-        if os.path.exists(filename):
-            with open(filename) as f:
-                return json.load(f)
-        else:
-            return self._counts[run_id]
+        with open(filename) as f:
+            return json.load(f)
 
     def get_data(self, run_id):
+        self.flush()
         filename = os.path.join(self.directory, run_id)
-        if not os.path.exists(filename):
-            raise StopIteration()
-        else:
-            with open(filename) as f:
-                for line in f:
-                    yield json.loads(line)
+        with open(filename) as f:
+            for line in f:
+                yield json.loads(line)

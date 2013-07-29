@@ -75,13 +75,16 @@ class DistributedRunner(Runner):
     def _execute(self):
         # calling the clients now
         self.test_result.startTestRun()
+        detached = self.args.get('detach')
 
-        cb = ioloop.PeriodicCallback(self.refresh, 100, self.loop)
-        cb.start()
+        if not detached:
+            cb = ioloop.PeriodicCallback(self.refresh, 100, self.loop)
+            cb.start()
+
         try:
             client = Client(self.args['broker'])
 
-            if self.zmq_publisher is None:
+            if self.zmq_publisher is None and not detached:
                 zmq_publisher = self.args.get('zmq_publisher')
                 if zmq_publisher in (None, DEFAULT_PUBLISHER):
                     # if this option is not provided by the command line,
@@ -115,14 +118,20 @@ class DistributedRunner(Runner):
             res = client.run(self.args)
             self.run_id = res['run_id']
             self.workers = res['workers']
-            logger.debug('Waiting for results')
-            self.loop.start()
+
+            if not detached:
+                logger.debug('Waiting for results')
+                self.loop.start()
+            else:
+                logger.info('Detached. run --attach to reattach')
+
         finally:
-            # end..
-            cb.stop()
-            self.test_result.stopTestRun()
-            self.context.destroy()
-            self.flush()
+            if not detached:
+                # end..
+                cb.stop()
+                self.test_result.stopTestRun()
+                self.context.destroy()
+                self.flush()
 
     def cancel(self):
         client = Client(self.args['broker'])

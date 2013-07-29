@@ -175,6 +175,9 @@ def main(sysargs=None):
     parser.add_argument('--attach', help='Reattach to a run',
                         action='store_true', default=False)
 
+    parser.add_argument('--detach', help='Detach immediatly',
+                        action='store_true', default=False)
+
     # per-output options
     for output in output_list():
         for option, value in output.options.items():

@@ -270,27 +270,26 @@ class TestResult(object):
 
 class LazyTestResult(TestResult):
 
-    properties = {'nb_finished_tests': 'stopTest',
-                  'nb_hits': 'add_hit',
-                  'nb_failures': 'addFailure',
-                  'nb_errors': 'addError',
-                  'nb_success': 'addSuccess',
-                  'nb_tests': 'startTest'}
-
-    not_implemented = ('errors', 'failures', 'urls')
-
     def __init__(self, config=None, args=None):
         super(LazyTestResult, self).__init__(config, args)
         self.counts = defaultdict(int)
 
-    def __getattr_(self, name):
-        if name in self.not_implemented:
-            raise NotImplementedError()
+    def __getattribute__(self, name):
+        properties = {'nb_finished_tests': 'stopTest',
+                      'nb_hits': 'add_hit',
+                      'nb_failures': 'addFailure',
+                      'nb_errors': 'addError',
+                      'nb_success': 'addSuccess',
+                      'nb_tests': 'startTest'}
 
-        if name in self.properties:
-            return self.counts[self.properties[name]]
+        not_implemented = ('errors', 'failures', 'urls')
 
-        raise AttributeError(name)
+        if name in properties:
+            return self.counts[properties[name]]
+        elif name in not_implemented:
+            raise NotImplementedError(name)
+
+        return object.__getattribute__(self, name)
 
     def set_counts(self, counts):
         for key, value in counts:
