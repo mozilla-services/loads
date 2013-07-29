@@ -29,6 +29,13 @@ class TestResult(object):
         self.observers = []
         self.args = args
 
+    def __str__(self):
+        msg = 'Ran %d tests in %.4f seconds. %d hits, %.2f RPS.'
+        return msg % (self.nb_finished_tests,
+                      self.duration,
+                      self.nb_hits,
+                      self.requests_per_second())
+
     @property
     def nb_finished_tests(self):
         return len(self._get_tests(finished=True))

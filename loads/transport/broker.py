@@ -38,7 +38,7 @@ class Broker(object):
     - **heartbeat**: the ZMQ socket to receive heartbeat requests.
     - **register** : the ZMQ socket to register workers.
     - **receiver**: the ZMQ socket that receives data from workers.
-    - **publisher**: the ZMQ socket to publish workers data.
+    - **publisher**: the ZMQ socket to publish workers data
     """
     def __init__(self, frontend=DEFAULT_FRONTEND, backend=DEFAULT_BACKEND,
                  heartbeat=DEFAULT_HEARTBEAT, register=DEFAULT_REG,
