@@ -8,6 +8,7 @@ import sys
 import tempfile
 import urlparse
 import math
+import fnmatch
 
 from gevent.socket import gethostbyname
 
@@ -52,6 +53,27 @@ class DateTimeJSONEncoder(json.JSONEncoder):
 
 
 _CACHE = {}
+
+
+def split_endpoint(endpoint):
+    """Returns the scheme, the location, and maybe the port.
+    """
+    res = {}
+    parts = urlparse.urlparse(endpoint)
+    res['scheme'] = parts.scheme
+
+    if parts.scheme == 'tcp':
+        netloc = parts.netloc.rsplit(':')
+        if len(netloc) == 1:
+            netloc.append('80')
+        res['ip'] = netloc[0]
+        res['port'] = int(netloc[1])
+    elif parts.scheme == 'ipc':
+        res['path'] = parts.path
+    else:
+        raise NotImplementedError()
+
+    return res
 
 
 def dns_resolve(url):
@@ -186,3 +208,10 @@ def try_import(*packages):
     if failed_packages:
         failed_packages = " ".join(failed_packages)
         raise ImportError('You need to run "pip install %s"' % failed_packages)
+
+
+def glob(patterns, location='.'):
+    for pattern in patterns:
+        for file_ in os.listdir(location):
+            if fnmatch.fnmatch(file_, pattern):
+                yield os.path.join(location, file_)

@@ -71,8 +71,8 @@ class TestBrokerDB(unittest.TestCase):
         with open(os.path.join(self.db.directory, '2')) as f:
             data2 = [json.loads(line) for line in f]
 
-        self.assertEqual(len(data), 5)
-        self.assertEqual(len(data2), 5)
+        self.assertEqual(len(data), 6)
+        self.assertEqual(len(data2), 6)
         counts = self.db.get_counts('1')
 
         for type_ in ('addSuccess', 'stopTestRun', 'stopTest',

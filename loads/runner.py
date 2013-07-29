@@ -1,6 +1,10 @@
+import os
 import gevent
+import subprocess
+import sys
+import shutil
 
-from loads.util import resolve_name, logger
+from loads.util import resolve_name, logger, glob
 from loads.test_result import TestResult
 from loads.relay import ZMQRelay
 from loads.output import create_output
@@ -67,10 +71,7 @@ class Runner(object):
     def __init__(self, args):
         self.args = args
         self.fqn = args.get('fqn')
-        if self.fqn is not None:
-            self.test = resolve_name(self.fqn)
-        else:
-            self.test = None
+        self.test = None
         self.slave = 'slave' in args
         self.outputs = []
         self.stop = False
@@ -98,6 +99,10 @@ class Runner(object):
         # We can have observers that will get pinged when the tests are over
         self.observers = _compute_observers(args)
 
+    def _resolve_name(self):
+        if self.fqn is not None:
+            self.test = resolve_name(self.fqn)
+
     @property
     def test_result(self):
         return self._test_result
@@ -107,7 +112,30 @@ class Runner(object):
         self.outputs.append(output)
         self.test_result.add_observer(output)
 
+    def _deploy_python_deps(self, deps):
+        # XXX pip hack to avoid uninstall
+        nil = "lambda *args, **kw: None"
+        code = ["from pip.req import InstallRequirement",
+                "InstallRequirement.uninstall = %s" % nil,
+                "InstallRequirement.commit_uninstall = %s" % nil,
+                "import pip", "pip.main()"]
+
+        cmd = [sys.executable, '-c', '"%s"' % ';'.join(code),
+               'install', '-t', 'deps', '-I']
+
+        for dep in deps:
+            print 'Deploying %r in %r' % (dep, os.getcwd())
+            process = subprocess.Popen(' '.join(cmd + [dep]), shell=True,
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE)
+            stdout, stderr = process.communicate()
+            if process.returncode != 0:
+                raise Exception(stderr)
+
+        sys.path.insert(0, 'deps')
+
     def execute(self):
+        old_location = os.getcwd()
         self.running = True
         try:
             self._execute()
@@ -117,6 +145,7 @@ class Runner(object):
             return 0
         finally:
             self.running = False
+            os.chdir(old_location)
 
     def _run(self, num, user):
         # creating the test case instance
@@ -152,6 +181,37 @@ class Runner(object):
     def _execute(self):
         """Spawn all the tests needed and wait for them to finish.
         """
+        test_dir = self.args.get('test_dir')
+        if test_dir is not None:
+            if not os.path.exists(test_dir):
+                os.makedirs(test_dir)
+
+            # grab the files, if any
+            includes = self.args.get('include_file', [])
+
+            for file_ in glob(includes):
+                print 'Copying %r' % file_
+                target = os.path.join(test_dir, file_)
+                if os.path.isdir(file_):
+                    if os.path.exists(target):
+                        shutil.rmtree(target)
+                    shutil.copytree(file_, target)
+                else:
+                    shutil.copyfile(file_, target)
+
+            # change to execution directory if asked
+            if not os.path.exists(test_dir):
+                os.makedirs(test_dir)
+            os.chdir(test_dir)
+
+        # deploy python deps if asked
+        python_deps = self.args.get('python_dep', [])
+        if python_deps != []:
+            self._deploy_python_deps(python_deps)
+
+        # resolve the name now
+        self._resolve_name()
+
         exception = None
         try:
             from gevent import monkey

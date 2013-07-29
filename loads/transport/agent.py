@@ -16,6 +16,7 @@ import random
 import json
 import subprocess
 import shlex
+import zlib
 
 import zmq.green as zmq
 from zmq.green.eventloop import ioloop, zmqstream
@@ -122,7 +123,19 @@ class Agent(object):
         # we get the message from the broker here
         data = message.data
         command = data['command']
+
         if command == 'RUN':
+            if 'files' in data:
+                for filename, file_data in data['files'].items():
+                    logger.debug('Creating %r' % filename)
+                    dirname = os.path.dirname(filename)
+                    if not os.path.exists(dirname):
+                        os.makedirs(dirname)
+                        
+                    with open(filename, 'w') as f:
+                        file_data = file_data.encode('latin1')
+                        f.write(zlib.decompress(file_data))
+
             args = data['args']
             run_id = data.get('run_id')
             pid = self._run(args, run_id)

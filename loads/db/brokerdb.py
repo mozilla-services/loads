@@ -57,7 +57,7 @@ class BrokerDB(object):
             filename = os.path.join(self.directory, run_id)
 
             with open(filename, 'a+') as f:
-                for i in range(qsize - 1):
+                for i in range(qsize):
                     line = queue.get()
                     f.write(json.dumps(line) + '\n')
 
@@ -84,7 +84,7 @@ class BrokerDB(object):
             with open(filename) as f:
                 return json.load(f)
         else:
-            return dict(self._counts[run_id])
+            return self._counts[run_id]
 
     def get_data(self, run_id):
         filename = os.path.join(self.directory, run_id)

@@ -14,7 +14,7 @@ from loads.transport.util import (DEFAULT_FRONTEND, DEFAULT_RECEIVER,
                                   DEFAULT_PUBLISHER)
 from loads.runner import Runner
 from loads.distributed import DistributedRunner
-from loads.transport.client import Client
+from loads.transport.client import Client, TimeoutError
 
 
 def _detach_question(runner):
@@ -39,15 +39,21 @@ def run(args):
             print traceback.format_exc()
             raise
     else:
-        runner = DistributedRunner(args)
 
         if attach:
             # find out what's running
             client = Client(args['broker'])
-            runs = client.list_runs()
+            try:
+                runs = client.list_runs()
+            except TimeoutError:
+                logger.info("Can't reach the broker at %r" % args['broker'])
+                client.close()
+                return 1
 
             if len(runs) == 0:
-                raise ValueError("Nothing is running")
+                logger.info("Nothing seem to be running on that broker.")
+                client.close()
+                return 1
             elif len(runs) == 1:
                 run_id, run_data = runs.items()[0]
                 __, started = run_data[-1]
@@ -55,18 +61,25 @@ def run(args):
                 # we need to pick one
                 raise NotImplementedError()
 
-            counts = client.get_counts(run_id).items()
-            metadata = client.get_metadata(run_id)
+            counts = client.get_counts(run_id)
+            events = [event for event, hits in counts]
 
+            if 'stopTestRun' in events:
+                logger.info("This test has just stopped.")
+                client.close()
+                return 1
+
+            metadata = client.get_metadata(run_id)
             logger.debug('Reattaching run %r' % run_id)
             started = datetime.utcfromtimestamp(started)
+            runner = DistributedRunner(args)
             try:
                 return runner.attach(run_id, started, counts, metadata)
             except KeyboardInterrupt:
                 _detach_question(runner)
         else:
             logger.debug('Summoning %d agents' % args['agents'])
-
+            runner = DistributedRunner(args)
             try:
                 return runner.execute()
             except KeyboardInterrupt:
@@ -86,6 +99,16 @@ def main(sysargs=None):
 
     parser.add_argument('-u', '--users', help='Number of virtual users',
                         type=str, default='1')
+
+    parser.add_argument('--test-dir', help='Directory to run the test from',
+                        type=str, default=None)
+
+    parser.add_argument('--python-dep', help='Python dep to install',
+                        action='append', default=[])
+
+    parser.add_argument('--include-file',
+                        help='File(s) to include - glob-style',
+                        action='append', default=[])
 
     # loads works with hits or duration
     group = parser.add_mutually_exclusive_group()
@@ -172,6 +195,8 @@ def main(sysargs=None):
         # second pass !
         config = Config(args.config)
         config_args = config.scan_args(parser, strip_prefixes=['loads'])
+        if 'fqn' in config['loads']:
+            config_args += [config['loads']['fqn']]
         args = parser.parse_args(args=sysargs + config_args)
 
     if args.quiet and 'stdout' in args.output:

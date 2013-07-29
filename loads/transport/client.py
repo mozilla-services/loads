@@ -4,12 +4,14 @@ from collections import defaultdict
 import errno
 import contextlib
 import json
+import zlib
+import os
 
 import zmq
 
 from loads.transport.exc import TimeoutError, ExecutionError, NoWorkerError
 from loads.transport.message import Message
-from loads.util import logger
+from loads.util import logger, glob
 from loads.transport.util import (send, recv, DEFAULT_FRONTEND,
                                   extract_result, timed, DEFAULT_TIMEOUT,
                                   DEFAULT_TIMEOUT_MOVF,
@@ -157,10 +159,34 @@ class Client(object):
 
             raise ExecutionError(msg)
 
-        return self.execute({'command': 'RUN',
-                             'async': async,
-                             'agents': agents_needed,
-                             'args': args})
+        # let's copy over some files if we need
+        includes = args.get('include_file', [])
+
+        cmd = {'command': 'RUN',
+               'async': async,
+               'agents': agents_needed,
+               'args': args}
+
+        files = {}
+
+        for file_ in glob(includes):
+            print 'Passing %r' % file_
+            # no stream XXX
+            if os.path.isdir(file_):
+                for root, dirs, _files in os.walk(file_):
+                    for f in _files:
+                        fullname = os.path.join(root, f)
+                        with open(fullname) as f:
+                            data = zlib.compress(f.read()).decode('latin1')
+                        files[fullname] = data
+            else:
+                with open(file_) as f:
+                    data = zlib.compress(f.read()).decode('latin1')
+
+                files[file_] = data
+
+        cmd['files'] = files
+        return self.execute(cmd)
 
     def ping(self, timeout=None, log_exceptions=True):
         return self.execute({'command': 'PING'}, extract=False,
@@ -172,15 +198,20 @@ class Client(object):
                             extract=False)
 
     def get_counts(self, run_id):
-        return self.execute({'command': 'GET_COUNTS', 'run_id': run_id},
-                            extract=False)
+        res = self.execute({'command': 'GET_COUNTS', 'run_id': run_id},
+                           extract=False)
+        # XXX why ?
+        if isinstance(res, dict):
+            return res.items()
+
+        return res
 
     def get_metadata(self, run_id):
         return self.execute({'command': 'GET_METADATA', 'run_id': run_id},
                             extract=False)
 
-    def status(self, run_id):
-        return self.execute({'command': 'STATUS', 'run_id': run_id})
+    def status(self, worker_id):
+        return self.execute({'command': 'STATUS', 'worker_id': worker_id})
 
     def stop(self, worker_id):
         return self.execute({'command': 'STOP', 'worker_id': worker_id})

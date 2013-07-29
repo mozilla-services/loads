@@ -9,12 +9,15 @@
 import os
 import time
 import requests
+import tempfile
+import shutil
 
 from unittest2 import TestCase, skipIf
 
 from loads.main import run as start_runner
 from loads.runner import Runner
-from loads.tests.support import get_runner_args, start_process, stop_process
+from loads.tests.support import (get_runner_args, start_process, stop_process,
+                                 hush)
 from loads.transport.client import Client
 from loads.transport.util import DEFAULT_FRONTEND
 
@@ -75,11 +78,16 @@ class FunctionalTest(TestCase):
     def setUpClass(cls):
         cls.procs = start_servers()
         cls.client = Client()
+        cls.location = os.getcwd()
+        cls.dirs = []
 
     @classmethod
     def tearDownClass(cls):
         for proc in cls.procs:
             stop_process(proc)
+        os.chdir(cls.location)
+        for dir in cls.dirs:
+            shutil.rmtree(dir)
 
     def test_normal_run(self):
         start_runner(get_runner_args(
@@ -134,14 +142,13 @@ class FunctionalTest(TestCase):
         args = get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_something',
             agents=1,
-            #output=['null'],
-            users=10,
-            duration=1)
+            output=['null'],
+            users=1,
+            duration=2)
 
         start_runner(args)
         runs = self.client.list_runs()
-
-        for i in range(5):
+        for i in range(10):
             data = self.client.get_data(runs.keys()[0])
             if len(data) > 0:
                 return
@@ -150,13 +157,13 @@ class FunctionalTest(TestCase):
         raise AssertionError('No data back')
 
     @skipIf('TRAVIS' in os.environ, 'Travis')
-    def test_distributed_detach(self):
+    def __test_distributed_detach(self):
         args = get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_something',
             agents=1,
-            #output=['null'],
-            users=10,
-            duration=1)
+            users=1,
+            output=['null'],
+            duration=2)
 
         # simulate a ctrl+c
         def _recv(self, msg):
@@ -176,6 +183,8 @@ class FunctionalTest(TestCase):
         # start the runner
         start_runner(args)
 
+        # we detached.
+
         # now reattach the console
         DistributedRunner._recv_result = old
         start_runner({'attach': True, 'broker': DEFAULT_FRONTEND,
@@ -189,3 +198,38 @@ class FunctionalTest(TestCase):
             time.sleep(.1)
 
         raise AssertionError('No data back')
+
+    @classmethod
+    def _get_dir(self):
+        dir = tempfile.mkdtemp()
+        self.dirs.append(dir)
+        return dir
+
+    @hush
+    def test_file_copy_test_file(self):
+        test_dir = self._get_dir()
+        os.chdir(os.path.dirname(__file__))
+
+        args = get_runner_args(
+            fqn='test_here.TestWebSite.test_something',
+            agents=1,
+            users=1,
+            hits=1,
+            test_dir=test_dir,
+            include_file=['test_here.*'])
+
+        start_runner(args)
+        data = []
+
+        for i in range(20):
+            runs = self.client.list_runs()
+            data = self.client.get_data(runs.keys()[0])
+            if len(data) > 0:
+                break
+            time.sleep(.1)
+
+        # check that we got in the dir
+        self.assertTrue('test_here.py' in os.listdir(test_dir))
+
+        if data == []:
+            raise AssertionError('No data back')
