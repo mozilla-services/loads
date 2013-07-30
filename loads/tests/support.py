@@ -160,3 +160,44 @@ def get_cluster(timeout=5., movf=1., ovf=1, **kw):
         workers = cli.list()
 
     return cli, cl
+
+
+# taken from http://emptysqua.re/blog/undoing-gevents-monkey-patching/
+def patch_socket(aggressive=True):
+    """Like gevent.monkey.patch_socket(), but stores old socket attributes for
+    unpatching.
+    """
+    from gevent import socket
+    _socket = __import__('socket')
+
+    old_attrs = {}
+    for attr in (
+        'socket', 'SocketType', 'create_connection', 'socketpair', 'fromfd'
+    ):
+        if hasattr(_socket, attr):
+            old_attrs[attr] = getattr(_socket, attr)
+            setattr(_socket, attr, getattr(socket, attr))
+
+    try:
+        from gevent.socket import ssl, sslerror
+        old_attrs['ssl'] = _socket.ssl
+        _socket.ssl = ssl
+        old_attrs['sslerror'] = _socket.sslerror
+        _socket.sslerror = sslerror
+    except ImportError:
+        if aggressive:
+            try:
+                del _socket.ssl
+            except AttributeError:
+                pass
+
+    return old_attrs
+
+
+def unpatch_socket(old_attrs):
+    """Take output of patch_socket() and undo patching."""
+    _socket = __import__('socket')
+
+    for attr in old_attrs:
+        if hasattr(_socket, attr):
+            setattr(_socket, attr, old_attrs[attr])

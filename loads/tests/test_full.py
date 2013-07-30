@@ -8,7 +8,7 @@ import requests
 import webtest
 
 from loads.case import TestCase
-from loads.tests.support import hush
+from loads.tests.support import hush, patch_socket, unpatch_socket
 
 
 _HERE = os.path.dirname(__file__)
@@ -22,6 +22,7 @@ class TestWebSite(TestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls.old_attrs = patch_socket()
         devnull = open('/dev/null', 'w')
         cls._server = subprocess.Popen(_SERVER, stdout=devnull,
                                        stderr=devnull)
@@ -41,12 +42,10 @@ class TestWebSite(TestCase):
     def tearDownClass(cls):
         cls._server.terminate()
         cls._server.wait()
+        unpatch_socket(cls.old_attrs)
 
     @hush
     def test_something(self):
-        from gevent import monkey
-        monkey.patch_all()
-
         res = self.app.get('/')
         self.assertTrue('chatform' in res.body)
         results = []
