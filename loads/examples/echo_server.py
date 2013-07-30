@@ -11,8 +11,8 @@ import time
 import gevent
 import gevent.pywsgi
 
-from ws4py.server.geventserver import WebSocketWSGIApplication, \
-     WebSocketWSGIHandler, WSGIServer
+from ws4py.server.wsgiutils import WebSocketWSGIApplication
+from ws4py.server.geventserver import WebSocketWSGIHandler, WSGIServer
 from ws4py.websocket import EchoWebSocket
 
 class BroadcastWebSocket(EchoWebSocket):
@@ -76,10 +76,15 @@ class EchoWebSocketApplication(object):
         return ""
 
     def auth(self, environ, start_response):
-        status = '200 OK'
         headers = [('Content-type', 'text/plain')]
+
+        if 'HTTP_AUTHORIZATION' not in environ:
+            start_response('401 Unauthorized', headers)
+            return ['Unauthorized']
+
+        status = '200 OK'
         start_response(status, headers)
-        user, pwd = base64.b64decode(environ['HTTP_AUTHORIZATION'][6:]).split(':') 
+        user, pwd = base64.b64decode(environ['HTTP_AUTHORIZATION'][6:]).split(':')
         return user
 
     def webapp(self, environ, start_response):
