@@ -44,6 +44,9 @@ class TestWebSite(TestCase):
 
     @hush
     def test_something(self):
+        from gevent import monkey
+        monkey.patch_all()
+
         res = self.app.get('/')
         self.assertTrue('chatform' in res.body)
         results = []
