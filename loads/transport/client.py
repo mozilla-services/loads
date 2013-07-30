@@ -170,7 +170,8 @@ class Client(object):
         files = {}
 
         for file_ in glob(includes):
-            print 'Passing %r' % file_
+            logger.info('Compressing %r' % file_)
+
             # no stream XXX
             if os.path.isdir(file_):
                 for root, dirs, _files in os.walk(file_):
@@ -186,7 +187,10 @@ class Client(object):
                 files[file_] = data
 
         cmd['files'] = files
-        return self.execute(cmd)
+        res = self.execute(cmd)
+        logger.debug('Run on its way')
+        logger.debug(res)
+        return res
 
     def ping(self, timeout=None, log_exceptions=True):
         return self.execute({'command': 'PING'}, extract=False,

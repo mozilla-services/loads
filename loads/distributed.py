@@ -126,6 +126,7 @@ class DistributedRunner(Runner):
                 logger.info('Detached. run --attach to reattach')
 
         finally:
+            logger.debug('Loop ended.')
             if not detached:
                 # end..
                 cb.stop()

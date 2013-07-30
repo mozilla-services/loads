@@ -97,6 +97,7 @@ class Agent(object):
                                               io_loop=self.loop)
 
     def _run(self, args, run_id=None):
+        logger.debug('Starting a run.')
         args['slave'] = True
         args['worker_id'] = os.getpid()
         try:
@@ -119,22 +120,44 @@ class Agent(object):
         self._processes[p.pid] = p, run_id
         return p.pid
 
+    def _copy_files(self, data):
+        old_dir = os.getcwd()
+        try:
+            test_dir = data['args'].get('test_dir')
+
+            if test_dir is not None:
+                if not os.path.exists(test_dir):
+                    logger.debug('Creating %r' % test_dir)
+                    os.makedirs(test_dir)
+
+                logger.debug('Moving to %r' % test_dir)
+                os.chdir(test_dir)
+
+            for filename, file_data in data['files'].items():
+                dirname = os.path.dirname(filename)
+                if not os.path.exists(dirname):
+                    os.makedirs(dirname)
+
+                with open(filename, 'w') as f:
+                    logger.debug('Creating %r in %r' % (filename,
+                                                        os.getcwd()))
+                    file_data = file_data.encode('latin1')
+                    f.write(zlib.decompress(file_data))
+        finally:
+            os.chdir(old_dir)
+
     def handle(self, message):
         # we get the message from the broker here
         data = message.data
         command = data['command']
 
         if command == 'RUN':
-            if 'files' in data:
-                for filename, file_data in data['files'].items():
-                    logger.debug('Creating %r' % filename)
-                    dirname = os.path.dirname(filename)
-                    if not os.path.exists(dirname):
-                        os.makedirs(dirname)
+            logger.debug('Received run.')
+            logger.debug(message.data)
 
-                    with open(filename, 'w') as f:
-                        file_data = file_data.encode('latin1')
-                        f.write(zlib.decompress(file_data))
+            # XXX should be done in _run or at least asynchronously
+            if 'files' in data:
+                self._copy_files(data)
 
             args = data['args']
             run_id = data.get('run_id')

@@ -232,7 +232,7 @@ class FunctionalTest(TestCase):
             users=1,
             hits=1,
             test_dir=test_dir,
-            include_file=['test_here.*'])
+            include_file=['test_here.py'])
 
         start_runner(args)
         data = []
@@ -245,7 +245,8 @@ class FunctionalTest(TestCase):
             time.sleep(.1)
 
         # check that we got in the dir
-        self.assertTrue('test_here.py' in os.listdir(test_dir))
+        content = os.listdir(test_dir)
+        self.assertTrue('test_here.py' in content, content)
 
         if data == []:
             raise AssertionError('No data back')

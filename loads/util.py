@@ -35,6 +35,12 @@ def set_logger(debug=False, name='loads', logfile='stdout'):
     ch.setFormatter(formatter)
     logger_.addHandler(ch)
 
+    # for the tests
+    if 'TESTING' in os.environ:
+        fh = logging.FileHandler('/tmp/loads.log')
+        fh.setLevel(logging.DEBUG)
+        logger.addHandler(fh)
+
 
 def total_seconds(td):
     # works for 2.7 and 2.6
