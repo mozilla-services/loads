@@ -16,7 +16,7 @@ $(PYTHON):
 	virtualenv $(VTENV_OPTS) .
 
 build: $(PYTHON)
-	$(BIN)/pip install -r test-requirements.txt
+	CYTHON=`pwd`/bin/cython $(BIN)/pip install -r test-requirements.txt
 	$(PYTHON) setup.py develop
 
 build_extras: build
