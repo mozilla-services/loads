@@ -12,15 +12,20 @@ logger = logging.getLogger('loads')
 class TestCluster(unittest.TestCase):
 
     def setUp(self):
-        self.clusters = []
         self.files = []
         self.overflow = 1.
         self.moverflow = 1.5
+        self.cluster = self.client = None
 
     def tearDown(self):
         for fl in self.files:
             os.remove(fl)
-        self.cluster.stop()
+
+        if self.cluster is not None:
+            self.cluster.stop()
+
+        if self.client is not None:
+            self.client.close()
 
     def _get_file(self):
         fd, path = tempfile.mkstemp()
@@ -29,15 +34,14 @@ class TestCluster(unittest.TestCase):
         return path
 
     @hush
-    def test_success(self):
-        client, cluster = get_cluster(wait=False)
-        self.cluster = cluster
+    def _test_success(self):
+        self.client, self.cluster = get_cluster(wait=False)
         job = {'fqn': 'loads.tests.jobs.SomeTests.test_one'}
-        res = client.run(job)
+        res = self.client.run(job)
         worker_id = res['workers'][0]
         res = {}
         while res == {}:
-            res = client.stop(worker_id)
+            res = self.client.stop(worker_id)
 
         self.assertEqual(res['status'].values(), ['terminated'])
 
