@@ -16,9 +16,7 @@ $(PYTHON):
 	virtualenv $(VTENV_OPTS) .
 
 build: $(PYTHON)
-	$(BIN)/pip install cython
-	CYTHON=`pwd`/bin/cython $(BIN)/pip install https://github.com/surfly/gevent/archive/master.zip
-	$(BIN)/pip install https://github.com/Lawouach/WebSocket-for-Python/archive/v0.3.0-beta.tar.gz
+	$(BIN)/pip install -r test-requirements.txt
 	$(PYTHON) setup.py develop
 
 build_extras: build
