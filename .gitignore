@@ -1,3 +1,7 @@
+.coverage
+.Python
+.tox
+*.un~
 *.pyc
 *.egg-info
 *.swp
