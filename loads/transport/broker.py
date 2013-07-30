@@ -45,7 +45,7 @@ class Broker(object):
                  io_threads=DEFAULT_IOTHREADS,
                  worker_timeout=DEFAULT_TIMEOUT_MOVF,
                  receiver=DEFAULT_RECEIVER, publisher=DEFAULT_PUBLISHER,
-                 dbdir=DEFAULT_DBDIR):
+                 dbdir=DEFAULT_DBDIR, use_heartbeat=False):
         # before doing anything, we verify if a broker is already up and
         # running
         logger.debug('Verifying if there is a running broker')
@@ -94,7 +94,10 @@ class Broker(object):
         self._rcvstream.on_recv(self._handle_rcv)
 
         # heartbeat
-        self.pong = Heartbeat(heartbeat, io_loop=self.loop, ctx=self.context)
+        self.use_heartbeat = use_heartbeat
+        if use_heartbeat:
+            self.pong = Heartbeat(heartbeat, io_loop=self.loop,
+                                  ctx=self.context)
 
         # status
         self.started = False
@@ -249,7 +252,8 @@ class Broker(object):
             return
 
         # running the heartbeat
-        self.pong.start()
+        if self.use_heartbeat:
+            self.pong.start()
 
         # running the cleaner
         self.cleaner = ioloop.PeriodicCallback(self.ctrl.clean,
@@ -285,8 +289,9 @@ class Broker(object):
         except IOError:
             pass
 
-        logger.debug('Stopping the heartbeat')
-        self.pong.stop()
+        if self.use_heartbeat:
+            logger.debug('Stopping the heartbeat')
+            self.pong.stop()
 
         logger.debug('Stopping the cleaner')
         self.cleaner.stop()

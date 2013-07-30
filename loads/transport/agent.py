@@ -66,8 +66,10 @@ class Agent(object):
                  heartbeat=DEFAULT_HEARTBEAT, register=DEFAULT_REG,
                  ping_delay=10., ping_retries=3,
                  params=None, timeout=DEFAULT_TIMEOUT_MOVF,
-                 max_age=DEFAULT_MAX_AGE, max_age_delta=DEFAULT_MAX_AGE_DELTA):
+                 max_age=DEFAULT_MAX_AGE, max_age_delta=DEFAULT_MAX_AGE_DELTA,
+                 use_heartbeat=False):
         logger.debug('Initializing the agent.')
+        self.use_heartbeat = use_heartbeat
         self.ctx = zmq.Context()
         self.backend = backend
         self._reg = self.ctx.socket(zmq.PUSH)
@@ -79,9 +81,10 @@ class Agent(object):
         self.loop = ioloop.IOLoop()
         self._backstream = zmqstream.ZMQStream(self._backend, self.loop)
         self._backstream.on_recv(self._handle_recv_back)
-        self.ping = Stethoscope(heartbeat, onbeatlost=self.lost,
-                                delay=ping_delay, retries=ping_retries,
-                                ctx=self.ctx, io_loop=self.loop)
+        if use_heartbeat:
+            self.ping = Stethoscope(heartbeat, onbeatlost=self.lost,
+                                    delay=ping_delay, retries=ping_retries,
+                                    ctx=self.ctx, io_loop=self.loop)
         self.debug = logger.isEnabledFor(logging.DEBUG)
         self.params = params
         self.pid = os.getpid()
@@ -268,7 +271,8 @@ class Agent(object):
         except zmq.core.error.ZMQError:
             pass
         self.loop.stop()
-        self.ping.stop()
+        if self.use_heartbeat:
+            self.ping.stop()
         self._check.stop()
         time.sleep(.1)
         self.ctx.destroy(0)
@@ -280,8 +284,9 @@ class Agent(object):
         util.PARAMS = self.params
         logger.debug('Starting the agent loop')
 
-        # running the pinger
-        self.ping.start()
+        if self.use_heartbeat:
+            # running the pinger
+            self.ping.start()
         self._check.start()
         self.running = True
 
