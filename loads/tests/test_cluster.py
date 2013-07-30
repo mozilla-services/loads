@@ -34,7 +34,7 @@ class TestCluster(unittest.TestCase):
         return path
 
     @hush
-    def test_success(self):
+    def _test_success(self):
         self.client, self.cluster = get_cluster(wait=False)
         job = {'fqn': 'loads.tests.jobs.SomeTests.test_one'}
         res = self.client.run(job)
