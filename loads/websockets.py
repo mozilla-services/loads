@@ -15,7 +15,8 @@ class WebSocketClient(_WS):
         self._test_result = test_result
 
     def received_message(self, m):
-        self.callback(m)
+        if self.callback is not None:
+            self.callback(m)
         if self._test_result is not None:
             self._test_result.socket_message(len(m.data))
         super(WebSocketClient, self).received_message(m)
@@ -36,8 +37,8 @@ def cleanup(greenlet):
         sock.close()
 
 
-def create_ws(url, callback, test_result, protocols=None, extensions=None,
-              klass=None):
+def create_ws(url, test_result, callback=None, protocols=None,
+              extensions=None, klass=None):
     custom_klass = klass is not None
     if klass is None:
         klass = WebSocketClient

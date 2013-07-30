@@ -4,7 +4,7 @@ import subprocess
 import sys
 import shutil
 
-from loads.util import resolve_name, glob
+from loads.util import resolve_name, glob, logger
 from loads.test_result import TestResult
 from loads.relay import ZMQRelay
 from loads.output import create_output
@@ -164,28 +164,33 @@ class Runner(object):
         """Spawn all the tests needed and wait for them to finish.
         """
         test_dir = self.args.get('test_dir')
+
+        # in standalone mode we take care of creating
+        # the files
         if test_dir is not None:
-            test_dir = test_dir + '-%d' % os.getpid()
+            if not self.slave:
+                test_dir = test_dir + '-%d' % os.getpid()
 
-            if not os.path.exists(test_dir):
-                os.makedirs(test_dir)
+                if not os.path.exists(test_dir):
+                    os.makedirs(test_dir)
 
-            # grab the files, if any
-            includes = self.args.get('include_file', [])
+                # grab the files, if any
+                includes = self.args.get('include_file', [])
 
-            for file_ in glob(includes):
-                print 'Copying %r' % file_
-                target = os.path.join(test_dir, file_)
-                if os.path.isdir(file_):
-                    if os.path.exists(target):
-                        shutil.rmtree(target)
-                    shutil.copytree(file_, target)
-                else:
-                    shutil.copyfile(file_, target)
+                for file_ in glob(includes):
+                    print 'Copying %r' % file_
+                    target = os.path.join(test_dir, file_)
+
+                    print '%r -> %r' % (file_, target)
+                    if os.path.isdir(file_):
+                        if os.path.exists(target):
+                            shutil.rmtree(target)
+                        shutil.copytree(file_, target)
+                    else:
+                        shutil.copyfile(file_, target)
 
             # change to execution directory if asked
-            if not os.path.exists(test_dir):
-                os.makedirs(test_dir)
+            logger.debug('chdir %r' % test_dir)
             os.chdir(test_dir)
 
         # deploy python deps if asked
@@ -195,7 +200,6 @@ class Runner(object):
 
         # resolve the name now
         self._resolve_name()
-
         exception = None
         try:
             from gevent import monkey

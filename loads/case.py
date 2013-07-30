@@ -48,9 +48,14 @@ class TestCase(unittest.TestCase):
     def defaultTestResult(self):
         return TestResult()
 
-    def create_ws(self, url, callback, protocols=None, extensions=None):
+    def create_ws(self, url, callback=None, protocols=None, extensions=None,
+                  klass=None):
         from loads.websockets import create_ws
-        ws = create_ws(url, callback, self._test_result, protocols, extensions)
+        ws = create_ws(url, self._test_result,
+                       callback=callback,
+                       protocols=protocols,
+                       extensions=extensions,
+                       klass=klass)
         self._ws.append(ws)
         return ws
 

@@ -280,7 +280,10 @@ class Broker(object):
         if not self.started:
             return
 
-        self._backstream.flush()
+        try:
+            self._backstream.flush()
+        except IOError:
+            pass
 
         logger.debug('Stopping the heartbeat')
         self.pong.stop()

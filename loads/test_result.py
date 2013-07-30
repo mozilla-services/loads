@@ -30,11 +30,16 @@ class TestResult(object):
         self.args = args
 
     def __str__(self):
-        msg = 'Ran %d tests in %.4f seconds. %d hits, %.2f RPS.'
+
+        msg = ('Ran %d tests in %.4f seconds. %d hits, %.2f RPS, '
+               '%s sockets opened, Bytes thru sockets %d')
+
         return msg % (self.nb_finished_tests,
                       self.duration,
                       self.nb_hits,
-                      self.requests_per_second())
+                      self.requests_per_second(),
+                      self.socket,
+                      self.socket_data_received)
 
     @property
     def nb_finished_tests(self):
@@ -280,7 +285,9 @@ class LazyTestResult(TestResult):
                       'nb_failures': 'addFailure',
                       'nb_errors': 'addError',
                       'nb_success': 'addSuccess',
-                      'nb_tests': 'startTest'}
+                      'nb_tests': 'startTest',
+                      'socket': 'socket_open',
+                      'socket_data_received': 'socket_message'}
 
         not_implemented = ('errors', 'failures', 'urls')
 
