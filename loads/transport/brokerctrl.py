@@ -234,9 +234,10 @@ class BrokerController(object):
         test_result.args = args
 
         data = self.get_data(run_id)
-        started = datetime.datetime.utcfromtimestamp(data[0]['started'])
+        if len(data) > 0:
+            started = datetime.datetime.utcfromtimestamp(data[0]['started'])
+            test_result.startTestRun(when=started)
 
-        test_result.startTestRun(when=started)
         test_result.set_counts(self.get_counts(run_id))
 
         # for each observer we call it with the test results
