@@ -62,9 +62,9 @@ class DistributedRunner(Runner):
         try:
             data = json.loads(msg[0])
             data_type = data.pop('data_type')
-
-            method = getattr(self.test_result, data_type)
-            method(**data)
+            if hasattr(self.test_result, data_type):
+                method = getattr(self.test_result, data_type)
+                method(**data)
 
             if data_type == 'stopTestRun':
                 self.loop.stop()
