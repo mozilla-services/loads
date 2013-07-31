@@ -170,7 +170,7 @@ class Client(object):
         files = {}
 
         for file_ in glob(includes):
-            logger.info('Compressing %r' % file_)
+            logger.debug('Compressing %r' % file_)
 
             # no stream XXX
             if os.path.isdir(file_):

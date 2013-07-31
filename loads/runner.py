@@ -106,7 +106,7 @@ class Runner(object):
                'install', '-t', 'deps', '-I']
 
         for dep in deps:
-            print 'Deploying %r in %r' % (dep, os.getcwd())
+            logger.debug('Deploying %r in %r' % (dep, os.getcwd()))
             process = subprocess.Popen(' '.join(cmd + [dep]), shell=True,
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE)
@@ -178,10 +178,8 @@ class Runner(object):
                 includes = self.args.get('include_file', [])
 
                 for file_ in glob(includes):
-                    print 'Copying %r' % file_
+                    logger.debug('Copying %r' % file_)
                     target = os.path.join(test_dir, file_)
-
-                    print '%r -> %r' % (file_, target)
                     if os.path.isdir(file_):
                         if os.path.exists(target):
                             shutil.rmtree(target)
