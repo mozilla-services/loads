@@ -41,7 +41,7 @@ class BrokerDB(object):
 
     def add(self, data):
         run_id = data.get('run_id')
-        data_type = data.get('data_type')
+        data_type = data.get('data_type', 'unknown')
         size = data.get('size', 1)
         self._counts[run_id][data_type] += size
         self._buffer[run_id].put(data)
