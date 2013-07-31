@@ -153,6 +153,9 @@ def main(sysargs=None):
                         help='The output used to display the results',
                         choices=outputs)
 
+    parser.add_argument('--cwd', default=None,
+                        help='The base directory to run the tests from')
+
     parser.add_argument('--aws-image-id', help='Amazon Server Id', type=str,
                         default='ami-be77e08e')
     parser.add_argument('--aws-access-key', help='Amazon Access Key',
