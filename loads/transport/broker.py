@@ -196,8 +196,10 @@ class Broker(object):
                 self._send_json(msg[:-1], {'error': 'Not enough agents'})
                 return
 
-            # send to every worker with the run_id
+            # send to every worker with the run_id and the receiver endpoint
             data['run_id'] = run_id
+            data['args']['zmq_receiver'] = self.endpoints['receiver']
+
             msg[2] = json.dumps(data)
 
             # save the tests metadata in the db
