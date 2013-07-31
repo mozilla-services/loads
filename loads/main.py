@@ -10,7 +10,7 @@ from konfig import Config
 from loads.util import logger, set_logger, try_import
 from loads.output import output_list
 from loads import __version__
-from loads.transport.util import (DEFAULT_FRONTEND, DEFAULT_PUBLISHER)
+from loads.transport.util import DEFAULT_FRONTEND, DEFAULT_PUBLISHER
 from loads.runner import Runner
 from loads.distributed import DistributedRunner
 from loads.transport.client import Client, TimeoutError
