@@ -15,9 +15,9 @@ from loads.util import set_logger, logger
 from loads.transport.util import (register_ipc_file, DEFAULT_FRONTEND,
                                   DEFAULT_BACKEND, DEFAULT_HEARTBEAT,
                                   DEFAULT_REG, verify_broker,
-                                  kill_ghost_brokers, DEFAULT_RECEIVER,
-                                  DEFAULT_PUBLISHER,
-                                  extract_result)
+                                  kill_ghost_brokers, extract_result,
+                                  DEFAULT_BROKER_RECEIVER,
+                                  DEFAULT_PUBLISHER)
 from loads.transport.heartbeat import Heartbeat
 from loads.transport.exc import DuplicateBrokerError
 from loads.transport.client import DEFAULT_TIMEOUT_MOVF
@@ -34,7 +34,7 @@ class Broker(object):
     Options:
 
     - **frontend**: the ZMQ socket to receive jobs.
-    - **backend**: the ZMQ socket to communicate with workers.
+    - **backend**: the ZMQ socket to communicate with agents.
     - **heartbeat**: the ZMQ socket to receive heartbeat requests.
     - **register** : the ZMQ socket to register workers.
     - **receiver**: the ZMQ socket that receives data from workers.
@@ -44,7 +44,7 @@ class Broker(object):
                  heartbeat=DEFAULT_HEARTBEAT, register=DEFAULT_REG,
                  io_threads=DEFAULT_IOTHREADS,
                  worker_timeout=DEFAULT_TIMEOUT_MOVF,
-                 receiver=DEFAULT_RECEIVER, publisher=DEFAULT_PUBLISHER,
+                 receiver=DEFAULT_BROKER_RECEIVER, publisher=DEFAULT_PUBLISHER,
                  dbdir=DEFAULT_DBDIR, use_heartbeat=False):
         # before doing anything, we verify if a broker is already up and
         # running
@@ -91,7 +91,7 @@ class Broker(object):
         self._regstream = zmqstream.ZMQStream(self._registration, self.loop)
         self._regstream.on_recv(self._handle_reg)
         self._rcvstream = zmqstream.ZMQStream(self._receiver, self.loop)
-        self._rcvstream.on_recv(self._handle_rcv)
+        self._rcvstream.on_recv(self._handle_recv)
 
         # heartbeat
         self.use_heartbeat = use_heartbeat
@@ -106,8 +106,8 @@ class Broker(object):
         # controller
         self.ctrl = BrokerController(self, self.loop, dbdir, worker_timeout)
 
-    def _handle_rcv(self, msg):
-        # publishing all the data received from slaves
+    def _handle_recv(self, msg):
+        # publishing all the data received from agents
         self._publisher.send(msg[0])
 
         # saving the data locally
@@ -223,7 +223,6 @@ class Broker(object):
     def _handle_recv_back(self, msg):
         # back => front
         #logger.debug('front <- back [%s]' % msg[0])
-
         # let's remove the worker id and track the time it took
         worker_id = msg[0]
         msg = msg[1:]
@@ -325,8 +324,8 @@ def main(args=sys.argv):
                         help="ZMQ socket for the registration.")
 
     parser.add_argument('--receiver', dest='receiver',
-                        default=DEFAULT_RECEIVER,
-                        help="ZMQ socket for the registration.")
+                        default=DEFAULT_BROKER_RECEIVER,
+                        help="ZMQ socket to receive events from the runners")
 
     parser.add_argument('--publisher', dest='publisher',
                         default=DEFAULT_PUBLISHER,

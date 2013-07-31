@@ -10,7 +10,7 @@ from konfig import Config
 from loads.util import logger, set_logger, try_import
 from loads.output import output_list
 from loads import __version__
-from loads.transport.util import (DEFAULT_FRONTEND, DEFAULT_RECEIVER,
+from loads.transport.util import (DEFAULT_FRONTEND, DEFAULT_AGENT_RECEIVER,
                                   DEFAULT_PUBLISHER)
 from loads.runner import Runner
 from loads.distributed import DistributedRunner
@@ -136,8 +136,9 @@ def main(sysargs=None):
                              'will override any value your provided in '
                              'the tests for the WebTest client.')
 
-    parser.add_argument('--zmq-receiver', default=DEFAULT_RECEIVER,
-                        help='Socket where the agents send the results to.')
+    parser.add_argument('--zmq-receiver', default=None,
+                        help=('Socket where the runners send the events to'
+                              ' (the one opened on the agent side).'))
 
     parser.add_argument('--zmq-publisher', default=DEFAULT_PUBLISHER,
                         help='Socket where the results are published.')

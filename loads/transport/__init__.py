@@ -4,7 +4,8 @@ import time
 from loads.transport.util import (DEFAULT_BACKEND, DEFAULT_HEARTBEAT,  # NOQA
                             DEFAULT_FRONTEND, encode_params, get_params,
                             DEFAULT_REG, DEFAULT_TIMEOUT_MOVF,
-                            DEFAULT_MAX_AGE, DEFAULT_MAX_AGE_DELTA)
+                            DEFAULT_MAX_AGE, DEFAULT_MAX_AGE_DELTA,
+                            DEFAULT_AGENT_RECEIVER, DEFAULT_BROKER_RECEIVER)
 
 
 __all__ = ('get_cluster', 'get_params')
@@ -12,7 +13,8 @@ __all__ = ('get_cluster', 'get_params')
 
 def get_cluster(numprocesses=5, frontend=DEFAULT_FRONTEND,
                 backend=DEFAULT_BACKEND, heartbeat=DEFAULT_HEARTBEAT,
-                register=DEFAULT_REG,
+                register=DEFAULT_REG, agent_receiver=DEFAULT_AGENT_RECEIVER,
+                broker_receiver=DEFAULT_BROKER_RECEIVER,
                 working_dir='.', logfile='stdout',
                 debug=False, background=False, worker_params=None,
                 timeout=DEFAULT_TIMEOUT_MOVF, max_age=DEFAULT_MAX_AGE,
@@ -57,10 +59,15 @@ def get_cluster(numprocesses=5, frontend=DEFAULT_FRONTEND,
                   logfile, debug, '--frontend', frontend, '--backend',
                   backend, '--heartbeat', heartbeat]
 
-    worker_cmd = [python, '-m', 'loads.transport.agent', '--logfile',
-                  logfile, debug, '--backend', backend, '--heartbeat',
-                  heartbeat, '--timeout', str(timeout), '--max-age',
-                  str(max_age), '--max-age-delta', str(max_age_delta)]
+    worker_cmd = [python, '-m', 'loads.transport.agent',
+                  '--logfile', logfile, debug,
+                  '--backend', backend,
+                  '--heartbeat', heartbeat,
+                  '--receiver', agent_receiver,
+                  '--publisher', broker_receiver,
+                  '--timeout', str(timeout),
+                  '--max-age', str(max_age),
+                  '--max-age-delta', str(max_age_delta)]
 
     if worker_params:
         worker_cmd += ['--params', params]
