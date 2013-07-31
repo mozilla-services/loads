@@ -58,6 +58,15 @@ class Runner(object):
         self.fqn = args.get('fqn')
         self.test = None
         self.slave = 'slave' in args
+        self.slave = 'slave' in args
+
+        # Only resolve the name of the test if we're using the default python
+        # test-runner.
+        if args.get('test_runner') is None and self.fqn:
+            self.test = resolve_name(self.fqn)
+        else:
+            self.test = None
+
         self.outputs = []
         self.stop = False
 
@@ -204,7 +213,8 @@ class Runner(object):
             monkey.patch_all()
 
             if not hasattr(self.test, 'im_class'):
-                raise ValueError(self.test)
+                raise ValueError("The test (%s) isn't properly set"
+                                 % self.test)
 
             worker_id = self.args.get('worker_id', None)
 
