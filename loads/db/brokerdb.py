@@ -67,6 +67,9 @@ class BrokerDB(object):
             if qsize == 0:
                 continue
 
+            if run_id is None:
+                run_id = 'unknown'
+
             filename = os.path.join(self.directory, run_id)
 
             with open(filename, 'a+') as f:
