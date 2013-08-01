@@ -53,7 +53,7 @@ class Agent(object):
                     this one should contain a "{pid}" section which will be
                     replaced by the pid of the agent, since each receiving
                     socket between the agent and the workers should be unique.
-    - **publisher**: the ZMQ socket to send data about the tests.
+    - **push**: the ZMQ socket to send data about the tests.
     - **ping_delay**: the delay in seconds betweem two pings.
     - **ping_retries**: the number of attempts to ping the broker before
       quitting.
@@ -71,7 +71,7 @@ class Agent(object):
     def __init__(self, backend=DEFAULT_BACKEND,
                  heartbeat=DEFAULT_HEARTBEAT, register=DEFAULT_REG,
                  receiver=DEFAULT_AGENT_RECEIVER,
-                 publisher=DEFAULT_BROKER_RECEIVER,
+                 push=DEFAULT_BROKER_RECEIVER,
                  ping_delay=10., ping_retries=3,
                  params=None, timeout=DEFAULT_TIMEOUT_MOVF,
                  max_age=DEFAULT_MAX_AGE, max_age_delta=DEFAULT_MAX_AGE_DELTA,
@@ -90,7 +90,7 @@ class Agent(object):
         self._processes = {}
         self._started = self._stopped = self._launched = 0
 
-        for ipc in (register, receiver, publisher):
+        for ipc in (register, receiver, push):
             register_ipc_file(ipc)
 
         self.loop = ioloop.IOLoop()
@@ -113,7 +113,7 @@ class Agent(object):
         self._push = self.ctx.socket(zmq.PUSH)
         self._push.set_hwm(8096 * 10)
         self._push.setsockopt(zmq.LINGER, -1)
-        self._push.connect(publisher)
+        self._push.connect(push)
 
         # Setup the zmq streams.
         self._backstream = zmqstream.ZMQStream(self._backend, self.loop)
@@ -417,7 +417,7 @@ def main(args=sys.argv):
     parser.add_argument('--register', dest='register',
                         default=DEFAULT_REG,
                         help="ZMQ socket for the registration.")
-    parser.add_argument('--publisher', dest='publisher',
+    parser.add_argument('--broker-push', dest='push',
                         default=DEFAULT_BROKER_RECEIVER,
                         help='ZMQ socket to proxy events to')
 
@@ -466,10 +466,10 @@ def main(args=sys.argv):
     logger.info('Agent registers at %s' % args.backend)
     logger.info('The heartbeat socket is at %r' % args.heartbeat)
     logger.info('The receiving socket is at %s' % args.receiver)
-    logger.info('The publisher socket is at %s' % args.publisher)
+    logger.info('The push socket is at %s' % args.push)
     agent = Agent(backend=args.backend, heartbeat=args.heartbeat,
                   register=args.register, receiver=args.receiver,
-                  publisher=args.publisher, params=params,
+                  push=args.push, params=params,
                   timeout=args.timeout, max_age=args.max_age,
                   max_age_delta=args.max_age_delta)
 
