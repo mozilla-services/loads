@@ -27,17 +27,17 @@ class DistributedRunner(Runner):
 
         # socket where the results are published
         self.context = zmq.Context()
-        self.pull = self.context.socket(zmq.SUB)
-        self.pull.setsockopt(zmq.SUBSCRIBE, '')
-        self.pull.set_hwm(8096 * 10)
-        self.pull.setsockopt(zmq.LINGER, -1)
+        self.sub = self.context.socket(zmq.SUB)
+        self.sub.setsockopt(zmq.SUBSCRIBE, '')
+        self.sub.set_hwm(8096 * 10)
+        self.sub.setsockopt(zmq.LINGER, -1)
         self.zmq_publisher = None
         self.zstream = None
 
         # io loop
         self.loop = ioloop.IOLoop()
 
-        self.zstream = zmqstream.ZMQStream(self.pull, self.loop)
+        self.zstream = zmqstream.ZMQStream(self.sub, self.loop)
         self.zstream.on_recv(self._recv_result)
 
         self.workers = []
@@ -75,6 +75,9 @@ class DistributedRunner(Runner):
                 # loop.
                 self._stopped_agents += 1
                 if self._stopped_agents == self._nb_agents:
+                    self.loop.stop()
+            elif data_type == 'run-finished':
+                if data.get('run_id') == self.run_id:
                     self.loop.stop()
         except Exception:
             self.loop.stop()
@@ -117,8 +120,8 @@ class DistributedRunner(Runner):
                     else:
                         zmq_publisher = DEFAULT_PUBLISHER
 
-                self.pull.connect(zmq_publisher)
-                self.zstream = zmqstream.ZMQStream(self.pull, self.loop)
+                self.sub.connect(zmq_publisher)
+                self.zstream = zmqstream.ZMQStream(self.sub, self.loop)
                 self.zstream.on_recv(self._recv_result)
                 self.zmq_publisher = zmq_publisher
 
