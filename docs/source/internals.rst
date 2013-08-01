@@ -3,7 +3,7 @@ Under the hood — How loads is designed
 
 Hopefully, it's not really complicated to dig into the code and have a good
 overview of how *loads* is designed, but sometimes a good document explaining
-things is a good starting point, so let's try!
+how things are done is a good starting point, so let's try!
 
 You can run loads either in *distributed mode* or in *non-distributed* mode.
 The vast majority of the time, you want to spawn a number of agents and let

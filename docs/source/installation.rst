@@ -55,4 +55,3 @@ To install what's required to run distributed tests, you need to
 run::
 
     $ make build_extras
-

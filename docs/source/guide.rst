@@ -7,7 +7,7 @@ Using Loads with Requests
 -------------------------
 
 Let's say you want to load test the Elastic Search root page on your
-system.
+system, just to be sure.
 
 Write a unittest like this one and save it in an **example.py** file::
 
@@ -105,8 +105,13 @@ write a test that uses a web socket against it::
 Using Loads with WebTest
 ------------------------
 
-If you are a **WebTest** fan, you can use it instead of Requests.
-You just need to use **app** instead of **session** in the test class::
+If you are a **WebTest** fan, you can use it instead of Requests. If you don't
+know what webtest is, `you should have a look at it
+<http://webtest.pythonpaste.org/en/latest/>`_ ;).
+
+You just need to use **app** instead of **session** in the test class, that's
+a `webtest.TestApp` object, providing all the APIs to interact with a web
+application::
 
     from loads.case import TestCase
 
@@ -116,21 +121,19 @@ You just need to use **app** instead of **session** in the test class::
             self.assertTrue('Search' in self.app.get('/'))
 
 
-
-Then you can define the server root url with **--server-url**
+Of course, because the server root URL will change during the tests, you can
+define it outside the tests, on the command line, with **--server-url**
 when you run your load test::
 
     $ bin/loads-runner example.TestWebSite.test_something --server_url http://localhost:9200
 
-The **app** attribute is a `WebTest <https://webtest.readthedocs.org>`_ TestApp
-instance, that provides all the APIs to interact with a web application.
 
 
 Changing the server URL
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 It may happen that you need to change the server url when you're running the
-tests. To do so, we provide a simple API::
+tests. To do so, change the `server_url` attribute of the app object::
 
     self.app.server_url = 'http://new-server'
 
@@ -139,6 +142,9 @@ Distributed test
 ----------------
 
 If you want to send a lot of load, you need to run a distributed test.
+A distributed test uses multiple agents to do the requests. The agents can be
+on the same machine, or on a different physical hardware.
+
 The **Loads** command line is able to interact with several **agents**
 through a **broker**.
 
@@ -179,16 +185,16 @@ Let's use them now, with the **agents** option::
     $ bin/load-runner example.TestWebSite.test_something -u 10:20:30 -c 20 --agents 5
     [======================================================================]  100%
 
-Congrats, you have just sent 6000 hits from 5 different agents.
+Congrats, you have just sent 6000 hits from 5 different agents. Easy, no?
 
 
 Detach mode
 ~~~~~~~~~~~
 
-When you are running in distributed mode a long test, you might want to detach
-the console and come back later to check your load test.
+When you are running a long test in distributed mode, you might want to detach
+the console and come back later to check the status of the load test.
 
-You can simply hit Ctrl+C in order to do this. **Loads** will ask you if
+To do this, you can simply hit Ctrl+C. **Loads** will ask you if
 you want to detach the console and continue the test, or simply stop it::
 
 

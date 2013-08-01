@@ -1,26 +1,17 @@
-Welcome to Loads's documentation!
-=================================
+Loads — Load testing for dummies
+================================
 
-.. warning::
+**Loads** is a tool to load test your HTTP services.
 
-   Loads is under heavy development. Don't use it.
+With **Loads**, your load tests are classical
+Python unit tests which are calling the service(s) you want to send load to.
 
+It also comes with a command line to run the actual load.
 
+Loads tries its best to avoid reinventing the wheel, so we offer integration
+with 3 existing libraries: **Requests**, **WebTest** and **ws4py**.
 
-**Loads** is a framework for load testing an HTTP service.
-
-Its installation is explained in :ref:`installation`.
-
-
-**Loads** works like Funkload: load tests are classical
-Python unit tests that are calling the server(s) to tests
-and a command line use them to run the actual load.
-
-Instead of providing its own API to call the server to
-test, **Loads** offers an integration with 3 existing
-libraries: **Requests**, **WebTest** and **ws4py**.
-
-Here's a test example::
+Here's a really simple test example::
 
     from loads.case import TestCase
 
@@ -29,6 +20,9 @@ Here's a test example::
         def test_es(self):
             self.session.get('http://localhost:9200')
 
+If you don't want to write your load tests in python, or if you want to use any
+other library to describe the testing, **Loads** allows you to use your
+own formalism. see :doc:zmq-api.
 
 With such a test, running loads simply consists of doing::
 
@@ -59,5 +53,6 @@ More documentation
 
    installation
    guide
+   next-level
    internals
    zmq-api
