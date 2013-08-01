@@ -2,12 +2,11 @@ import argparse
 import sys
 import logging
 import traceback
-import os
 from datetime import datetime
 
 from konfig import Config
 
-from loads.util import logger, set_logger, try_import
+from loads.util import logger, set_logger
 from loads.output import output_list
 from loads import __version__
 from loads.transport.util import DEFAULT_FRONTEND, DEFAULT_PUBLISHER
@@ -156,25 +155,6 @@ def main(sysargs=None):
     parser.add_argument('--cwd', default=None,
                         help='The base directory to run the tests from')
 
-    parser.add_argument('--aws-image-id', help='Amazon Server Id', type=str,
-                        default='ami-be77e08e')
-    parser.add_argument('--aws-access-key', help='Amazon Access Key',
-                        type=str, default=os.environ.get('ACCESS_KEY'))
-    parser.add_argument('--aws-secret-key', help='Amazon Secret Key',
-                        type=str, default=os.environ.get('SECRET_KEY'))
-    parser.add_argument('--aws-ssh-user', help='Amazon User',
-                        type=str, default='ubuntu')
-    parser.add_argument('--aws-ssh-key', help='Amazon SSH Key file',
-                        type=str, default='ubuntu')
-    parser.add_argument('--aws', help='Running on AWS?', action='store_true',
-                        default=False)
-    parser.add_argument('--aws-python-deps', help='Python deps to install',
-                        action='append', default=[])
-    parser.add_argument('--aws-system-deps', help='System deps to install',
-                        action='append', default=[])
-    parser.add_argument('--aws-test-dir', help='Test dir to embark',
-                        default=None)
-
     parser.add_argument('--attach', help='Reattach to a run',
                         action='store_true', default=False)
 
@@ -223,36 +203,9 @@ def main(sysargs=None):
         parser.print_usage()
         sys.exit(0)
 
-    # deploy on amazon
-    if args.aws:
-        try_import('paramiko', 'boto')
-
-        from loads.deploy import aws_deploy
-        master, master_id = aws_deploy(args.aws_access_key,
-                                       args.aws_secret_key,
-                                       args.aws_ssh_user,
-                                       args.aws_ssh_key,
-                                       args.aws_image_id,
-                                       args.aws_python_deps,
-                                       args.aws_system_deps,
-                                       args.aws_test_dir)
-        # XXX
-        args.broker = 'tcp://%s:5553' % master['host']
-        args.zmq_publisher = 'tcp://%s:5554' % master['host']
-    else:
-        master_id = None
-
-    try:
-        args = dict(args._get_kwargs())
-        res = run(args)
-        return res
-    finally:
-        if master_id is not None:
-            print 'Shutting down Amazon boxes'
-            from loads.deploy import aws_shutdown
-            aws_shutdown(args['aws_access_key'],
-                         args['aws_secret_key'],
-                         master_id)
+    args = dict(args._get_kwargs())
+    res = run(args)
+    return res
 
 
 if __name__ == '__main__':
