@@ -177,7 +177,7 @@ class Agent(object):
                 cmd += 'run(%s)' % str(args)
                 cmd = sys.executable + ' -c "%s"' % cmd
                 cmd = shlex.split(cmd)
-                p = subprocess.Popen(cmd)
+                p = subprocess.Popen(cmd, cwd=args.get('test_dir'))
         except Exception, e:
             msg = 'Failed to start process ' + str(e)
             raise ExecutionError(msg)
