@@ -9,8 +9,13 @@ import mock
 class TestZmqRelay(TestCase):
 
     def setUp(self):
+        self._old_init_socket = ZMQRelay._init_socket
+        ZMQRelay._init_socket = mock.Mock()
         self.relay = ZMQRelay(args={})
         self.relay.push = mock.Mock()
+
+    def tearDown(self):
+        ZMQRelay._init_socket = self._old_init_socket
 
     def test_add_success(self):
         self.relay.addSuccess(mock.sentinel.test, mock.sentinel.loads_status)

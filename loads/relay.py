@@ -5,16 +5,10 @@ import errno
 import zmq.green as zmq
 
 from loads.util import DateTimeJSONEncoder
-from loads.transport.util import DEFAULT_RECEIVER
 
 
 class ZMQRelay(object):
     """Relays all the method calls to a zmq endpoint"""
-
-    # XXX is this relevant anymore ?
-    #
-    options = {'receiver': ('Socket to send the calls to',
-                            str, DEFAULT_RECEIVER, True)}
 
     def __init__(self, args):
         self.args = args
@@ -24,7 +18,7 @@ class ZMQRelay(object):
         self.wid = self.args.get('worker_id')
 
     def _init_socket(self):
-        receive = self.args.get('zmq_receiver', DEFAULT_RECEIVER)
+        receive = self.args['zmq_receiver']
         self._push = self.context.socket(zmq.PUSH)
         self._push.set_hwm(8096 * 10)
         self._push.setsockopt(zmq.LINGER, -1)
