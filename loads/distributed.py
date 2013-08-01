@@ -20,9 +20,10 @@ class DistributedRunner(Runner):
     """
     def __init__(self, args):
         super(DistributedRunner, self).__init__(args)
-        self.ended = self.hits = 0
         self.loop = self.run_id = None
         self._test_result = None
+        self._stopped_agents = 0
+        self._nb_agents = args.get('agents')
 
         # socket where the results are published
         self.context = zmq.Context()
@@ -35,12 +36,15 @@ class DistributedRunner(Runner):
 
         # io loop
         self.loop = ioloop.IOLoop()
-        self.outputs = []
+
+        self.zstream = zmqstream.ZMQStream(self.pull, self.loop)
+        self.zstream.on_recv(self._recv_result)
+
         self.workers = []
 
-        outputs = args.get('output', ['stdout'])
-
-        for output in outputs:
+        # outputs
+        self.outputs = []
+        for output in args.get('output', ['stdout']):
             self.register_output(output)
 
     @property
@@ -62,12 +66,16 @@ class DistributedRunner(Runner):
         try:
             data = json.loads(msg[0])
             data_type = data.pop('data_type')
-
-            method = getattr(self.test_result, data_type)
-            method(**data)
+            if hasattr(self.test_result, data_type):
+                method = getattr(self.test_result, data_type)
+                method(**data)
 
             if data_type == 'stopTestRun':
-                self.loop.stop()
+                # Make sure all the agents are finished before stopping the
+                # loop.
+                self._stopped_agents += 1
+                if self._stopped_agents == self._nb_agents:
+                    self.loop.stop()
         except Exception:
             self.loop.stop()
             raise

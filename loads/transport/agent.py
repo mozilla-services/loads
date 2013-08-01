@@ -4,35 +4,36 @@
 - gets load testing orders & performs them
 - sends back the results in real time.
 """
-import os
-import errno
-import time
-import sys
-import traceback
 import argparse
-import logging
-import threading
-import random
+import errno
+import functools
 import json
+import logging
+import os
+import random
 import subprocess
 import shlex
+import sys
+import time
+import traceback
 import zlib
+from multiprocessing import Process
 
-import zmq.green as zmq
-from zmq.green.eventloop import ioloop, zmqstream
+import psutil
+import zmq
+from zmq.eventloop import ioloop, zmqstream
 
 from loads.transport import util
 from loads.util import logger, set_logger
-from loads.transport.util import (DEFAULT_BACKEND,
-                                  DEFAULT_HEARTBEAT, DEFAULT_REG,
-                                  DEFAULT_TIMEOUT_MOVF, DEFAULT_MAX_AGE,
-                                  DEFAULT_MAX_AGE_DELTA)
+from loads.transport.util import (
+    DEFAULT_BACKEND, DEFAULT_HEARTBEAT, DEFAULT_REG,
+    DEFAULT_TIMEOUT_MOVF, DEFAULT_MAX_AGE, DEFAULT_MAX_AGE_DELTA,
+    DEFAULT_AGENT_RECEIVER, DEFAULT_BROKER_RECEIVER,
+    register_ipc_file
+)
 from loads.transport.message import Message
 from loads.transport.util import decode_params, timed
 from loads.transport.heartbeat import Stethoscope
-
-
-__ = json.dumps
 
 
 class ExecutionError(Exception):
@@ -48,6 +49,11 @@ class Agent(object):
     - **heartbeat**: The ZMQ socket to perform PINGs on the broker to make
       sure it's still alive.
     - **register** : the ZMQ socket to register agents
+    - **receiver**: The ZMQ socket which will receive data about the test run.
+                    this one should contain a "{pid}" section which will be
+                    replaced by the pid of the agent, since each receiving
+                    socket between the agent and the workers should be unique.
+    - **push**: the ZMQ socket to send data about the tests.
     - **ping_delay**: the delay in seconds betweem two pings.
     - **ping_retries**: the number of attempts to ping the broker before
       quitting.
@@ -64,27 +70,14 @@ class Agent(object):
     """
     def __init__(self, backend=DEFAULT_BACKEND,
                  heartbeat=DEFAULT_HEARTBEAT, register=DEFAULT_REG,
+                 receiver=DEFAULT_AGENT_RECEIVER,
+                 push=DEFAULT_BROKER_RECEIVER,
                  ping_delay=10., ping_retries=3,
                  params=None, timeout=DEFAULT_TIMEOUT_MOVF,
                  max_age=DEFAULT_MAX_AGE, max_age_delta=DEFAULT_MAX_AGE_DELTA,
                  use_heartbeat=False):
-        logger.debug('Initializing the agent.')
         self.use_heartbeat = use_heartbeat
-        self.ctx = zmq.Context()
-        self.backend = backend
-        self._reg = self.ctx.socket(zmq.PUSH)
-        self._reg.connect(register)
-        self._backend = self.ctx.socket(zmq.REP)
-        self._backend.identity = str(os.getpid())
-        self._backend.connect(self.backend)
-        self.running = False
-        self.loop = ioloop.IOLoop()
-        self._backstream = zmqstream.ZMQStream(self._backend, self.loop)
-        self._backstream.on_recv(self._handle_recv_back)
-        if use_heartbeat:
-            self.ping = Stethoscope(heartbeat, onbeatlost=self.lost,
-                                    delay=ping_delay, retries=ping_retries,
-                                    ctx=self.ctx, io_loop=self.loop)
+        logger.debug('Initializing the agent.')
         self.debug = logger.isEnabledFor(logging.DEBUG)
         self.params = params
         self.pid = os.getpid()
@@ -92,36 +85,50 @@ class Agent(object):
         self.max_age = max_age
         self.max_age_delta = max_age_delta
         self.delayed_exit = None
-        self.lock = threading.RLock()
         self.env = os.environ.copy()
+        self.running = False
         self._processes = {}
+        self._started = self._stopped = self._launched = 0
+
+        for ipc in (register, receiver, push):
+            register_ipc_file(ipc)
+
+        self.loop = ioloop.IOLoop()
+
+        # Setup the zmq sockets.
+        self._receiver_socket = receiver.format(pid=self.pid)
+        self.ctx = zmq.Context()
+        self.backend = backend
+
+        self._reg = self.ctx.socket(zmq.PUSH)
+        self._reg.connect(register)
+
+        self._backend = self.ctx.socket(zmq.REP)
+        self._backend.identity = str(os.getpid())
+        self._backend.connect(self.backend)
+
+        self._receiver = self.ctx.socket(zmq.PULL)
+        self._receiver.bind(self._receiver_socket)
+
+        self._push = self.ctx.socket(zmq.PUSH)
+        self._push.set_hwm(8096 * 10)
+        self._push.setsockopt(zmq.LINGER, -1)
+        self._push.connect(push)
+
+        # Setup the zmq streams.
+        self._backstream = zmqstream.ZMQStream(self._backend, self.loop)
+        self._backstream.on_recv(self._handle_recv_back)
+        self._rcvstream = zmqstream.ZMQStream(self._receiver, self.loop)
+        self._rcvstream.on_recv(self._handle_events)
+
+        if use_heartbeat:
+            self.ping = Stethoscope(heartbeat, onbeatlost=self.lost,
+                                    delay=ping_delay, retries=ping_retries,
+                                    ctx=self.ctx, io_loop=self.loop)
+
         self._check = ioloop.PeriodicCallback(self._check_proc,
                                               ping_delay * 1000,
                                               io_loop=self.loop)
-
-    def _run(self, args, run_id=None):
-        logger.debug('Starting a run.')
-        args['slave'] = True
-        args['worker_id'] = os.getpid()
-        try:
-            if args.get('test_runner', None) is not None:
-                built_args = ' '.join(['--%s %s' % (key, value)
-                                      for (key, value)
-                                      in args.items()]).split()
-                test_runner_args = map(str, [args['test_runner']] + built_args)
-                p = subprocess.call(test_runner_args)
-            else:
-                cmd = 'from loads.main import run;'
-                cmd += 'run(%s)' % str(args)
-                cmd = sys.executable + ' -c "%s"' % cmd
-                cmd = shlex.split(cmd)
-                p = subprocess.Popen(cmd)
-        except Exception, e:
-            msg = 'Failed to start process ' + str(e)
-            raise ExecutionError(msg)
-
-        self._processes[p.pid] = p, run_id
-        return p.pid
 
     def _copy_files(self, data):
         old_dir = os.getcwd()
@@ -149,7 +156,53 @@ class Agent(object):
         finally:
             os.chdir(old_dir)
 
-    def handle(self, message):
+    def _run(self, args, run_id=None):
+        logger.debug('Starting a run.')
+        self._started = self._stopped = 0
+
+        args['slave'] = True
+        args['worker_id'] = os.getpid()
+        args['zmq_receiver'] = self._receiver_socket
+        try:
+            if args.get('test_runner', None) is not None:
+                nb_runs = (args['users'][0] or 1) * (args['hits'][0] or 1)
+                self._launched = nb_runs
+                run = functools.partial(self.launch_multiple_runners,
+                                        nb_runs, args)
+                p = Process(target=run)
+                p.start()
+            else:
+                self._launched = 1
+                cmd = 'from loads.main import run;'
+                cmd += 'run(%s)' % str(args)
+                cmd = sys.executable + ' -c "%s"' % cmd
+                cmd = shlex.split(cmd)
+                p = subprocess.Popen(cmd)
+        except Exception, e:
+            msg = 'Failed to start process ' + str(e)
+            raise ExecutionError(msg)
+        self._processes[p.pid] = psutil.Process(p.pid), run_id
+        return p.pid
+
+    def launch_multiple_runners(self, nb, args):
+        cmd = args['test_runner'].format(test=args['fqn'])
+
+        pids = []
+        for x in range(nb):
+            loads_status = ','.join(map(str, (args['hits'][0],
+                                              args['users'][0],
+                                              x + 1, 1)))
+            env = os.environ.copy()
+            env['LOADS_WORKER_ID'] = str(args.get('worker_id'))
+            env['LOADS_STATUS'] = loads_status
+            env['LOADS_ZMQ_RECEIVER'] = self._receiver_socket
+            cmd_args = {'env': env, 'stdout': subprocess.PIPE}
+            cwd = args.get('cwd')
+            if cwd:
+                cmd_args['cwd'] = cwd
+            pids.append(subprocess.Popen(cmd.split(' '), **cmd_args))
+
+    def _handle_commands(self, message):
         # we get the message from the broker here
         data = message.data
         command = data['command']
@@ -165,9 +218,9 @@ class Agent(object):
             args = data['args']
             run_id = data.get('run_id')
             pid = self._run(args, run_id)
-            return __({'result': {'pid': pid,
-                                  'worker_id': str(os.getpid()),
-                                  'command': command}})
+            return {'result': {'pid': pid,
+                               'worker_id': str(os.getpid()),
+                               'command': command}}
 
         elif command in ('STATUS', '_STATUS'):
             status = {}
@@ -177,38 +230,65 @@ class Agent(object):
                 if run_id is not None and run_id != _run_id:
                     continue
 
-                if proc.poll() is None:
+                if proc.is_running():
                     status[pid] = 'running'
                 else:
                     status[pid] = 'terminated'
 
-            return __({'result': {'status': status,
-                                  'command': command}})
+            return {'result': {'status': status,
+                               'command': command}}
         elif command == 'STOP':
             status = {}
             for pid, (proc, run_id) in self._processes.items():
-                if proc.poll() is None:
+                if proc.is_running():
                     proc.terminate()
                     del self._processes[pid]
                 status[pid] = 'terminated'
 
-            return __({'result': {'status': status,
-                                  'command': command}})
+            return {'result': {'status': status,
+                               'command': command}}
 
         raise NotImplementedError()
 
     def _check_proc(self):
         for pid, (proc, run_id) in self._processes.items():
-            if not proc.poll() is None:
+            if not proc.is_running():
                 del self._processes[pid]
+
+    def _handle_events(self, msg):
+        # Here we receive all the events from the runners.
+        # Proxy them to the broker unless they are startTestRun / stopTestRun,
+        # because we want to be sure all the test runs are actually finished
+        # before sending these signals there (as they stop the whole test run)
+        logger.debug('Message received from the test-runner')
+
+        data = json.loads(msg[0])
+        data_type = data['data_type']
+
+        if data_type == 'startTestRun':
+            if self._started == 0:
+                self._stopped = 0
+                self._push.send(msg[0])
+            self._started += 1
+
+        elif data_type == 'stopTestRun':
+            self._stopped += 1
+            if self._stopped == self._launched:
+                self._push.send(msg[0])
+
+                # reinitialize the counters
+                self._started = 0
+                self._stopped = 0
+        else:
+            self._push.send(msg[0])
 
     def _handle_recv_back(self, msg):
         # do the message and send the result
         if self.debug:
-            logger.debug('Message received')
-            target = timed()(self.handle)
+            logger.debug('Message received from the broker')
+            target = timed()(self._handle_commands)
         else:
-            target = self.handle
+            target = self._handle_commands
 
         duration = -1
 
@@ -217,6 +297,7 @@ class Agent(object):
             res = target(Message.load_from_string(msg[0]))
             if self.debug:
                 duration, res = res
+            res = json.dumps(res)
 
             # we're working with strings
             if isinstance(res, unicode):
@@ -336,6 +417,13 @@ def main(args=sys.argv):
     parser.add_argument('--register', dest='register',
                         default=DEFAULT_REG,
                         help="ZMQ socket for the registration.")
+    parser.add_argument('--broker-push', dest='push',
+                        default=DEFAULT_BROKER_RECEIVER,
+                        help='ZMQ socket to proxy events to')
+
+    parser.add_argument('--receiver', dest='receiver',
+                        default=DEFAULT_AGENT_RECEIVER,
+                        help='ZMQ socket to receive events')
 
     parser.add_argument('--debug', action='store_true', default=False,
                         help="Debug mode")
@@ -377,9 +465,12 @@ def main(args=sys.argv):
 
     logger.info('Agent registers at %s' % args.backend)
     logger.info('The heartbeat socket is at %r' % args.heartbeat)
+    logger.info('The receiving socket is at %s' % args.receiver)
+    logger.info('The push socket is at %s' % args.push)
     agent = Agent(backend=args.backend, heartbeat=args.heartbeat,
-                  register=args.register,
-                  params=params, timeout=args.timeout, max_age=args.max_age,
+                  register=args.register, receiver=args.receiver,
+                  push=args.push, params=params,
+                  timeout=args.timeout, max_age=args.max_age,
                   max_age_delta=args.max_age_delta)
 
     try:
