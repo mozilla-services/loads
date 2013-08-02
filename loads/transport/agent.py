@@ -260,8 +260,6 @@ class Agent(object):
         # Proxy them to the broker unless they are startTestRun / stopTestRun,
         # because we want to be sure all the test runs are actually finished
         # before sending these signals there (as they stop the whole test run)
-        logger.debug('Message received from the test-runner')
-
         data = json.loads(msg[0])
         data_type = data['data_type']
 

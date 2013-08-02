@@ -238,10 +238,14 @@ class Broker(object):
                 self._publisher.send(json.dumps({'data_type': 'run-finished',
                                                  'run_id': run_id}))
 
+            return
+
         # other things are pass-through
         try:
             self._frontstream.send_multipart(msg)
         except Exception, e:
+            logger.error('Could not send to front')
+            logger.error(msg)
             # we don't want to die on error. we just log it
             exc_type, exc_value, exc_traceback = sys.exc_info()
             exc = traceback.format_tb(exc_traceback)
