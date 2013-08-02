@@ -6,7 +6,6 @@
 """
 import argparse
 import errno
-import functools
 import json
 import logging
 import os
@@ -18,7 +17,6 @@ import time
 import traceback
 import zlib
 
-import psutil
 import zmq
 from zmq.eventloop import ioloop, zmqstream
 
