@@ -215,7 +215,9 @@ def main(sysargs=None):
         if len(runs) == 0:
             print('Nothing is running right now.')
         else:
-            print('We have %d runs right now.' % len(runs))
+            print('We have %d run(s) right now:' % len(runs))
+            for run_id, workers in runs.items():
+                print('  - %s with %d worker(s)' % (run_id, len(workers)))
         sys.exit(0)
 
     if args.fqn is None and not args.attach:
