@@ -198,7 +198,9 @@ To do this, you can simply hit Ctrl+C. **Loads** will ask you if
 you want to detach the console and continue the test, or simply stop it::
 
 
-    [                                            ]   0%
+    $ bin/load-runner example.TestWebSite.test_something -u 10:20:30 -c 20 --agents 5
+    ^C
+    ...
     Duration: 2.04 seconds
     Hits: 964
     Started: 2013-07-22 07:12:30.139814
@@ -231,18 +233,6 @@ Then you can use **--attach** to reattach the console::
     Failures: 0
 
     Do you want to (s)top the test or (d)etach ? s
-
-
-Running on Amazon Web Services
-------------------------------
-
-Running **Loads** on AWS requires you to have a dedicated AMI and security
-group
-
-**Loads** uses **boto** in order to provision new micro instances that will
-be used as nodes to run the tests.
-
-XXX
 
 Outputs
 -------
