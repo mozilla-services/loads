@@ -118,6 +118,9 @@ def main(sysargs=None):
     parser.add_argument('--version', action='store_true', default=False,
                         help='Displays Loads version and exits.')
 
+    parser.add_argument('--ping-broker', action='store_true', default=False,
+                        help='Displays info about the broker.')
+
     parser.add_argument('-a', '--agents', help='Number of agents to use',
                         type=int)
 
@@ -197,6 +200,22 @@ def main(sysargs=None):
 
     if args.version:
         print(__version__)
+        sys.exit(0)
+
+    if args.ping_broker:
+        client = Client(args.broker)
+        res = client.ping()
+        print('Broker running on pid %d' % res['pid'])
+        print('%d workers registered' % len(res['workers']))
+        print('endpoints:')
+        for name, location in res['endpoints'].items():
+            print('  - %s: %s' % (name, location))
+
+        runs = client.list_runs()
+        if len(runs) == 0:
+            print('Nothing is running right now.')
+        else:
+            print('We have %d runs right now.' % len(runs))
         sys.exit(0)
 
     if args.fqn is None and not args.attach:
