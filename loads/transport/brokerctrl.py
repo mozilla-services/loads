@@ -149,6 +149,7 @@ class BrokerController(object):
                 self._worker_times[worker_id] = start, now
             else:
                 self._worker_times[worker_id] = now, now
+
     #
     # DB APIs
     #
