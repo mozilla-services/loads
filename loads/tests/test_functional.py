@@ -18,7 +18,7 @@ from loads.main import run as start_runner
 from loads.runner import Runner
 from loads.tests.support import (get_runner_args, start_process, stop_process,
                                  hush)
-from loads.transport.client import Client
+from loads.transport.client import Pool, Client
 from loads.transport.util import DEFAULT_FRONTEND
 
 
@@ -58,7 +58,7 @@ def start_servers():
                 raise
 
     # wait for the broker to be up with 3 slaves.
-    client = Client()
+    client = Pool()
     while len(client.list()) != 3:
         time.sleep(.1)
 
@@ -155,7 +155,7 @@ class FunctionalTest(TestCase):
             output=['null'],
             users=1, hits=5))
 
-        client = Client()
+        client = Pool()
         runs = client.list_runs()
         data = client.get_data(runs.keys()[0])
         self.assertTrue(len(data) > 25, len(data))
@@ -170,7 +170,7 @@ class FunctionalTest(TestCase):
 
         start_runner(args)
 
-        client = Client()
+        client = Pool()
 
         for i in range(10):
             runs = client.list_runs()

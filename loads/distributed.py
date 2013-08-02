@@ -68,7 +68,6 @@ class DistributedRunner(Runner):
     def _recv_result(self, msg):
         """When we receive some data from zeromq, send it to the test_result
            for later use."""
-        logger.debug(msg)
         self.loop.add_callback(self._process_result, msg)
 
     def _process_result(self, msg):

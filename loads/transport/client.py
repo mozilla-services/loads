@@ -114,7 +114,7 @@ class Client(object):
         if socks.get(self.master) == zmq.POLLIN:
             return json.loads(recv(self.master))
 
-        raise TimeoutError(timeout / 1000)
+        raise TimeoutError(timeout)
 
     def run(self, args, async=True):
         # let's ask the broker how many agents it has
@@ -256,7 +256,7 @@ class Pool(object):
     def close(self):
         self.ctx.destroy(0)
 
-    def ping(self, timeout=.1):
+    def ping(self, timeout=None):
         with self._connector(self.timeout) as connector:
             return connector.ping(timeout)
 
