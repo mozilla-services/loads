@@ -120,6 +120,10 @@ class BrokerController(object):
             self.send_to_worker(worker_id, status_msg)
 
     def update_status(self, worker_id, processes_status):
+        """Checks the status of the processes. If all the processes are done,
+           call self.test_ended() and return the run_id. Returns None
+           otherwise.
+        """
         now = time.time()
 
         if 'running' not in processes_status:
@@ -137,6 +141,7 @@ class BrokerController(object):
                 # we want to tell the world if the run has ended
                 if run_id not in running:
                     self.test_ended(run_id)
+                    return run_id
         else:
             # not over
             if worker_id in self._worker_times:
@@ -144,7 +149,6 @@ class BrokerController(object):
                 self._worker_times[worker_id] = start, now
             else:
                 self._worker_times[worker_id] = now, now
-
     #
     # DB APIs
     #

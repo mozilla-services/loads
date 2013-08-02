@@ -232,8 +232,11 @@ class Broker(object):
 
         if data.get('command') == '_STATUS':
             statuses = data['status'].values()
-            self.ctrl.update_status(worker_id, statuses)
-            return
+            run_id = self.ctrl.update_status(worker_id, statuses)
+            if run_id is not None:
+                # if the tests are finished, publish this on the pubsub.
+                self._publisher.send(json.dumps({'data_type': 'run-finished',
+                                                 'run_id': run_id}))
 
         # other things are pass-through
         try:
