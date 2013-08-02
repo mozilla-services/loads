@@ -138,7 +138,8 @@ class Broker(object):
         cmd = data['command']
         if cmd == 'PING':
             res = {'result': {'pid': os.getpid(),
-                              'endpoints': self.endpoints}}
+                              'endpoints': self.endpoints,
+                              'workers': self.ctrl.workers}}
             self._send_json(target, res)
             return
         elif cmd == 'LISTRUNS':
