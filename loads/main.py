@@ -119,7 +119,10 @@ def main(sysargs=None):
                         help='Displays Loads version and exits.')
 
     parser.add_argument('--ping-broker', action='store_true', default=False,
-                        help='Displays info about the broker.')
+                        help='Displays info about the broker and exits.')
+
+    parser.add_argument('--purge-broker', action='store_true', default=False,
+                        help='Stops all runs on the broker and exits.')
 
     parser.add_argument('-a', '--agents', help='Number of agents to use',
                         type=int)
@@ -219,6 +222,24 @@ def main(sysargs=None):
             for run_id, workers in runs.items():
                 print('  - %s with %d worker(s)' % (run_id, len(workers)))
         sys.exit(0)
+
+    if args.purge_broker:
+        client = Client(args.broker)
+        runs = client.list_runs()
+        if len(runs) == 0:
+            print('Nothing to purge.')
+        else:
+            print('We have %d run(s) right now:' % len(runs))
+
+            for run_id, workers in runs.items():
+                print('Purging %s...' % run_id)
+                client.stop_run(run_id)
+
+            print('Purged.')
+
+        sys.exit(0)
+
+
 
     if args.fqn is None and not args.attach:
         parser.print_usage()
