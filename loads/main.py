@@ -239,8 +239,6 @@ def main(sysargs=None):
 
         sys.exit(0)
 
-
-
     if args.fqn is None and not args.attach:
         parser.print_usage()
         sys.exit(0)
