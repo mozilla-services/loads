@@ -44,9 +44,9 @@ Now run **loads-runner** against it::
 This will execute your test just once - so you can control it works well.
 
 Now, try to run it using 100 virtual users (-u), each of them running the test
-10 times (-c)::
+10 times (--hits)::
 
-    $ bin/loads-runner example.TestWebSite.test_es -u 100 -c 10
+    $ bin/loads-runner example.TestWebSite.test_es -u 100 --hits 10
     [======================================================================]  100%
     Hits: 1000
     Started: 2013-06-14 12:15:06.375365
@@ -61,7 +61,7 @@ Now, try to run it using 100 virtual users (-u), each of them running the test
     Failures: 0
 
 
-Congrats, you've just sent a load of 1000 hits, using 100 concurrent threads.
+Congrats, you've just sent a load of 1000 hits, using 100 concurrent users.
 
 Now let's run a series of 10, 20 then 30 users, each one running 20 hits::
 
@@ -85,10 +85,14 @@ write a test that uses a web socket against it::
     class TestWebSite(TestCase):
 
         def test_something(self):
+
+            results = []
+
             def callback(m):
                 results.append(m.data)
 
             ws = self.create_ws('ws://localhost:9000/ws',
+                                protocols=['chat', 'http-only'],
                                 callback=callback)
             ws.send('something')
             ws.receive()
@@ -118,14 +122,14 @@ application::
     class TestWebSite(TestCase):
 
         def test_something(self):
-            self.assertTrue('Search' in self.app.get('/'))
+            self.assertTrue('tarek' in self.app.get('/'))
 
 
 Of course, because the server root URL will change during the tests, you can
 define it outside the tests, on the command line, with **--server-url**
 when you run your load test::
 
-    $ bin/loads-runner example.TestWebSite.test_something --server_url http://localhost:9200
+    $ bin/loads-runner example.TestWebSite.test_something --server-url http://blog.ziade.org
 
 
 
@@ -187,6 +191,10 @@ Let's use them now, with the **agents** option::
 
 Congrats, you have just sent 6000 hits from 5 different agents. Easy, no?
 
+To stop your cluster::
+
+    $ bin/circusctl quit
+
 
 Detach mode
 ~~~~~~~~~~~
@@ -234,15 +242,31 @@ Then you can use **--attach** to reattach the console::
 
     Do you want to (s)top the test or (d)etach ? s
 
-Outputs
--------
 
-By default, loads reports the status of the load in real time onthe standard
-output of the client machine. Depending what you are trying to achieve, that
-may or may not be what you want.
 
-**Loads** comes with a pluggable "output" mechanism: it's possible to
-define your own output format if you need so.
+Using Loads with a config file
+------------------------------
 
-You can change this behaviour with the --output option of the `loads-runner`
-command line.
+
+Instead of typing a very long command line, you can create a configuration file
+and have Loads use it.
+
+Here's an example::
+
+
+    [loads]
+    fqn = example.TestWebSite.test_something
+    agents = 4
+
+    include_file = *.py
+                pushtest
+
+    test_dir = /tmp/tests
+    users = 5
+    duration = 30
+    observer = irc
+    detach = True
+
+
+In this example, we're pushing a load test accross 4 agents.
+

@@ -8,7 +8,7 @@ from loads.case import TestCase
 
 class TestWebSite(TestCase):
 
-    server_url = 'http://not-used'
+    server_url = 'http://blog.ziade.org'
 
     def test_public(self):
         self.session.get('http://google.com')
@@ -41,6 +41,32 @@ class TestWebSite(TestCase):
             gevent.sleep(0)
             if time.time() - start > 1:
                 raise AssertionError('Too slow')
+
+    def test_something4(self):
+        self.app.server_url = 'http://blog.ziade.org'
+
+        res = self.app.get('/')
+        self.assertTrue('tarek' in res, res.content)
+
+
+    def test_something2(self):
+        results = []
+
+        def callback(m):
+            results.append(m.data)
+
+        ws = self.create_ws('ws://localhost:9000/ws',
+                            protocols=['chat', 'http-only'],
+                            callback=callback)
+        ws.send('something')
+        ws.receive()
+        ws.send('happened')
+        ws.receive()
+
+        while len(results) < 2:
+            time.sleep(.1)
+
+        self.assertEqual(results, ['something', 'happened'])
 
     def _test_will_fail(self):
         res = self.session.get('http://localhost:9200')
