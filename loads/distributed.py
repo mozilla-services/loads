@@ -47,6 +47,14 @@ class DistributedRunner(Runner):
         for output in args.get('output', ['stdout']):
             self.register_output(output)
 
+        self._client = None
+
+    @property
+    def client(self):
+        if self._client is None:
+            self._client = Client(self.args['broker'])
+        return self._client
+
     @property
     def test_result(self):
         if self._test_result is None:
@@ -60,6 +68,7 @@ class DistributedRunner(Runner):
     def _recv_result(self, msg):
         """When we receive some data from zeromq, send it to the test_result
            for later use."""
+        logger.debug(msg)
         self.loop.add_callback(self._process_result, msg)
 
     def _process_result(self, msg):
@@ -83,6 +92,37 @@ class DistributedRunner(Runner):
             self.loop.stop()
             raise
 
+    def _attach_publisher(self):
+        zmq_publisher = self.args.get('zmq_publisher')
+
+        if zmq_publisher in (None, DEFAULT_PUBLISHER):
+            # if this option is not provided by the command line,
+            # we ask the broker about it
+            res = self.client.ping()
+            endpoint = res['endpoints']['publisher']
+            if endpoint.startswith('ipc'):
+                # IPC - lets hope we're on the same box
+                zmq_publisher = endpoint
+            elif endpoint.startswith('tcp'):
+                # TCP, let's see what IP & port we have
+                splitted = split_endpoint(endpoint)
+                if splitted['ip'] == '0.0.0.0':
+                    # let's use the broker ip
+                    broker = self.args['broker']
+                    broker_ip = split_endpoint(broker)['ip']
+                    zmq_publisher = 'tcp://%s:%d' % (broker_ip,
+                                                     splitted['port'])
+                else:
+                    # let's use the original ip
+                    zmq_publisher = endpoint
+            else:
+                zmq_publisher = DEFAULT_PUBLISHER
+
+        self.sub.connect(zmq_publisher)
+        self.zstream = zmqstream.ZMQStream(self.sub, self.loop)
+        self.zstream.on_recv(self._recv_result)
+        self.zmq_publisher = zmq_publisher
+
     def _execute(self):
         # calling the clients now
         self.test_result.startTestRun()
@@ -93,40 +133,9 @@ class DistributedRunner(Runner):
             cb.start()
 
         try:
-            client = Client(self.args['broker'])
-
-            if self.zmq_publisher is None and not detached:
-                zmq_publisher = self.args.get('zmq_publisher')
-                if zmq_publisher in (None, DEFAULT_PUBLISHER):
-                    # if this option is not provided by the command line,
-                    # we ask the broker about it
-                    res = client.ping()
-                    endpoint = res['endpoints']['publisher']
-                    if endpoint.startswith('ipc'):
-                        # IPC - lets hope we're on the same box
-                        zmq_publisher = endpoint
-                    elif endpoint.startswith('tcp'):
-                        # TCP, let's see what IP & port we have
-                        splitted = split_endpoint(endpoint)
-                        if splitted['ip'] == '0.0.0.0':
-                            # let's use the broker ip
-                            broker = self.args['broker']
-                            broker_ip = split_endpoint(broker)['ip']
-                            zmq_publisher = 'tcp://%s:%d' % (broker_ip,
-                                                             splitted['port'])
-                        else:
-                            # let's use the original ip
-                            zmq_publisher = endpoint
-                    else:
-                        zmq_publisher = DEFAULT_PUBLISHER
-
-                self.sub.connect(zmq_publisher)
-                self.zstream = zmqstream.ZMQStream(self.sub, self.loop)
-                self.zstream.on_recv(self._recv_result)
-                self.zmq_publisher = zmq_publisher
-
+            self._attach_publisher()
             logger.debug('Calling the broker...')
-            res = client.run(self.args)
+            res = self.client.run(self.args)
             self.run_id = res['run_id']
             self.workers = res['workers']
 
@@ -146,10 +155,10 @@ class DistributedRunner(Runner):
                 self.flush()
 
     def cancel(self):
-        client = Client(self.args['broker'])
-        client.stop_run(self.run_id)
+        self.client.stop_run(self.run_id)
 
     def attach(self, run_id, started, counts, args):
+        self._attach_publisher()
         self.test_result.args = args
         self.test_result.startTestRun(when=started)
         self.test_result.set_counts(counts)

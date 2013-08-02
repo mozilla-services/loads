@@ -52,7 +52,7 @@ def start_servers():
             requests.get('http://0.0.0.0:9000')
             break
         except requests.ConnectionError:
-            time.sleep(.1)
+            time.sleep(.2)
             tries += 1
             if tries > 20:
                 raise
@@ -155,8 +155,9 @@ class FunctionalTest(TestCase):
             output=['null'],
             users=1, hits=5))
 
-        runs = self.client.list_runs()
-        data = self.client.get_data(runs.keys()[0])
+        client = Client()
+        runs = client.list_runs()
+        data = client.get_data(runs.keys()[0])
         self.assertTrue(len(data) > 25, len(data))
 
     def test_distributed_run_duration(self):
@@ -168,17 +169,20 @@ class FunctionalTest(TestCase):
             duration=2)
 
         start_runner(args)
-        runs = self.client.list_runs()
+
+        client = Client()
+
         for i in range(10):
-            data = self.client.get_data(runs.keys()[0])
+            runs = client.list_runs()
+            time.sleep(.1)
+            data = client.get_data(runs.keys()[0])
             if len(data) > 0:
                 return
-            time.sleep(.1)
 
         raise AssertionError('No data back')
 
     @skipIf('TRAVIS' in os.environ, 'Travis')
-    def __test_distributed_detach(self):
+    def test_distributed_detach(self):
         args = get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_something',
             agents=1,
@@ -205,19 +209,22 @@ class FunctionalTest(TestCase):
         start_runner(args)
 
         # we detached.
+        time.sleep(.2)
 
         # now reattach the console
         DistributedRunner._recv_result = old
         start_runner({'attach': True, 'broker': DEFAULT_FRONTEND,
                       'output': ['null']})
 
+        # the test is over
         for i in range(5):
+            time.sleep(.1)
             runs = self.client.list_runs()
+            if len(runs) == 0:
+                continue
             data = self.client.get_data(runs.keys()[0])
             if len(data) > 0:
                 return
-            time.sleep(.1)
-
         raise AssertionError('No data back')
 
     @classmethod

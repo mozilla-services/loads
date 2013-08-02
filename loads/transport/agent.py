@@ -243,8 +243,11 @@ class Agent(object):
                 else:
                     status[pid] = 'terminated'
 
-            return {'result': {'status': status,
-                               'command': command}}
+            res = {'result': {'status': status,
+                              'command': command}}
+
+            logger.debug('Status: %s' % str(res))
+            return res
         elif command == 'STOP':
             return self._stop_runs(command)
         elif command == 'QUIT':

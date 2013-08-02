@@ -122,7 +122,11 @@ class Broker(object):
             self.ctrl.unregister_worker(msg[1])
 
     def _send_json(self, target, data):
-        self._frontstream.send_multipart(target + [json.dumps(data)])
+        try:
+            self._frontstream.send_multipart(target + [json.dumps(data)])
+        except ValueError:
+            logger.error('Could not dump %s' % str(data))
+            raise
 
     def _handle_recv_front(self, msg, tentative=0):
         # front => back
@@ -140,6 +144,7 @@ class Broker(object):
         elif cmd == 'LISTRUNS':
             logger.debug('Asked for LISTRUNS')
             res = {'result': self.ctrl.list_runs()}
+            logger.debug('Got %s' % str(res))
             self._send_json(target, res)
             return
         elif cmd == 'STOPRUN':
