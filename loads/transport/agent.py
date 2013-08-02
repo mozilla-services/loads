@@ -17,7 +17,6 @@ import sys
 import time
 import traceback
 import zlib
-from multiprocessing import Process
 
 import psutil
 import zmq
@@ -163,31 +162,39 @@ class Agent(object):
         args['slave'] = True
         args['worker_id'] = os.getpid()
         args['zmq_receiver'] = self._receiver_socket
+
+        test_runner = args.get('test_runner', None)
+        if test_runner is not None:
+            # we have a custom runner
+            nb_runs = (args['users'][0] or 1) * (args['hits'][0] or 1)
+
         try:
-            if args.get('test_runner', None) is not None:
-                nb_runs = (args['users'][0] or 1) * (args['hits'][0] or 1)
+            if test_runner is not None:
                 self._launched = nb_runs
-                run = functools.partial(self.launch_multiple_runners,
-                                        nb_runs, args)
-                p = Process(target=run)
-                p.start()
+                procs = [self.launch_multiple_runners(nb_runs, args)]
             else:
                 self._launched = 1
                 cmd = 'from loads.main import run;'
                 cmd += 'run(%s)' % str(args)
                 cmd = sys.executable + ' -c "%s"' % cmd
                 cmd = shlex.split(cmd)
-                p = subprocess.Popen(cmd, cwd=args.get('test_dir'))
+                procs = [subprocess.Popen(cmd, cwd=args.get('test_dir'))]
+
         except Exception, e:
             msg = 'Failed to start process ' + str(e)
             raise ExecutionError(msg)
-        self._processes[p.pid] = psutil.Process(p.pid), run_id
-        return p.pid
+
+        pids = []
+        for proc in procs:
+            self._processes[proc.pid] = proc, run_id
+            pids.append(proc.pid)
+
+        return pids
 
     def launch_multiple_runners(self, nb, args):
         cmd = args['test_runner'].format(test=args['fqn'])
 
-        pids = []
+        procs = []
         for x in range(nb):
             loads_status = ','.join(map(str, (args['hits'][0],
                                               args['users'][0],
@@ -200,7 +207,9 @@ class Agent(object):
             cwd = args.get('cwd')
             if cwd:
                 cmd_args['cwd'] = cwd
-            pids.append(subprocess.Popen(cmd.split(' '), **cmd_args))
+            procs.append(subprocess.Popen(cmd.split(' '), **cmd_args))
+
+        return procs
 
     def _handle_commands(self, message):
         # we get the message from the broker here
@@ -217,8 +226,9 @@ class Agent(object):
 
             args = data['args']
             run_id = data.get('run_id')
-            pid = self._run(args, run_id)
-            return {'result': {'pid': pid,
+            pids = self._run(args, run_id)
+
+            return {'result': {'pids': pids,
                                'worker_id': str(os.getpid()),
                                'command': command}}
 
@@ -230,7 +240,7 @@ class Agent(object):
                 if run_id is not None and run_id != _run_id:
                     continue
 
-                if proc.is_running():
+                if proc.poll() is None:
                     status[pid] = 'running'
                 else:
                     status[pid] = 'terminated'
@@ -250,7 +260,7 @@ class Agent(object):
     def _stop_runs(self, command):
         status = {}
         for pid, (proc, run_id) in self._processes.items():
-            if proc.is_running():
+            if proc.poll() is None:
                 proc.terminate()
                 del self._processes[pid]
             status[pid] = 'terminated'
@@ -260,7 +270,7 @@ class Agent(object):
 
     def _check_proc(self):
         for pid, (proc, run_id) in self._processes.items():
-            if not proc.is_running():
+            if not proc.poll() is None:
                 del self._processes[pid]
 
     def _handle_events(self, msg):
@@ -314,9 +324,6 @@ class Agent(object):
             exc.insert(0, str(e))
             res = {'error': {'worker_pid': self.pid, 'error': '\n'.join(exc)}}
             logger.error(res)
-
-        #if self.debug:
-        #    logger.debug('Duration - %.6f' % duration)
 
         try:
             self._backstream.send(res)
