@@ -238,17 +238,25 @@ class Agent(object):
             return {'result': {'status': status,
                                'command': command}}
         elif command == 'STOP':
-            status = {}
-            for pid, (proc, run_id) in self._processes.items():
-                if proc.is_running():
-                    proc.terminate()
-                    del self._processes[pid]
-                status[pid] = 'terminated'
-
-            return {'result': {'status': status,
-                               'command': command}}
+            return self._stop_runs(command)
+        elif command == 'QUIT':
+            try:
+                return self._stop_runs(command)
+            finally:
+                sys.exit(0)
 
         raise NotImplementedError()
+
+    def _stop_runs(self, command):
+        status = {}
+        for pid, (proc, run_id) in self._processes.items():
+            if proc.is_running():
+                proc.terminate()
+                del self._processes[pid]
+            status[pid] = 'terminated'
+
+        return {'result': {'status': status,
+                           'command': command}}
 
     def _check_proc(self):
         for pid, (proc, run_id) in self._processes.items():
@@ -283,34 +291,32 @@ class Agent(object):
     def _handle_recv_back(self, msg):
         # do the message and send the result
         if self.debug:
-            logger.debug('Message received from the broker')
+            #logger.debug('Message received from the broker')
             target = timed()(self._handle_commands)
         else:
             target = self._handle_commands
 
         duration = -1
 
-        # results are sent with a PID:OK: or a PID:ERROR prefix
         try:
             res = target(Message.load_from_string(msg[0]))
             if self.debug:
                 duration, res = res
-            res = json.dumps(res)
 
+            res = json.dumps(res)
             # we're working with strings
             if isinstance(res, unicode):
                 res = res.encode('utf8')
 
-            res = '%d:OK:%s' % (self.pid, res)
         except Exception, e:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             exc = traceback.format_tb(exc_traceback)
             exc.insert(0, str(e))
-            res = '%d:ERROR:%s' % (self.pid, '\n'.join(exc))
+            res = {'error': {'worker_pid': self.pid, 'error': '\n'.join(exc)}}
             logger.error(res)
 
-        if self.debug:
-            logger.debug('Duration - %.6f' % duration)
+        #if self.debug:
+        #    logger.debug('Duration - %.6f' % duration)
 
         try:
             self._backstream.send(res)

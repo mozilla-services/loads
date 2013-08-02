@@ -1,6 +1,5 @@
 import threading
 from Queue import Queue
-from collections import defaultdict
 import errno
 import contextlib
 import json
@@ -9,11 +8,11 @@ import os
 
 import zmq
 
-from loads.transport.exc import TimeoutError, ExecutionError, NoWorkerError
+from loads.transport.exc import TimeoutError, ExecutionError
 from loads.transport.message import Message
 from loads.util import logger, glob
 from loads.transport.util import (send, recv, DEFAULT_FRONTEND,
-                                  extract_result, timed, DEFAULT_TIMEOUT,
+                                  timed, DEFAULT_TIMEOUT,
                                   DEFAULT_TIMEOUT_MOVF,
                                   DEFAULT_TIMEOUT_OVF)
 
@@ -51,10 +50,9 @@ class Client(object):
         self.lock = threading.Lock()
         self.timeout_max_overflow = timeout_max_overflow * 1000
         self.timeout_overflows = timeout_overflows
-        self.timeout_counters = defaultdict(int)
         self.debug = debug
 
-    def execute(self, job, timeout=None, extract=True, log_exceptions=True):
+    def execute(self, job, timeout=None, log_exceptions=True):
         """Runs the job
 
         Options:
@@ -75,38 +73,13 @@ class Client(object):
             timeout = self.timeout_max_overflow
 
         try:
-            duration, res = timed(self.debug)(self._execute)(job, timeout,
-                                                             extract)
-
-            # XXX unify
-            if isinstance(res, str):
-                return json.loads(res)['result']
-
-            worker_pid, res, data = res
-
-            # if we overflowed we want to increment the counter
-            # if not we reset it
-            if duration * 1000 > self.timeout:
-                self.timeout_counters[worker_pid] += 1
-
-                # XXX well, we have the result but we want to timeout
-                # nevertheless because that's been too much overflow
-                if self.timeout_counters[worker_pid] > self.timeout_overflows:
-                    raise TimeoutError(timeout / 1000)
-            else:
-                self.timeout_counters[worker_pid] = 0
-
-            if not res:
-                if data == 'No worker':
-                    raise NoWorkerError()
-                raise ExecutionError(data)
+            duration, res = timed(self.debug)(self._execute)(job, timeout)
         except Exception:
             # logged, connector replaced.
             if log_exceptions:
                 logger.exception('Failed to execute the job.')
             raise
 
-        res = json.loads(data)
         if 'error' in res:
             raise ValueError(res['error'])
         return res['result']
@@ -119,7 +92,7 @@ class Client(object):
         if self.kill_ctx:
             self.ctx.destroy(0)
 
-    def _execute(self, job, timeout=None, extract=False):
+    def _execute(self, job, timeout=None):
 
         if not isinstance(job, Message):
             job = Message(**job)
@@ -139,10 +112,7 @@ class Client(object):
                         raise
 
         if socks.get(self.master) == zmq.POLLIN:
-            if extract:
-                return extract_result(recv(self.master))
-            else:
-                return recv(self.master)
+            return json.loads(recv(self.master))
 
         raise TimeoutError(timeout / 1000)
 
@@ -193,26 +163,21 @@ class Client(object):
         return res
 
     def ping(self, timeout=None, log_exceptions=True):
-        return self.execute({'command': 'PING'}, extract=False,
-                            timeout=timeout,
+        return self.execute({'command': 'PING'}, timeout=timeout,
                             log_exceptions=log_exceptions)
 
     def get_data(self, run_id):
-        return self.execute({'command': 'GET_DATA', 'run_id': run_id},
-                            extract=False)
+        return self.execute({'command': 'GET_DATA', 'run_id': run_id})
 
     def get_counts(self, run_id):
-        res = self.execute({'command': 'GET_COUNTS', 'run_id': run_id},
-                           extract=False)
+        res = self.execute({'command': 'GET_COUNTS', 'run_id': run_id})
         # XXX why ?
         if isinstance(res, dict):
             return res.items()
-
         return res
 
     def get_metadata(self, run_id):
-        return self.execute({'command': 'GET_METADATA', 'run_id': run_id},
-                            extract=False)
+        return self.execute({'command': 'GET_METADATA', 'run_id': run_id})
 
     def status(self, worker_id):
         return self.execute({'command': 'STATUS', 'worker_id': worker_id})
@@ -221,14 +186,13 @@ class Client(object):
         return self.execute({'command': 'STOP', 'worker_id': worker_id})
 
     def stop_run(self, run_id):
-        return self.execute({'command': 'STOPRUN', 'run_id': run_id},
-                            extract=False)
+        return self.execute({'command': 'STOPRUN', 'run_id': run_id})
 
     def list(self):
         return self.execute({'command': 'LIST'})
 
     def list_runs(self):
-        return self.execute({'command': 'LISTRUNS'}, extract=False)
+        return self.execute({'command': 'LISTRUNS'})
 
 
 class Pool(object):

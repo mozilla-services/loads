@@ -15,7 +15,7 @@ from loads.util import set_logger, logger
 from loads.transport.util import (register_ipc_file, DEFAULT_FRONTEND,
                                   DEFAULT_BACKEND, DEFAULT_HEARTBEAT,
                                   DEFAULT_REG, verify_broker,
-                                  kill_ghost_brokers, extract_result,
+                                  kill_ghost_brokers,
                                   DEFAULT_BROKER_RECEIVER,
                                   DEFAULT_PUBLISHER)
 from loads.transport.heartbeat import Heartbeat
@@ -122,57 +122,53 @@ class Broker(object):
             self.ctrl.unregister_worker(msg[1])
 
     def _send_json(self, target, data):
-        data = json.dumps(data)
-        msg = target + ['%d:OK:%s' % (os.getpid(), data)]
-        self._frontstream.send_multipart(msg)
+        self._frontstream.send_multipart(target + [json.dumps(data)])
 
     def _handle_recv_front(self, msg, tentative=0):
         # front => back
         # if the last part of the message is 'PING', we just PONG back
         # this is used as a health check
         data = json.loads(msg[2])
+        target = msg[:-1]
+
         cmd = data['command']
         if cmd == 'PING':
             res = {'result': {'pid': os.getpid(),
                               'endpoints': self.endpoints}}
-            res = json.dumps(res)
-            self._frontstream.send_multipart(msg[:-1] + [res])
+            self._send_json(target, res)
             return
         elif cmd == 'LISTRUNS':
-            res = json.dumps({'result': self.ctrl.list_runs()})
-            self._frontstream.send_multipart(msg[:-1] + [res])
+            logger.debug('Asked for LISTRUNS')
+            res = {'result': self.ctrl.list_runs()}
+            self._send_json(target, res)
             return
         elif cmd == 'STOPRUN':
             run_id = data['run_id']
             stopped_workers = self.ctrl.stop_run(run_id, msg)
 
             # we give back the list of workers we stopped
-            res = json.dumps({'result': stopped_workers})
-            self._frontstream.send_multipart(msg[:-1] + [res])
+            res = {'result': stopped_workers}
+            self._send_json(target, res)
             return
         elif cmd == 'GET_DATA':
             # we send back the data we have in the db
             # XXX stream ?
             db_data = self.ctrl.get_data(data['run_id'])
-            res = json.dumps({'result': db_data})
-            self._frontstream.send_multipart(msg[:-1] + [res])
+            self._send_json(target, {'result': db_data})
             return
         elif cmd == 'GET_COUNTS':
             counts = self.ctrl.get_counts(data['run_id'])
-            res = json.dumps({'result': counts})
-            self._frontstream.send_multipart(msg[:-1] + [res])
+            self._send_json(target, {'result': counts})
             return
         elif cmd == 'GET_METADATA':
             metadata = self.ctrl.get_metadata(data['run_id'])
-            res = json.dumps({'result': metadata})
-            self._frontstream.send_multipart(msg[:-1] + [res])
+            self._send_json(target, {'result': metadata})
             return
 
         # other commands below this point are for workers
         if tentative == 3:
             logger.debug('No workers')
-            msg = msg[:-1] + ['%d:ERROR:No worker' % os.getpid()]
-            self._frontstream.send_multipart(msg)
+            self._send_json(target, {'error': 'No worker'})
             return
 
         # the msg tells us which worker to work with
@@ -183,7 +179,7 @@ class Broker(object):
 
         if cmd == 'LIST':
             # we return a list of worker ids and their status
-            self._send_json(msg[:-1], {'result': self.ctrl.workers})
+            self._send_json(target, {'result': self.ctrl.workers})
             return
         elif cmd == 'RUN':
             # create a unique id for this run
@@ -193,7 +189,7 @@ class Broker(object):
             try:
                 workers = self.ctrl.reserve_workers(data['agents'], run_id)
             except NotEnoughWorkersError:
-                self._send_json(msg[:-1], {'error': 'Not enough agents'})
+                self._send_json(target, {'error': 'Not enough agents'})
                 return
 
             # send to every worker with the run_id and the receiver endpoint
@@ -210,8 +206,8 @@ class Broker(object):
                 self.ctrl.send_to_worker(worker_id, msg)
 
             # tell the client what workers where picked
-            self._send_json(msg[:-1], {'result': {'workers': workers,
-                                                  'run_id': run_id}})
+            res = {'result': {'workers': workers, 'run_id': run_id}}
+            self._send_json(target, res)
             return
 
         if 'worker_id' not in data:
@@ -228,10 +224,15 @@ class Broker(object):
         msg = msg[1:]
 
         # grabbing the data to update the workers statuses if needed
-        data = json.loads(extract_result(msg[-1])[-1])['result']
+        data = json.loads(msg[-1])
+        if 'error' in data:
+            result = data['error']
+            logger.error(result.get('exception'))
+        else:
+            result = data['result']
 
-        if data.get('command') == '_STATUS':
-            statuses = data['status'].values()
+        if result.get('command') == '_STATUS':
+            statuses = result['status'].values()
             run_id = self.ctrl.update_status(worker_id, statuses)
             if run_id is not None:
                 # if the tests are finished, publish this on the pubsub.

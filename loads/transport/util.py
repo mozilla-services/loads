@@ -125,14 +125,6 @@ def get_params():
     return PARAMS
 
 
-def extract_result(data):
-    data = data.split(':', 2)
-    if len(data) != 3:
-        raise ValueError("Wrong data: %s" % data)
-    pid, result, data = data
-    return long(pid), result == 'OK', data
-
-
 def dump_stacks():
     dump = []
 

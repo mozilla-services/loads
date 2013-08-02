@@ -92,6 +92,11 @@ class FunctionalTest(TestCase):
         if os.path.exists(_RESULTS):
             os.remove(_RESULTS)
 
+    def tearDown(self):
+        runs = self.client.list_runs()
+        for run_id in runs:
+            self.client.stop_run(run_id)
+
     def test_normal_run(self):
         start_runner(get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_something',
@@ -239,6 +244,9 @@ class FunctionalTest(TestCase):
 
         for i in range(20):
             runs = self.client.list_runs()
+            if len(runs) == 0:
+                time.sleep(.1)
+                continue
             data = self.client.get_data(runs.keys()[0])
             if len(data) > 0:
                 break
