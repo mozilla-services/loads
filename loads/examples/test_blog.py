@@ -42,14 +42,7 @@ class TestWebSite(TestCase):
             if time.time() - start > 1:
                 raise AssertionError('Too slow')
 
-    def test_something4(self):
-        self.app.server_url = 'http://blog.ziade.org'
-
-        res = self.app.get('/')
-        self.assertTrue('tarek' in res, res.content)
-
-
-    def test_something2(self):
+    def test_from_doc(self):
         results = []
 
         def callback(m):
