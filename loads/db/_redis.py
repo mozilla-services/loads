@@ -4,8 +4,7 @@ except ImportError:
     raise ImportError("You need to install http://pypi.python.org/pypi/redis")
 
 from loads.db import BaseDB
-from json import dumps as _D
-from json import loads as _L
+from json import dumps, loads
 
 
 class RedisDB(BaseDB):
@@ -24,11 +23,11 @@ class RedisDB(BaseDB):
     #
     def save_metadata(self, run_id, metadata):
         key = 'metadata:%s' % run_id
-        self._redis.set(key, _D(metadata))
+        self._redis.set(key, loads(metadata))
 
     def get_metadata(self, run_id):
         key = 'metadata:%s' % run_id
-        return _L(self._redis.get(key))
+        return loads(self._redis.get(key))
 
     def add(self, data):
         run_id = data.get('run_id', 'unknown')
@@ -43,7 +42,7 @@ class RedisDB(BaseDB):
             pipeline.sadd(counters, counter)
 
         pipeline.incrby('count:%s:%s' % (run_id, data_type), size)
-        pipeline.lpush('data:%s' % run_id, _D(data))
+        pipeline.lpush('data:%s' % run_id, dumps(data))
         pipeline.execute()
 
     def flush(self):
@@ -66,4 +65,4 @@ class RedisDB(BaseDB):
         if len == 0:
             raise StopIteration()
         for index in range(len):
-            yield _L(self._redis.lindex(key, index))
+            yield loads(self._redis.lindex(key, index))
