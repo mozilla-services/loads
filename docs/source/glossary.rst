@@ -10,6 +10,7 @@ Glossary
      The code that will actually run the test suite for you.
 
    distributed run
+   distributed test
      When a test is run in distributed mode, meaning that all the commands goes
      trought the broker and one or more agents.
 
@@ -36,3 +37,7 @@ Glossary
      Each agent can spawn a number of workers, which does the actual queries.
      The agent isn't sending itself the queries, it creates a worker which does
      it instead.
+
+   virtual users
+     When running a test, you can chose the number of users you want to have in
+     parallel. This is called the number of virtual users.
