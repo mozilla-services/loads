@@ -56,3 +56,4 @@ More documentation
    next-level
    internals
    zmq-api
+   glossary
