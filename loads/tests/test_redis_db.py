@@ -6,8 +6,9 @@ from zmq.green.eventloop import ioloop
 try:
     from loads.db._redis import RedisDB
     import redis
+    redis.StrictRedis().ping()
     NO_TEST = False
-except ImportError:
+except (ImportError, redis.exceptions.ConnectionError):
     NO_TEST = True
 
 from loads.tests.test_python_db import ONE_RUN
