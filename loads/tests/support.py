@@ -44,7 +44,7 @@ def get_runner_args(fqn, users=1, hits=1, duration=None,
                     server_url='http://localhost:9000',
                     zmq_endpoint='tcp://127.0.0.1:5558', output=['null'],
                     test_dir=None, include_file=None, python_dep=None,
-                    observer=None, slave=False, worker_id=None):
+                    observer=None, slave=False, agent_id=None):
     if output is None:
         output = ['null']
 
@@ -76,8 +76,8 @@ def get_runner_args(fqn, users=1, hits=1, duration=None,
     else:
         args['hits'] = str(hits)
 
-    if worker_id is not None:
-        args['worker_id'] = worker_id
+    if agent_id is not None:
+        args['agent_id'] = agent_id
 
     return args
 

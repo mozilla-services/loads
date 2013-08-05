@@ -212,13 +212,13 @@ class Runner(object):
             monkey.patch_all()
 
             if not hasattr(self.test, 'im_class'):
-                raise ValueError("The test (%s) isn't properly set"
-                                 % self.test)
+                raise ValueError("The FQN of the test doesn't point to a test "
+                                 "class (%s)." % self.test)
 
-            worker_id = self.args.get('worker_id', None)
+            agent_id = self.args.get('agent_id', None)
 
             gevent.spawn(self._grefresh)
-            self.test_result.startTestRun(worker_id)
+            self.test_result.startTestRun(agent_id)
 
             for user in self.users:
                 if self.stop:
@@ -229,7 +229,7 @@ class Runner(object):
                 gevent.joinall(group)
 
             gevent.sleep(0)
-            self.test_result.stopTestRun(worker_id)
+            self.test_result.stopTestRun(agent_id)
         except KeyboardInterrupt:
             pass
         except Exception as e:

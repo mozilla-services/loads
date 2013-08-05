@@ -40,7 +40,7 @@ class DistributedRunner(Runner):
         self.zstream = zmqstream.ZMQStream(self.sub, self.loop)
         self.zstream.on_recv(self._recv_result)
 
-        self.workers = []
+        self.agents = []
 
         # outputs
         self.outputs = []
@@ -136,7 +136,7 @@ class DistributedRunner(Runner):
             logger.debug('Calling the broker...')
             res = self.client.run(self.args)
             self.run_id = res['run_id']
-            self.workers = res['workers']
+            self.agents = res['agents']
 
             if not detached:
                 logger.debug('Waiting for results')
