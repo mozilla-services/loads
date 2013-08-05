@@ -120,19 +120,6 @@ def main(sysargs=None):
     parser.add_argument('--version', action='store_true', default=False,
                         help='Displays Loads version and exits.')
 
-    parser.add_argument('--ping-broker', action='store_true', default=False,
-                        help='Pings the broker to get info, display it and '
-                             'exits.')
-
-    parser.add_argument('--purge-broker', action='store_true', default=False,
-                        help='Stops all runs on the broker and exits.')
-
-    parser.add_argument('-a', '--agents', help='Number of agents to use',
-                        type=int)
-
-    parser.add_argument('-b', '--broker', help='Broker endpoint',
-                        default=DEFAULT_FRONTEND)
-
     parser.add_argument('--test-runner', default=None,
                         help='The path to binary to use as the test runner '
                              'when in distributed mode. The default is '
@@ -143,6 +130,16 @@ def main(sysargs=None):
                              'will override any value your provided in '
                              'the tests for the WebTest client.')
 
+    parser.add_argument('--observer', action='append',
+                        help='Callable that will receive the final results. '
+                             'Only in distributed mode (runs on the broker)')
+
+    #
+    # distributed options
+    #
+    parser.add_argument('-a', '--agents', help='Number of agents to use.',
+                        type=int)
+
     parser.add_argument('--zmq-receiver', default=None,
                         help=('ZMQ socket where the runners send the events to'
                               ' (opened on the agent side).'))
@@ -151,9 +148,16 @@ def main(sysargs=None):
                         help='ZMQ socket where the test results messages '
                              'are published.')
 
-    parser.add_argument('--observer', action='append',
-                        help='Callable that will receive the final results. '
-                             'Only in distributed mode (runs on the broker)')
+    parser.add_argument('--ping-broker', action='store_true', default=False,
+                        help='Pings the broker to get info, display it and '
+                             'exits.')
+
+    parser.add_argument('--purge-broker', action='store_true', default=False,
+                        help='Stops all runs on the broker and exits.')
+
+    parser.add_argument('-b', '--broker', help='Broker endpoint',
+                        default=DEFAULT_FRONTEND)
+
 
     outputs = [st.name for st in output_list()]
     outputs.sort()
