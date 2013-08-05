@@ -41,7 +41,9 @@ class TestBrokerDB(unittest.TestCase):
     def setUp(self):
         self.loop = ioloop.IOLoop()
         self.tmp = tempfile.mkdtemp()
-        self.db = BrokerDB(self.loop, self.tmp)
+        dboptions = {'directory': self.tmp}
+        self.db = BrokerDB(self.loop, db='python',
+                           dboptions=dboptions)
 
     def tearDown(self):
         shutil.rmtree(self.db.directory)

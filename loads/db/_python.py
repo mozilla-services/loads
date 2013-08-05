@@ -4,23 +4,29 @@ import json
 
 from gevent.queue import Queue
 from zmq.green.eventloop import ioloop
+from loads.db import BaseDB
 
 
 DEFAULT_DBDIR = os.path.join('/tmp', 'loads')
 
 
-class BrokerDB(object):
+class BrokerDB(BaseDB):
     """A simple DB that's synced on disc eventually
     """
-    def __init__(self, loop, directory, sync_delay=250):
-        self.directory = directory
+    name = 'python'
+    options = {'directory': (DEFAULT_DBDIR, 'DB path.', str),
+               'sync_delay': (250, 'Sync delay', int)}
+
+    def _initialize(self):
+        self.directory = self.params['directory']
+        self.sync_delay = self.params['sync_delay']
+
         if not os.path.exists(self.directory):
             os.makedirs(self.directory)
 
         self._buffer = defaultdict(Queue)
-        self.sync_delay = sync_delay
         self._callback = ioloop.PeriodicCallback(self.flush, self.sync_delay,
-                                                 loop)
+                                                 self.loop)
         self._callback.start()
         self._counts = defaultdict(lambda: defaultdict(int))
         self._dirty = False

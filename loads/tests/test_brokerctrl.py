@@ -24,7 +24,8 @@ class TestBrokerController(unittest.TestCase):
         self.dbdir = tempfile.mkdtemp()
         loop = ioloop.IOLoop()
         broker = FakeBroker()
-        self.ctrl = BrokerController(broker, loop, dbdir=self.dbdir)
+        dboptions = {'directory': self.dbdir}
+        self.ctrl = BrokerController(broker, loop, dboptions=dboptions)
         self.old_exists = psutil.pid_exists
         psutil.pid_exists = lambda pid: True
 
