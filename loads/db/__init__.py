@@ -53,7 +53,7 @@ def get_database(name='python', loop=None, **options):
         raise NotImplementedError(name)
 
     db = klass(loop, **options)
-    logger.info('Created a %r database' % name)
+    logger.info('Created a %r database connection' % name)
     return db
 
 
