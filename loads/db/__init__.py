@@ -7,6 +7,9 @@ class BaseDB(object):
     options = {}
 
     def __init__(self, loop, **kw):
+        if self.name == '':
+            raise ValueError('You need to set a name')
+
         self.loop = loop
         self.params = {}
         for key, (default, help, type) in self.options.items():
