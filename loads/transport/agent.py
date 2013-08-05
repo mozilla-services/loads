@@ -22,15 +22,13 @@ from zmq.eventloop import ioloop, zmqstream
 
 from loads.transport import util
 from loads.util import logger, set_logger
-from loads.transport.util import (
-    DEFAULT_BACKEND, DEFAULT_REG,
-    DEFAULT_TIMEOUT_MOVF, DEFAULT_MAX_AGE, DEFAULT_MAX_AGE_DELTA,
-    DEFAULT_AGENT_RECEIVER, DEFAULT_BROKER_RECEIVER,
-    register_ipc_file
-)
+from loads.transport.util import (DEFAULT_FRONTEND, DEFAULT_TIMEOUT_MOVF,
+                                  DEFAULT_MAX_AGE, DEFAULT_MAX_AGE_DELTA,
+                                  DEFAULT_AGENT_RECEIVER, register_ipc_file)
 from loads.transport.message import Message
 from loads.transport.util import decode_params, timed
 from loads.transport.heartbeat import Stethoscope
+from loads.transport.client import Client
 
 
 class ExecutionError(Exception):
@@ -42,15 +40,11 @@ class Agent(object):
 
     Options:
 
-    - **backend**: The ZMQ socket to connect to the broker.
-    - **heartbeat**: The ZMQ socket to perform PINGs on the broker to make
-      sure it's still alive.
-    - **register** : the ZMQ socket to register agents
+    - **broker**: The ZMQ socket to connect to the broker.
     - **receiver**: The ZMQ socket which will receive data about the test run.
                     this one should contain a "{pid}" section which will be
                     replaced by the pid of the agent, since each receiving
                     socket between the agent and the workers should be unique.
-    - **push**: the ZMQ socket to send data about the tests.
     - **ping_delay**: the delay in seconds betweem two pings.
     - **ping_retries**: the number of attempts to ping the broker before
       quitting.
@@ -65,10 +59,8 @@ class Agent(object):
       This is done to avoid having all agents quit at the same instant.
       Defaults to 0. The value must be an integer.
     """
-    def __init__(self, backend=DEFAULT_BACKEND,
-                 heartbeat=None, register=DEFAULT_REG,
+    def __init__(self, broker=DEFAULT_FRONTEND,
                  receiver=DEFAULT_AGENT_RECEIVER,
-                 push=DEFAULT_BROKER_RECEIVER,
                  ping_delay=10., ping_retries=3,
                  params=None, timeout=DEFAULT_TIMEOUT_MOVF,
                  max_age=DEFAULT_MAX_AGE, max_age_delta=DEFAULT_MAX_AGE_DELTA):
@@ -85,36 +77,40 @@ class Agent(object):
         self._processes = {}
         self._started = self._stopped = self._launched = 0
 
-        for ipc in (register, receiver, push):
-            register_ipc_file(ipc)
-
         self.loop = ioloop.IOLoop()
-
-        # Setup the zmq sockets.
-        self._receiver_socket = receiver.format(pid=self.pid)
         self.ctx = zmq.Context()
-        self.backend = backend
 
-        self._reg = self.ctx.socket(zmq.PUSH)
-        self._reg.connect(register)
+        # Setup the zmq sockets
 
+        # Let's ask the broker its options
+        self.broker = broker
+        client = Client(self.broker)
+        result = client.ping()
+        self.endpoints = result['endpoints']
+
+        # backend socket - used to receive work from the broker
         self._backend = self.ctx.socket(zmq.REP)
         self._backend.identity = str(os.getpid())
-        self._backend.connect(self.backend)
+        self._backend.connect(self.endpoints['backend'])
 
+        # register socket - used to register into the broker
+        self._reg = self.ctx.socket(zmq.PUSH)
+        self._reg.connect(self.endpoints['register'])
+
+        # receiver socket - used to receive results from workers
+        self._receiver_socket = receiver.format(pid=self.pid)
+        register_ipc_file(self._receiver_socket)
         self._receiver = self.ctx.socket(zmq.PULL)
         self._receiver.bind(self._receiver_socket)
 
+        # push socket - used to send back results to the broker
         self._push = self.ctx.socket(zmq.PUSH)
         self._push.set_hwm(8096 * 10)
         self._push.setsockopt(zmq.LINGER, -1)
-        self._push.connect(push)
+        self._push.connect(self.endpoints['receiver'])
 
-        # Setup the zmq streams.
-        self._backstream = zmqstream.ZMQStream(self._backend, self.loop)
-        self._backstream.on_recv(self._handle_recv_back)
-        self._rcvstream = zmqstream.ZMQStream(self._receiver, self.loop)
-        self._rcvstream.on_recv(self._handle_events)
+        # hearbeat socket - used to check if the broker is alive
+        heartbeat = self.endpoints.get('heartbeat')
 
         if heartbeat is not None:
             self.ping = Stethoscope(heartbeat, onbeatlost=self.lost,
@@ -122,6 +118,12 @@ class Agent(object):
                                     ctx=self.ctx, io_loop=self.loop)
         else:
             self.ping = None
+
+        # Setup the zmq streams.
+        self._backstream = zmqstream.ZMQStream(self._backend, self.loop)
+        self._backstream.on_recv(self._handle_recv_back)
+        self._rcvstream = zmqstream.ZMQStream(self._receiver, self.loop)
+        self._rcvstream.on_recv(self._handle_events)
 
         self._check = ioloop.PeriodicCallback(self._check_proc,
                                               ping_delay * 1000,
@@ -422,30 +424,19 @@ class Agent(object):
 def main(args=sys.argv):
     parser = argparse.ArgumentParser(description='Run an agent.')
 
-    parser.add_argument('--backend', dest='backend',
-                        default=DEFAULT_BACKEND,
+    parser.add_argument('--broker', dest='broker',
+                        default=DEFAULT_FRONTEND,
                         help="ZMQ socket to the broker.")
-
-    parser.add_argument('--register', dest='register',
-                        default=DEFAULT_REG,
-                        help="ZMQ socket for the registration.")
-    parser.add_argument('--broker-push', dest='push',
-                        default=DEFAULT_BROKER_RECEIVER,
-                        help='ZMQ socket to proxy events to')
 
     parser.add_argument('--receiver', dest='receiver',
                         default=DEFAULT_AGENT_RECEIVER,
-                        help='ZMQ socket to receive events')
+                        help="ZMQ socket to get results from workers.")
 
     parser.add_argument('--debug', action='store_true', default=False,
                         help="Debug mode")
 
     parser.add_argument('--logfile', dest='logfile', default='stdout',
                         help="File to log in to.")
-
-    parser.add_argument('--heartbeat', dest='heartbeat',
-                        default=None,
-                        help="ZMQ socket for the heartbeat.")
 
     parser.add_argument('--params', dest='params', default=None,
                         help='The parameters to be used by the agent.')
@@ -475,15 +466,9 @@ def main(args=sys.argv):
     else:
         params = decode_params(args.params)
 
-    logger.info('Agent registers at %s' % args.backend)
-    if args.heartbeat:
-        logger.info('The heartbeat socket is at %r' % args.heartbeat)
-    logger.info('The receiving socket is at %s' % args.receiver)
-    logger.info('The push socket is at %s' % args.push)
-    agent = Agent(backend=args.backend, heartbeat=args.heartbeat,
-                  register=args.register, receiver=args.receiver,
-                  push=args.push, params=params,
-                  timeout=args.timeout, max_age=args.max_age,
+    logger.info('Connecting to %s' % args.broker)
+    agent = Agent(broker=args.broker, receiver=args.receiver,
+                  params=params, timeout=args.timeout, max_age=args.max_age,
                   max_age_delta=args.max_age_delta)
 
     try:

@@ -57,8 +57,7 @@ class Runner(object):
         self.args = args
         self.fqn = args.get('fqn')
         self.test = None
-        self.slave = 'slave' in args
-        self.slave = 'slave' in args
+        self.slave = args.get('slave', False)
 
         # Only resolve the name of the test if we're using the default python
         # test-runner.
