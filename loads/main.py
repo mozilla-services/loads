@@ -158,7 +158,6 @@ def main(sysargs=None):
     parser.add_argument('-b', '--broker', help='Broker endpoint',
                         default=DEFAULT_FRONTEND)
 
-
     outputs = [st.name for st in output_list()]
     outputs.sort()
 

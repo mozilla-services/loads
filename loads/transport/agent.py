@@ -22,13 +22,9 @@ from zmq.eventloop import ioloop, zmqstream
 
 from loads.transport import util
 from loads.util import logger, set_logger
-from loads.transport.util import (
-    DEFAULT_BACKEND, DEFAULT_HEARTBEAT, DEFAULT_REG,
-    DEFAULT_FRONTEND,
-    DEFAULT_TIMEOUT_MOVF, DEFAULT_MAX_AGE, DEFAULT_MAX_AGE_DELTA,
-    DEFAULT_AGENT_RECEIVER, DEFAULT_BROKER_RECEIVER,
-    register_ipc_file
-)
+from loads.transport.util import (DEFAULT_FRONTEND, DEFAULT_TIMEOUT_MOVF,
+                                  DEFAULT_MAX_AGE, DEFAULT_MAX_AGE_DELTA,
+                                  DEFAULT_AGENT_RECEIVER, register_ipc_file)
 from loads.transport.message import Message
 from loads.transport.util import decode_params, timed
 from loads.transport.heartbeat import Stethoscope
