@@ -10,29 +10,29 @@ from loads.db.brokerdb import BrokerDB
 
 
 _RUN_ID = '8b91dee8-0aec-4bb9-b0a0-87269a9c2874'
-_WID = 1727
+_AGENT_ID = 1727
 
 _ONE_RUN = [
-    {'worker_id': _WID, 'data_type': 'startTestRun', 'run_id': _RUN_ID},
+    {'agent_id': _AGENT_ID, 'data_type': 'startTestRun', 'run_id': _RUN_ID},
 
-    {'worker_id': _WID, 'data_type': 'startTest', 'run_id': _RUN_ID,
+    {'agent_id': _AGENT_ID, 'data_type': 'startTest', 'run_id': _RUN_ID,
      'test': 'test_es (loads.examples.test_blog.TestWebSite)',
      'loads_status': [1, 1, 1, 0]},
 
     {'status': 200, 'loads_status': [1, 1, 1, 0], 'data_type': 'add_hit',
      'run_id': _RUN_ID, 'started': '2013-06-26T10:11:38.838224',
      'elapsed': 0.008656, 'url': 'http://127.0.0.1:9200/',
-     'worker_id': _WID, u'method': u'GET'},
+     'agent_id': _AGENT_ID, u'method': u'GET'},
 
     {'test': 'test_es (loads.examples.test_blog.TestWebSite)',
-     'worker_id': _WID, 'loads_status': [1, 1, 1, 0],
+     'agent_id': _AGENT_ID, 'loads_status': [1, 1, 1, 0],
      'data_type': 'addSuccess', 'run_id': _RUN_ID},
 
     {'test': 'test_es (loads.examples.test_blog.TestWebSite)',
-     'worker_id': _WID, 'loads_status': [1, 1, 1, 0],
+     'agent_id': _AGENT_ID, 'loads_status': [1, 1, 1, 0],
      'data_type': 'stopTest', 'run_id': _RUN_ID},
 
-    {'worker_id': _WID, 'data_type': 'stopTestRun',
+    {'agent_id': _AGENT_ID, 'data_type': 'stopTestRun',
      'run_id': _RUN_ID}]
 
 
