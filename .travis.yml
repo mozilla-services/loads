@@ -8,6 +8,8 @@ install:
     - pip install -r test-requirements.txt --use-mirrors
     - python setup.py develop
 script: flake8 loads && nosetests -sv loads/tests
+services:
+  - redis-server
 notifications:
     email:
         - tarek@mozilla.com
