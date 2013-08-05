@@ -160,7 +160,7 @@ class BrokerController(object):
         return self._db.get_metadata(run_id)
 
     def save_data(self, worker_id, data):
-        # we are savinf data by worker ids.
+        # we are saving data by worker ids.
         # we need to find out what is the run_id
         for _worker_id, (run_id, started) in self._runs.items():
             if _worker_id != worker_id:
