@@ -23,7 +23,7 @@ from zmq.eventloop import ioloop, zmqstream
 from loads.transport import util
 from loads.util import logger, set_logger
 from loads.transport.util import (
-    DEFAULT_BACKEND, DEFAULT_HEARTBEAT, DEFAULT_REG,
+    DEFAULT_BACKEND, DEFAULT_REG,
     DEFAULT_TIMEOUT_MOVF, DEFAULT_MAX_AGE, DEFAULT_MAX_AGE_DELTA,
     DEFAULT_AGENT_RECEIVER, DEFAULT_BROKER_RECEIVER,
     register_ipc_file
@@ -66,14 +66,12 @@ class Agent(object):
       Defaults to 0. The value must be an integer.
     """
     def __init__(self, backend=DEFAULT_BACKEND,
-                 heartbeat=DEFAULT_HEARTBEAT, register=DEFAULT_REG,
+                 heartbeat=None, register=DEFAULT_REG,
                  receiver=DEFAULT_AGENT_RECEIVER,
                  push=DEFAULT_BROKER_RECEIVER,
                  ping_delay=10., ping_retries=3,
                  params=None, timeout=DEFAULT_TIMEOUT_MOVF,
-                 max_age=DEFAULT_MAX_AGE, max_age_delta=DEFAULT_MAX_AGE_DELTA,
-                 use_heartbeat=False):
-        self.use_heartbeat = use_heartbeat
+                 max_age=DEFAULT_MAX_AGE, max_age_delta=DEFAULT_MAX_AGE_DELTA):
         logger.debug('Initializing the agent.')
         self.debug = logger.isEnabledFor(logging.DEBUG)
         self.params = params
@@ -118,10 +116,12 @@ class Agent(object):
         self._rcvstream = zmqstream.ZMQStream(self._receiver, self.loop)
         self._rcvstream.on_recv(self._handle_events)
 
-        if use_heartbeat:
+        if heartbeat is not None:
             self.ping = Stethoscope(heartbeat, onbeatlost=self.lost,
                                     delay=ping_delay, retries=ping_retries,
                                     ctx=self.ctx, io_loop=self.loop)
+        else:
+            self.ping = None
 
         self._check = ioloop.PeriodicCallback(self._check_proc,
                                               ping_delay * 1000,
@@ -364,7 +364,7 @@ class Agent(object):
         except zmq.core.error.ZMQError:
             pass
         self.loop.stop()
-        if self.use_heartbeat:
+        if self.ping is not None:
             self.ping.stop()
         self._check.stop()
         time.sleep(.1)
@@ -377,7 +377,7 @@ class Agent(object):
         util.PARAMS = self.params
         logger.debug('Starting the agent loop')
 
-        if self.use_heartbeat:
+        if self.ping is not None:
             # running the pinger
             self.ping.start()
         self._check.start()
@@ -444,7 +444,7 @@ def main(args=sys.argv):
                         help="File to log in to.")
 
     parser.add_argument('--heartbeat', dest='heartbeat',
-                        default=DEFAULT_HEARTBEAT,
+                        default=None,
                         help="ZMQ socket for the heartbeat.")
 
     parser.add_argument('--params', dest='params', default=None,
@@ -476,7 +476,8 @@ def main(args=sys.argv):
         params = decode_params(args.params)
 
     logger.info('Agent registers at %s' % args.backend)
-    logger.info('The heartbeat socket is at %r' % args.heartbeat)
+    if args.heartbeat:
+        logger.info('The heartbeat socket is at %r' % args.heartbeat)
     logger.info('The receiving socket is at %s' % args.receiver)
     logger.info('The push socket is at %s' % args.push)
     agent = Agent(backend=args.backend, heartbeat=args.heartbeat,
