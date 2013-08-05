@@ -74,7 +74,7 @@ class Agent(object):
         self.delayed_exit = None
         self.env = os.environ.copy()
         self.running = False
-        self._processes = {}
+        self._workers = {}
         self._started = self._stopped = self._launched = 0
 
         self.loop = ioloop.IOLoop()
@@ -90,7 +90,7 @@ class Agent(object):
 
         # backend socket - used to receive work from the broker
         self._backend = self.ctx.socket(zmq.REP)
-        self._backend.identity = str(os.getpid())
+        self._backend.identity = str(self.pid)
         self._backend.connect(self.endpoints['backend'])
 
         # register socket - used to register into the broker
@@ -160,7 +160,7 @@ class Agent(object):
         self._started = self._stopped = 0
 
         args['slave'] = True
-        args['worker_id'] = os.getpid()
+        args['agent_id'] = self.pid
         args['zmq_receiver'] = self._receiver_socket
 
         test_runner = args.get('test_runner', None)
@@ -186,7 +186,7 @@ class Agent(object):
 
         pids = []
         for proc in procs:
-            self._processes[proc.pid] = proc, run_id
+            self._workers[proc.pid] = proc, run_id
             pids.append(proc.pid)
 
         return pids
@@ -200,7 +200,7 @@ class Agent(object):
                                               args['users'][0],
                                               x + 1, 1)))
             env = os.environ.copy()
-            env['LOADS_WORKER_ID'] = str(args.get('worker_id'))
+            env['LOADS_AGENT_ID'] = str(args.get('agent_id'))
             env['LOADS_STATUS'] = loads_status
             env['LOADS_ZMQ_RECEIVER'] = self._receiver_socket
             cmd_args = {'env': env,
@@ -229,14 +229,14 @@ class Agent(object):
             pids = self._run(args, run_id)
 
             return {'result': {'pids': pids,
-                               'worker_id': str(os.getpid()),
+                               'agent_id': str(self.pid),
                                'command': command}}
 
         elif command in ('STATUS', '_STATUS'):
             status = {}
             run_id = data.get('run_id')
 
-            for pid, (proc, _run_id) in self._processes.items():
+            for pid, (proc, _run_id) in self._workers.items():
                 if run_id is not None and run_id != _run_id:
                     continue
 
@@ -262,19 +262,19 @@ class Agent(object):
 
     def _stop_runs(self, command):
         status = {}
-        for pid, (proc, run_id) in self._processes.items():
+        for pid, (proc, run_id) in self._workers.items():
             if proc.poll() is None:
                 proc.terminate()
-                del self._processes[pid]
+                del self._workers[pid]
             status[pid] = 'terminated'
 
         return {'result': {'status': status,
                            'command': command}}
 
     def _check_proc(self):
-        for pid, (proc, run_id) in self._processes.items():
+        for pid, (proc, run_id) in self._workers.items():
             if not proc.poll() is None:
-                del self._processes[pid]
+                del self._workers[pid]
 
     def _handle_events(self, msg):
         # Here we receive all the events from the runners.
@@ -325,7 +325,7 @@ class Agent(object):
             exc_type, exc_value, exc_traceback = sys.exc_info()
             exc = traceback.format_tb(exc_traceback)
             exc.insert(0, str(e))
-            res = {'error': {'worker_pid': self.pid, 'error': '\n'.join(exc)}}
+            res = {'error': {'agent_id': self.pid, 'error': '\n'.join(exc)}}
             logger.error(res)
 
         try:
@@ -347,7 +347,7 @@ class Agent(object):
 
         # telling the broker we are stopping
         try:
-            self._reg.send_multipart(['UNREGISTER', str(os.getpid())])
+            self._reg.send_multipart(['UNREGISTER', str(self.pid)])
         except zmq.ZMQError:
             logger.debug('Could not unregister')
 
@@ -386,7 +386,7 @@ class Agent(object):
         self.running = True
 
         # telling the broker we are ready
-        self._reg.send_multipart(['REGISTER', str(os.getpid())])
+        self._reg.send_multipart(['REGISTER', str(self.pid)])
 
         # arming the exit callback
         if self.max_age != -1:

@@ -32,75 +32,75 @@ def _compute_observers(observers):
 
 class BrokerController(object):
     def __init__(self, broker, loop, dbdir=DEFAULT_DBDIR,
-                 worker_timeout=DEFAULT_TIMEOUT_MOVF):
+                 agent_timeout=DEFAULT_TIMEOUT_MOVF):
         self.broker = broker
         self.loop = loop
 
-        # workers registration and timers
-        self._workers = []
-        self._worker_times = {}
-        self.worker_timeout = worker_timeout
+        # agents registration and timers
+        self._agents = []
+        self._agent_times = {}
+        self.agent_timeout = agent_timeout
         self._runs = {}
 
         # local DB
         self._db = BrokerDB(self.loop, dbdir)
 
     @property
-    def workers(self):
-        return self._workers
+    def agents(self):
+        return self._agents
 
-    def _remove_worker(self, worker_id):
-        logger.debug('%r removed' % worker_id)
-        if worker_id in self._workers:
-            self._workers.remove(worker_id)
+    def _remove_agent(self, agent_id):
+        logger.debug('%r removed' % agent_id)
+        if agent_id in self._agents:
+            self._agents.remove(agent_id)
 
-        if worker_id in self._worker_times:
-            del self._worker_times[worker_id]
+        if agent_id in self._agent_times:
+            del self._agent_times[agent_id]
 
-        if worker_id in self._runs:
-            del self._runs[worker_id]
+        if agent_id in self._runs:
+            del self._runs[agent_id]
 
-    def register_worker(self, worker_id):
-        if worker_id not in self._workers:
-            self._workers.append(worker_id)
-            logger.debug('%r registered' % worker_id)
+    def register_agent(self, agent_id):
+        if agent_id not in self._agents:
+            self._agents.append(agent_id)
+            logger.debug('%r registered' % agent_id)
 
-    def unregister_worker(self, worker_id):
-        if worker_id in self._workers:
-            self._remove_worker(worker_id)
+    def unregister_agent(self, agent_id):
+        if agent_id in self._agents:
+            self._remove_agent(agent_id)
 
-    def _associate(self, run_id, workers):
+    def _associate(self, run_id, agents):
         when = time.time()
 
-        for worker_id in workers:
-            self._runs[worker_id] = run_id, when
+        for agent_id in agents:
+            self._runs[agent_id] = run_id, when
 
-    def reserve_workers(self, num, run_id):
-        if num > len(self._workers):
-            raise NotEnoughWorkersError('Not Enough workers')
+    def reserve_agents(self, num, run_id):
+        if num > len(self._agents):
+            raise NotEnoughWorkersError('Not Enough agents')
 
         # we want to run the same command on several agents
         # provisionning them
-        workers = []
-        available = [wid for wid in self._workers if wid not in self._runs]
+        agents = []
+        available = [wid for wid in self._agents if wid not in self._runs]
 
-        while len(workers) < num:
-            worker_id = random.choice(available)
-            if self._check_worker(worker_id):
-                workers.append(worker_id)
-                available.remove(worker_id)
+        while len(agents) < num:
+            agent_id = random.choice(available)
+            if self._check_agent(agent_id):
+                agents.append(agent_id)
+                available.remove(agent_id)
 
-        self._associate(run_id, workers)
-        return workers
+        self._associate(run_id, agents)
+        return agents
 
-    def send_to_worker(self, worker_id, msg):
+    def send_to_agent(self, agent_id, msg):
         msg = list(msg)
 
         # start the timer
-        self._worker_times[worker_id] = time.time(), None
+        self._agent_times[agent_id] = time.time(), None
 
         # now we can send to the right guy
-        msg.insert(0, worker_id)
+        msg.insert(0, agent_id)
         try:
             self.broker._backstream.send_multipart(msg)
         except Exception, e:
@@ -113,13 +113,13 @@ class BrokerController(object):
     def clean(self):
         # XXX here we want to check out the runs
         # and cleanup _run given the status of the run
-        # on each worker
-        for worker_id, (run_id, when) in self._runs.items():
+        # on each agent
+        for agent_id, (run_id, when) in self._runs.items():
             status_msg = ['', json.dumps({'command': '_STATUS',
                                           'run_id': run_id})]
-            self.send_to_worker(worker_id, status_msg)
+            self.send_to_agent(agent_id, status_msg)
 
-    def update_status(self, worker_id, processes_status):
+    def update_status(self, agent_id, processes_status):
         """Checks the status of the processes. If all the processes are done,
            call self.test_ended() and return the run_id. Returns None
            otherwise.
@@ -128,12 +128,12 @@ class BrokerController(object):
 
         if 'running' not in processes_status:
             # ended
-            if worker_id in self._worker_times:
-                del self._worker_times[worker_id]
+            if agent_id in self._agent_times:
+                del self._agent_times[agent_id]
 
-            if worker_id in self._runs:
-                run_id, when = self._runs[worker_id]
-                del self._runs[worker_id]
+            if agent_id in self._runs:
+                run_id, when = self._runs[agent_id]
+                del self._runs[agent_id]
 
                 # is the whole run over ?
                 running = [run_id_ for (run_id_, when_) in self._runs.values()]
@@ -144,11 +144,11 @@ class BrokerController(object):
                     return run_id
         else:
             # not over
-            if worker_id in self._worker_times:
-                start, stop = self._worker_times[worker_id]
-                self._worker_times[worker_id] = start, now
+            if agent_id in self._agent_times:
+                start, stop = self._agent_times[agent_id]
+                self._agent_times[agent_id] = start, now
             else:
-                self._worker_times[worker_id] = now, now
+                self._agent_times[agent_id] = now, now
 
     #
     # DB APIs
@@ -159,11 +159,11 @@ class BrokerController(object):
     def get_metadata(self, run_id):
         return self._db.get_metadata(run_id)
 
-    def save_data(self, worker_id, data):
-        # we are saving data by worker ids.
+    def save_data(self, agent_id, data):
+        # we are saving data by agent ids.
         # we need to find out what is the run_id
-        for _worker_id, (run_id, started) in self._runs.items():
-            if _worker_id != worker_id:
+        for _agent_id, (run_id, started) in self._runs.items():
+            if _agent_id != agent_id:
                 continue
             data['run_id'] = run_id
             data['started'] = started
@@ -179,47 +179,47 @@ class BrokerController(object):
     def flush_db(self):
         return self._db.flush()
 
-    def _check_worker(self, worker_id):
-        # XXX we'll want workers to register themselves
+    def _check_agent(self, agent_id):
+        # XXX we'll want agents to register themselves
         # again after each heartbeat
         #
-        # The broker will removing idling workers
+        # The broker will removing idling agents
         # just before sending a hearbeat.
         #
-        # That will let us make sure a dead worker on
+        # That will let us make sure a dead agent on
         # a distant box is removed
-        if worker_id in self._worker_times:
-            start, stop = self._worker_times[worker_id]
+        if agent_id in self._agent_times:
+            start, stop = self._agent_times[agent_id]
             if stop is not None:
                 duration = start - stop
-                if duration > self.worker_timeout:
-                    logger.debug('The worker %r is slow (%.2f)' % (worker_id,
-                                                                   duration))
+                if duration > self.agent_timeout:
+                    logger.debug('The agent %r is slow (%.2f)' % (agent_id,
+                                                                  duration))
                     return False
         return True
 
     def list_runs(self):
         runs = defaultdict(list)
-        for worker_id, (run_id, when) in self._runs.items():
-            runs[run_id].append((worker_id, when))
+        for agent_id, (run_id, when) in self._runs.items():
+            runs[run_id].append((agent_id, when))
         return runs
 
     def stop_run(self, run_id, msg):
-        workers = []
+        agents = []
 
-        for worker_id, (_run_id, when) in self._runs.items():
+        for agent_id, (_run_id, when) in self._runs.items():
             if run_id != _run_id:
                 continue
-            workers.append(worker_id)
+            agents.append(agent_id)
 
-        # now we have a list of workers to stop
+        # now we have a list of agents to stop
         stop_msg = msg[:-1] + [json.dumps({'command': 'STOP'})]
 
-        for worker_id in workers:
-            self.send_to_worker(worker_id, stop_msg)
+        for agent_id in agents:
+            self.send_to_agent(agent_id, stop_msg)
 
         self.clean()
-        return workers
+        return agents
 
     #
     # Observers

@@ -10,7 +10,7 @@ def main():
     fqn = sys.argv[1]
     args = get_runner_args(fqn=fqn,
                            zmq_endpoint=os.environ['LOADS_ZMQ_RECEIVER'],
-                           worker_id=os.environ['LOADS_WORKER_ID'],
+                           agent_id=os.environ['LOADS_AGENT_ID'],
                            slave=True)
     Runner(args).execute()
 
