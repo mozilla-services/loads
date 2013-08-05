@@ -89,7 +89,7 @@ def main(sysargs=None):
         sysargs = sys.argv[1:]
 
     parser = argparse.ArgumentParser(description='Runs a load test.')
-    parser.add_argument('fqn', help='Fully qualified name of the test',
+    parser.add_argument('fqn', help='Fully Qualified Name of the test',
                         nargs='?')
 
     parser.add_argument('--config', help='Configuration file to read',
@@ -101,16 +101,18 @@ def main(sysargs=None):
     parser.add_argument('--test-dir', help='Directory to run the test from',
                         type=str, default=None)
 
-    parser.add_argument('--python-dep', help='Python dep to install',
+    parser.add_argument('--python-dep', help='Python (PyPI) dependencies '
+                                             'to install',
                         action='append', default=[])
 
     parser.add_argument('--include-file',
-                        help='File(s) to include - glob-style',
+                        help='File(s) to include (needed for the test) '
+                             '- glob-style',
                         action='append', default=[])
 
     # loads works with hits or duration
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--hits', help='Number of hits per users',
+    group.add_argument('--hits', help='Number of hits per user',
                        type=str, default=None)
     group.add_argument('-d', '--duration', help='Duration of the test (s)',
                        type=int, default=None)
@@ -119,7 +121,8 @@ def main(sysargs=None):
                         help='Displays Loads version and exits.')
 
     parser.add_argument('--ping-broker', action='store_true', default=False,
-                        help='Displays info about the broker and exits.')
+                        help='Pings the broker to get info, display it and '
+                             'exits.')
 
     parser.add_argument('--purge-broker', action='store_true', default=False,
                         help='Stops all runs on the broker and exits.')
@@ -133,7 +136,7 @@ def main(sysargs=None):
     parser.add_argument('--test-runner', default=None,
                         help='The path to binary to use as the test runner '
                              'when in distributed mode. The default is '
-                             'this runner')
+                             'this (python) runner')
 
     parser.add_argument('--server-url', default=None,
                         help='The URL of the server you want to test. It '
@@ -141,30 +144,34 @@ def main(sysargs=None):
                              'the tests for the WebTest client.')
 
     parser.add_argument('--zmq-receiver', default=None,
-                        help=('Socket where the runners send the events to'
-                              ' (the one opened on the agent side).'))
+                        help=('ZMQ socket where the runners send the events to'
+                              ' (opened on the agent side).'))
 
     parser.add_argument('--zmq-publisher', default=DEFAULT_PUBLISHER,
-                        help='Socket where the results are published.')
+                        help='ZMQ socket where the test results messages '
+                             'are published.')
 
     parser.add_argument('--observer', action='append',
-                        help='Callable that will receive the final results.')
+                        help='Callable that will receive the final results. '
+                             'Only in distributed mode (runs on the broker)')
 
     outputs = [st.name for st in output_list()]
     outputs.sort()
 
-    parser.add_argument('--quiet', action='store_true', default=False)
+    parser.add_argument('--quiet', action='store_true', default=False,
+                        help='Do not print any log messages.')
     parser.add_argument('--output', action='append', default=['stdout'],
-                        help='The output used to display the results',
+                        help='The output which will get the results',
                         choices=outputs)
 
     parser.add_argument('--cwd', default=None,
                         help='The base directory to run the tests from')
 
-    parser.add_argument('--attach', help='Reattach to a run',
+    parser.add_argument('--attach', help='Reattach to a distributed run',
                         action='store_true', default=False)
 
-    parser.add_argument('--detach', help='Detach immediatly',
+    parser.add_argument('--detach', help='Detach immediatly the current '
+                                         'distributed run',
                         action='store_true', default=False)
 
     # per-output options
