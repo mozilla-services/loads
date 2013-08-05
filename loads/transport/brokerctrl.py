@@ -6,7 +6,7 @@ import json
 from collections import defaultdict
 import datetime
 
-from loads.db.brokerdb import BrokerDB, DEFAULT_DBDIR
+from loads.db import get_database
 from loads.transport.client import DEFAULT_TIMEOUT_MOVF
 from loads.util import logger, resolve_name
 from loads.test_result import LazyTestResult
@@ -31,7 +31,7 @@ def _compute_observers(observers):
 
 
 class BrokerController(object):
-    def __init__(self, broker, loop, dbdir=DEFAULT_DBDIR,
+    def __init__(self, broker, loop, db='python', dboptions=None,
                  agent_timeout=DEFAULT_TIMEOUT_MOVF):
         self.broker = broker
         self.loop = loop
@@ -43,7 +43,9 @@ class BrokerController(object):
         self._runs = {}
 
         # local DB
-        self._db = BrokerDB(self.loop, dbdir)
+        if dboptions is None:
+            dboptions = {}
+        self._db = get_database(db, self.loop, **dboptions)
 
     @property
     def agents(self):
