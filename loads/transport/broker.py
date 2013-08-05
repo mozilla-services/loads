@@ -21,7 +21,7 @@ from loads.transport.util import (register_ipc_file, DEFAULT_FRONTEND,
 from loads.transport.heartbeat import Heartbeat
 from loads.transport.exc import DuplicateBrokerError
 from loads.transport.client import DEFAULT_TIMEOUT_MOVF
-from loads.db.brokerdb import DEFAULT_DBDIR
+from loads.db import get_backends
 from loads.transport.brokerctrl import BrokerController, NotEnoughWorkersError
 
 
@@ -45,7 +45,7 @@ class Broker(object):
                  io_threads=DEFAULT_IOTHREADS,
                  agent_timeout=DEFAULT_TIMEOUT_MOVF,
                  receiver=DEFAULT_BROKER_RECEIVER, publisher=DEFAULT_PUBLISHER,
-                 dbdir=DEFAULT_DBDIR):
+                 db='python', dboptions=None):
         # before doing anything, we verify if a broker is already up and
         # running
         logger.debug('Verifying if there is a running broker')
@@ -107,7 +107,9 @@ class Broker(object):
         self.poll_timeout = None
 
         # controller
-        self.ctrl = BrokerController(self, self.loop, dbdir, agent_timeout)
+        self.ctrl = BrokerController(self, self.loop, db=db,
+                                     dboptions=dboptions,
+                                     agent_timeout=agent_timeout)
 
     def _handle_recv(self, msg):
         # publishing all the data received from agents
@@ -365,8 +367,22 @@ def main(args=sys.argv):
     parser.add_argument('--logfile', dest='logfile', default='stdout',
                         help="File to log in to.")
 
-    parser.add_argument('--db-directory', dest='dbdir', default=DEFAULT_DBDIR,
-                        help="Database Directory.")
+    parser.add_argument('--db', dest='db', default='python',
+                        help="Database backend.")
+
+    # add db args
+    for backend, options in get_backends():
+        for option, default, help, type_ in options:
+            option = 'db_%s_%s' % (backend, option)
+            kargs = {'dest': option, 'default': default}
+
+            if type_ is bool:
+                kargs['action'] = 'store_true'
+            else:
+                kargs['type'] = type_
+
+            option = option.replace('_', '-')
+            parser.add_argument('--%s' % option, **kargs)
 
     args = parser.parse_args()
     set_logger(args.debug, logfile=args.logfile)
@@ -393,12 +409,23 @@ def main(args=sys.argv):
             logger.info('A broker is running. PID: %s' % pid)
         return 0
 
+    # grabbing the db options
+    dboptions = {}
+    prefix = 'db_%s_' % args.db
+
+    for key, value in args._get_kwargs():
+
+        if not key.startswith(prefix):
+            continue
+        dboptions[key[len(prefix):]] = value
+
     logger.info('Starting the broker')
     try:
         broker = Broker(frontend=args.frontend, backend=args.backend,
                         heartbeat=args.heartbeat, register=args.register,
                         receiver=args.receiver, publisher=args.publisher,
-                        io_threads=args.io_threads, dbdir=args.dbdir)
+                        io_threads=args.io_threads, db=args.db,
+                        dboptions=dboptions)
     except DuplicateBrokerError, e:
         logger.info('There is already a broker running on PID %s' % e)
         logger.info('Exiting')
