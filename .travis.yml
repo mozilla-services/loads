@@ -5,6 +5,7 @@ python:
 before_install:
     - sudo apt-get install -y libev-dev
 install:
+    - pip install redis
     - pip install -r test-requirements.txt --use-mirrors
     - python setup.py develop
 script: flake8 loads && nosetests -sv loads/tests
