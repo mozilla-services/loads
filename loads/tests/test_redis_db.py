@@ -8,7 +8,7 @@ try:
     import redis
     redis.StrictRedis().ping()
     NO_TEST = False
-except (ImportError, redis.exceptions.ConnectionError):
+except Exception:
     NO_TEST = True
 
 from loads.tests.test_python_db import ONE_RUN
