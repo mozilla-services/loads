@@ -45,16 +45,34 @@ class BaseDB(object):
 def get_database(name='python', loop=None, **options):
     if name == 'python':
         from loads.db._python import BrokerDB
-        db = BrokerDB(loop, **options)
-        logger.info('Created a %r database' % name)
-        return db
+        klass = BrokerDB
+    elif name == 'redis':
+        from loads.db._redis import RedisDB
+        klass = RedisDB
+    else:
+        raise NotImplementedError(name)
 
-    raise NotImplementedError(name)
+    db = klass(loop, **options)
+    logger.info('Created a %r database' % name)
+    return db
 
 
 def get_backends():
-    from loads.db._python import BrokerDB
-    options = [(name, default, help, type_)
+    backends = []
+
+    def _options(backend):
+        return[(name, default, help, type_)
                for name, (default, help, type_)
-               in BrokerDB.options.items()]
-    return [(BrokerDB.name, options)]
+               in backend.options.items()]
+
+    # pure python
+    from loads.db._python import BrokerDB
+    backends.append((BrokerDB.name, _options(BrokerDB)))
+
+    try:
+        from loads.db._redis import RedisDB
+    except ImportError:
+        return backends
+
+    backends.append((RedisDB.name, _options(RedisDB)))
+    return backends

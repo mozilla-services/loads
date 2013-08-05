@@ -1,4 +1,4 @@
-import unittest
+import unittest2
 import time
 import os
 import shutil
@@ -12,7 +12,7 @@ from loads.db._python import BrokerDB
 _RUN_ID = '8b91dee8-0aec-4bb9-b0a0-87269a9c2874'
 _AGENT_ID = 1727
 
-_ONE_RUN = [
+ONE_RUN = [
     {'agent_id': _AGENT_ID, 'data_type': 'startTestRun', 'run_id': _RUN_ID},
 
     {'agent_id': _AGENT_ID, 'data_type': 'startTest', 'run_id': _RUN_ID,
@@ -36,7 +36,7 @@ _ONE_RUN = [
      'run_id': _RUN_ID}]
 
 
-class TestBrokerDB(unittest.TestCase):
+class TestBrokerDB(unittest2.TestCase):
 
     def setUp(self):
         self.loop = ioloop.IOLoop()
@@ -54,7 +54,7 @@ class TestBrokerDB(unittest.TestCase):
         self.assertEqual(list(self.db.get_data('swwqqsw')), [])
 
         def add_data():
-            for line in _ONE_RUN:
+            for line in ONE_RUN:
                 data = dict(line)
                 data['run_id'] = '1'
                 self.db.add(data)
