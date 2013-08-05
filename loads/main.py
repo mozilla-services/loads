@@ -216,7 +216,7 @@ def main(sysargs=None):
         client = Client(args.broker)
         res = client.ping()
         print('Broker running on pid %d' % res['pid'])
-        print('%d workers registered' % len(res['workers']))
+        print('%d agents registered' % len(res['agents']))
         print('endpoints:')
         for name, location in res['endpoints'].items():
             print('  - %s: %s' % (name, location))
@@ -226,8 +226,8 @@ def main(sysargs=None):
             print('Nothing is running right now.')
         else:
             print('We have %d run(s) right now:' % len(runs))
-            for run_id, workers in runs.items():
-                print('  - %s with %d worker(s)' % (run_id, len(workers)))
+            for run_id, agents in runs.items():
+                print('  - %s with %d agent(s)' % (run_id, len(agents)))
         sys.exit(0)
 
     if args.purge_broker:

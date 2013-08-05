@@ -29,21 +29,21 @@ DEFAULT_IOTHREADS = 1
 
 
 class Broker(object):
-    """Class that route jobs to workers.
+    """Class that route jobs to agents.
 
     Options:
 
     - **frontend**: the ZMQ socket to receive jobs.
     - **backend**: the ZMQ socket to communicate with agents.
     - **heartbeat**: the ZMQ socket to receive heartbeat requests.
-    - **register** : the ZMQ socket to register workers.
-    - **receiver**: the ZMQ socket that receives data from workers.
-    - **publisher**: the ZMQ socket to publish workers data
+    - **register** : the ZMQ socket to register agents.
+    - **receiver**: the ZMQ socket that receives data from agents.
+    - **publisher**: the ZMQ socket to publish agents data
     """
     def __init__(self, frontend=DEFAULT_FRONTEND, backend=DEFAULT_BACKEND,
                  heartbeat=None, register=DEFAULT_REG,
                  io_threads=DEFAULT_IOTHREADS,
-                 worker_timeout=DEFAULT_TIMEOUT_MOVF,
+                 agent_timeout=DEFAULT_TIMEOUT_MOVF,
                  receiver=DEFAULT_BROKER_RECEIVER, publisher=DEFAULT_PUBLISHER,
                  db='python', dboptions=None):
         # before doing anything, we verify if a broker is already up and
@@ -109,7 +109,7 @@ class Broker(object):
         # controller
         self.ctrl = BrokerController(self, self.loop, db=db,
                                      dboptions=dboptions,
-                                     worker_timeout=worker_timeout)
+                                     agent_timeout=agent_timeout)
 
     def _handle_recv(self, msg):
         # publishing all the data received from agents
@@ -117,14 +117,14 @@ class Broker(object):
 
         # saving the data locally
         data = json.loads(msg[0])
-        worker_id = str(data.get('worker_id'))
-        self.ctrl.save_data(worker_id, data)
+        agent_id = str(data.get('agent_id'))
+        self.ctrl.save_data(agent_id, data)
 
     def _handle_reg(self, msg):
         if msg[0] == 'REGISTER':
-            self.ctrl.register_worker(msg[1])
+            self.ctrl.register_agent(msg[1])
         elif msg[0] == 'UNREGISTER':
-            self.ctrl.unregister_worker(msg[1])
+            self.ctrl.unregister_agent(msg[1])
 
     def _send_json(self, target, data):
         try:
@@ -144,7 +144,7 @@ class Broker(object):
         if cmd == 'PING':
             res = {'result': {'pid': os.getpid(),
                               'endpoints': self.endpoints,
-                              'workers': self.ctrl.workers}}
+                              'agents': self.ctrl.agents}}
             self._send_json(target, res)
             return
         elif cmd == 'LISTRUNS':
@@ -155,10 +155,10 @@ class Broker(object):
             return
         elif cmd == 'STOPRUN':
             run_id = data['run_id']
-            stopped_workers = self.ctrl.stop_run(run_id, msg)
+            stopped_agents = self.ctrl.stop_run(run_id, msg)
 
-            # we give back the list of workers we stopped
-            res = {'result': stopped_workers}
+            # we give back the list of agents we stopped
+            res = {'result': stopped_agents}
             self._send_json(target, res)
             return
         elif cmd == 'GET_DATA':
@@ -176,34 +176,34 @@ class Broker(object):
             self._send_json(target, {'result': metadata})
             return
 
-        # other commands below this point are for workers
+        # other commands below this point are for agents
         if tentative == 3:
-            logger.debug('No workers')
-            self._send_json(target, {'error': 'No worker'})
+            logger.debug('No agents')
+            self._send_json(target, {'error': 'No agent'})
             return
 
-        # the msg tells us which worker to work with
+        # the msg tells us which agent to work with
         data = json.loads(msg[2])   # XXX we need to unserialize here
 
         # broker protocol
         cmd = data['command']
 
         if cmd == 'LIST':
-            # we return a list of worker ids and their status
-            self._send_json(target, {'result': self.ctrl.workers})
+            # we return a list of agent ids and their status
+            self._send_json(target, {'result': self.ctrl.agents})
             return
         elif cmd == 'RUN':
             # create a unique id for this run
             run_id = str(uuid4())
 
-            # get some workers
+            # get some agents
             try:
-                workers = self.ctrl.reserve_workers(data['agents'], run_id)
+                agents = self.ctrl.reserve_agents(data['agents'], run_id)
             except NotEnoughWorkersError:
                 self._send_json(target, {'error': 'Not enough agents'})
                 return
 
-            # send to every worker with the run_id and the receiver endpoint
+            # send to every agent with the run_id and the receiver endpoint
             data['run_id'] = run_id
             data['args']['zmq_receiver'] = self.endpoints['receiver']
 
@@ -213,28 +213,28 @@ class Broker(object):
             self.ctrl.save_metadata(run_id, data['args'])
             self.ctrl.flush_db()
 
-            for worker_id in workers:
-                self.ctrl.send_to_worker(worker_id, msg)
+            for agent_id in agents:
+                self.ctrl.send_to_agent(agent_id, msg)
 
-            # tell the client what workers where picked
-            res = {'result': {'workers': workers, 'run_id': run_id}}
+            # tell the client which agents where selected.
+            res = {'result': {'agents': agents, 'run_id': run_id}}
             self._send_json(target, res)
             return
 
-        if 'worker_id' not in data:
+        if 'agent_id' not in data:
             raise NotImplementedError('DEAD CODE?')
         else:
-            worker_id = str(data['worker_id'])
-            self.ctrl.send_to_worker(worker_id, msg)
+            agent_id = str(data['agent_id'])
+            self.ctrl.send_to_agent(agent_id, msg)
 
     def _handle_recv_back(self, msg):
         # back => front
         #logger.debug('front <- back [%s]' % msg[0])
-        # let's remove the worker id and track the time it took
-        worker_id = msg[0]
+        # let's remove the agent id and track the time it took
+        agent_id = msg[0]
         msg = msg[1:]
 
-        # grabbing the data to update the workers statuses if needed
+        # grabbing the data to update the agents statuses if needed
         data = json.loads(msg[-1])
         if 'error' in data:
             result = data['error']
@@ -244,7 +244,7 @@ class Broker(object):
 
         if result.get('command') == '_STATUS':
             statuses = result['status'].values()
-            run_id = self.ctrl.update_status(worker_id, statuses)
+            run_id = self.ctrl.update_status(agent_id, statuses)
             if run_id is not None:
                 # if the tests are finished, publish this on the pubsub.
                 self._publisher.send(json.dumps({'data_type': 'run-finished',
@@ -332,7 +332,7 @@ def main(args=sys.argv):
 
     parser.add_argument('--backend', dest='backend',
                         default=DEFAULT_BACKEND,
-                        help="ZMQ socket for workers.")
+                        help="ZMQ socket for agents.")
 
     parser.add_argument('--heartbeat', dest='heartbeat',
                         default=None,

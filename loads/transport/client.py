@@ -28,11 +28,11 @@ class Client(object):
     - **timeout_max_overflow**: maximum timeout overflow allowed.
       Defaults to 1.5s
     - **timeout_overflows**: number of times in a row the timeout value
-      can be overflowed per worker. The client keeps a counter of
+      can be overflowed per agent. The client keeps a counter of
       executions that were longer than the regular timeout but shorter
       than **timeout_max_overflow**. When the number goes over
       **timeout_overflows**, the usual TimeoutError is raised.
-      When a worker returns on time, the counter is reset.
+      When a agent returns on time, the counter is reset.
     """
     def __init__(self, frontend=DEFAULT_FRONTEND, timeout=DEFAULT_TIMEOUT,
                  timeout_max_overflow=DEFAULT_TIMEOUT_MOVF,
@@ -179,11 +179,11 @@ class Client(object):
     def get_metadata(self, run_id):
         return self.execute({'command': 'GET_METADATA', 'run_id': run_id})
 
-    def status(self, worker_id):
-        return self.execute({'command': 'STATUS', 'worker_id': worker_id})
+    def status(self, agent_id):
+        return self.execute({'command': 'STATUS', 'agent_id': agent_id})
 
-    def stop(self, worker_id):
-        return self.execute({'command': 'STOP', 'worker_id': worker_id})
+    def stop(self, agent_id):
+        return self.execute({'command': 'STOP', 'agent_id': agent_id})
 
     def stop_run(self, run_id):
         return self.execute({'command': 'STOPRUN', 'run_id': run_id})
@@ -207,11 +207,11 @@ class Pool(object):
       Defaults to 5s.
     - **timeout_max_overflow**: maximum timeout overflow allowed
     - **timeout_overflows**: number of times in a row the timeout value
-      can be overflowed per worker. The client keeps a counter of
+      can be overflowed per agent. The client keeps a counter of
       executions that were longer than the regular timeout but shorter
       than **timeout_max_overflow**. When the number goes over
       **timeout_overflows**, the usual TimeoutError is raised.
-      When a worker returns on time, the counter is reset.
+      When a agent returns on time, the counter is reset.
     """
     def __init__(self, size=10, frontend=DEFAULT_FRONTEND,
                  timeout=DEFAULT_TIMEOUT,
@@ -264,9 +264,9 @@ class Pool(object):
         with self._connector(self.timeout) as connector:
             return connector.run(args, async)
 
-    def status(self, worker_id):
+    def status(self, agent_id):
         with self._connector(self.timeout) as connector:
-            return connector.status(worker_id)
+            return connector.status(agent_id)
 
     def list(self):
         with self._connector(self.timeout) as connector:
@@ -276,9 +276,9 @@ class Pool(object):
         with self._connector(self.timeout) as connector:
             return connector.list_runs()
 
-    def stop(self, worker_id):
+    def stop(self, agent_id):
         with self._connector(self.timeout) as connector:
-            return connector.stop(worker_id)
+            return connector.stop(agent_id)
 
     def get_data(self, run_id):
         with self._connector(self.timeout) as connector:

@@ -35,34 +35,34 @@ class TestBrokerController(unittest.TestCase):
         shutil.rmtree(self.dbdir)
 
     def test_registration(self):
-        self.ctrl.register_worker('1')
-        self.assertTrue('1' in self.ctrl.workers)
+        self.ctrl.register_agent('1')
+        self.assertTrue('1' in self.ctrl.agents)
 
-        # make the worker busy before we unregister it
-        self.ctrl.send_to_worker('1', ['something'])
-        self.ctrl.reserve_workers(1, 'run')
+        # make the agent busy before we unregister it
+        self.ctrl.send_to_agent('1', ['something'])
+        self.ctrl.reserve_agents(1, 'run')
 
-        self.ctrl.unregister_worker('1')
-        self.assertFalse('1' in self.ctrl.workers)
+        self.ctrl.unregister_agent('1')
+        self.assertFalse('1' in self.ctrl.agents)
 
-    def test_reserve_workers(self):
-        self.ctrl.register_worker('1')
-        self.ctrl.register_worker('2')
+    def test_reserve_agents(self):
+        self.ctrl.register_agent('1')
+        self.ctrl.register_agent('2')
 
-        self.assertRaises(NotEnoughWorkersError, self.ctrl.reserve_workers,
+        self.assertRaises(NotEnoughWorkersError, self.ctrl.reserve_agents,
                           10, 'run')
 
-        workers = self.ctrl.reserve_workers(2, 'run')
-        workers.sort()
-        self.assertEqual(workers, ['1', '2'])
+        agents = self.ctrl.reserve_agents(2, 'run')
+        agents.sort()
+        self.assertEqual(agents, ['1', '2'])
 
     def test_run_and_stop(self):
-        self.ctrl.register_worker('1')
-        self.ctrl.register_worker('2')
-        self.ctrl.register_worker('3')
+        self.ctrl.register_agent('1')
+        self.ctrl.register_agent('2')
+        self.ctrl.register_agent('3')
 
-        self.ctrl.reserve_workers(1, 'run')
-        self.ctrl.reserve_workers(2, 'run2')
+        self.ctrl.reserve_agents(1, 'run')
+        self.ctrl.reserve_agents(2, 'run2')
 
         runs = self.ctrl.list_runs().keys()
         runs.sort()
@@ -72,15 +72,15 @@ class TestBrokerController(unittest.TestCase):
         self.assertEqual(len(Stream.msgs), 5)
 
     def test_db_access(self):
-        self.ctrl.register_worker('1')
-        self.ctrl.reserve_workers(1, 'run')
+        self.ctrl.register_agent('1')
+        self.ctrl.reserve_agents(1, 'run')
 
         # metadata
         data = {'some': 'data'}
         self.ctrl.save_metadata('run', data)
         self.assertEqual(self.ctrl.get_metadata('run'), data)
 
-        # save data by worker
+        # save data by agent
         self.ctrl.save_data('1', data)
         self.ctrl.flush_db()
 

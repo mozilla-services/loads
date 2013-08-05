@@ -15,7 +15,7 @@ class ZMQRelay(object):
         self.context = zmq.Context()
         self._init_socket()
         self.encoder = DateTimeJSONEncoder()
-        self.wid = self.args.get('worker_id')
+        self.agent_id = self.args.get('agent_id')
 
     def _init_socket(self):
         receive = self.args['zmq_receiver']
@@ -29,10 +29,10 @@ class ZMQRelay(object):
                   test=str(test),
                   loads_status=loads_status)
 
-    def startTestRun(self, worker_id=None):
+    def startTestRun(self, agent_id=None):
         self.push('startTestRun')
 
-    def stopTestRun(self, worker_id=None):
+    def stopTestRun(self, agent_id=None):
         self.push('stopTestRun')
 
     def stopTest(self, test, loads_status):
@@ -79,7 +79,7 @@ class ZMQRelay(object):
         self.push('socket_message', size=size)
 
     def push(self, data_type, **data):
-        data.update({'data_type': data_type, 'worker_id': self.wid})
+        data.update({'data_type': data_type, 'agent_id': self.agent_id})
         while True:
             try:
                 self._push.send(self.encoder.encode(data), zmq.NOBLOCK)

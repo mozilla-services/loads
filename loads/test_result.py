@@ -196,51 +196,51 @@ class TestResult(object):
         return float(len(self.hits)) / self.duration
 
     # These are to comply with the APIs of unittest.
-    def startTestRun(self, worker_id=None, when=None):
+    def startTestRun(self, agent_id=None, when=None):
         if when is None:
             when = datetime.utcnow()
 
-        if worker_id is None:
+        if agent_id is None:
             self.start_time = when
 
-    def stopTestRun(self, worker_id=None):
+    def stopTestRun(self, agent_id=None):
         # we don't want to start multiple time the test run
-        if worker_id is None:
+        if agent_id is None:
             self.stop_time = datetime.utcnow()
 
-    def startTest(self, test, loads_status, worker_id=None):
+    def startTest(self, test, loads_status, agent_id=None):
         hit, user, current_hit, current_user = loads_status
         t = Test(name=test, hit=hit, user=user)
-        key = self._get_key(test, loads_status, worker_id)
+        key = self._get_key(test, loads_status, agent_id)
         self.tests[key] = t
 
-    def stopTest(self, test, loads_status, worker_id=None):
+    def stopTest(self, test, loads_status, agent_id=None):
         hit, user, current_hit, current_user = loads_status
-        t = self._get_test(test, loads_status, worker_id)
+        t = self._get_test(test, loads_status, agent_id)
         t.end = datetime.utcnow()
 
-    def addError(self, test, exc_info, loads_status, worker_id=None):
-        test = self._get_test(test, loads_status, worker_id)
+    def addError(self, test, exc_info, loads_status, agent_id=None):
+        test = self._get_test(test, loads_status, agent_id)
         test.errors.append(exc_info)
 
-    def addFailure(self, test, exc_info, loads_status, worker_id=None):
-        test = self._get_test(test, loads_status, worker_id)
+    def addFailure(self, test, exc_info, loads_status, agent_id=None):
+        test = self._get_test(test, loads_status, agent_id)
         test.failures.append(exc_info)
 
-    def addSuccess(self, test, loads_status, worker_id=None):
-        test = self._get_test(test, loads_status, worker_id)
+    def addSuccess(self, test, loads_status, agent_id=None):
+        test = self._get_test(test, loads_status, agent_id)
         test.success += 1
 
     def add_hit(self, **data):
         self.hits.append(Hit(**data))
 
-    def socket_open(self, worker_id=None):
+    def socket_open(self, agent_id=None):
         self.sockets += 1
 
-    def socket_close(self, worker_id=None):
+    def socket_close(self, agent_id=None):
         self.sockets -= 1
 
-    def socket_message(self, size, worker_id=None):
+    def socket_message(self, size, agent_id=None):
         self.socket_data_received += size
 
     def __getattribute__(self, name):
@@ -262,13 +262,13 @@ class TestResult(object):
     def add_observer(self, observer):
         self.observers.append(observer)
 
-    def _get_key(self, test, loads_status, worker_id):
-        return tuple((str(test),) + tuple(loads_status) + (worker_id,))
+    def _get_key(self, test, loads_status, agent_id):
+        return tuple((str(test),) + tuple(loads_status) + (agent_id,))
 
-    def _get_test(self, test, loads_status, worker_id):
-        key = self._get_key(test, loads_status, worker_id)
+    def _get_test(self, test, loads_status, agent_id):
+        key = self._get_key(test, loads_status, agent_id)
         if key not in self.tests:
-            self.startTest(test, loads_status, worker_id)
+            self.startTest(test, loads_status, agent_id)
 
         return self.tests[key]
 
@@ -309,7 +309,7 @@ class Hit(object):
     Used for later computation.
     """
     def __init__(self, url, method, status, started, elapsed, loads_status,
-                 worker_id=None):
+                 agent_id=None):
         self.url = url
         self.method = method
         self.status = status
@@ -323,7 +323,7 @@ class Hit(object):
         (self.series, self.user, self.current_hit,
          self.current_user) = loads_status
 
-        self.worker_id = worker_id
+        self.agent_id = agent_id
 
 
 class Test(object):
