@@ -35,13 +35,16 @@ class RedisDB(BaseDB):
         data_type = data.get('data_type', 'unknown')
         size = data.get('size', 1)
 
+        pipeline = self._redis.pipeline()
+
         counter = 'count:%s:%s' % (run_id, data_type)
         counters = 'counters:%s' % run_id
         if not self._redis.sismember(counters, counter):
-            self._redis.sadd(counters, counter)
+            pipeline.sadd(counters, counter)
 
-        self._redis.incrby('count:%s:%s' % (run_id, data_type), size)
-        self._redis.lpush('data:%s' % run_id, _D(data))
+        pipeline.incrby('count:%s:%s' % (run_id, data_type), size)
+        pipeline.lpush('data:%s' % run_id, _D(data))
+        pipeline.execute()
 
     def flush(self):
         pass
