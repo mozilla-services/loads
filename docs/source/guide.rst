@@ -43,7 +43,7 @@ Now run **loads-runner** against it::
 
 This will execute your test just once - so you can control it works well.
 
-Now, try to run it using 100 virtual users (-u), each of them running the test
+Now, try to run it using 100 :term:`virtual users` (-u), each of them running the test
 10 times (--hits)::
 
     $ bin/loads-runner example.TestWebSite.test_es -u 100 --hits 10
@@ -61,7 +61,7 @@ Now, try to run it using 100 virtual users (-u), each of them running the test
     Failures: 0
 
 
-Congrats, you've just sent a load of 1000 hits, using 100 concurrent users.
+Congrats, you've just sent a load of 1000 hits, using 100 virtual users.
 
 Now let's run a series of 10, 20 then 30 users, each one running 20 hits::
 
@@ -145,12 +145,12 @@ tests. To do so, change the `server_url` attribute of the app object::
 Distributed test
 ----------------
 
-If you want to send a lot of load, you need to run a distributed test.
-A distributed test uses multiple agents to do the requests. The agents can be
+If you want to send a lot of load, you need to run a :term:`distributed test`.
+A distributed test uses multiple :term:`agents` to do the requests. The agents can be
 on the same machine, or on a different physical hardware.
 
 The **Loads** command line is able to interact with several **agents**
-through a **broker**.
+through a :term:`broker`.
 
 To run a broker and some agents, let's use Circus.
 
@@ -247,7 +247,6 @@ Then you can use **--attach** to reattach the console::
 Using Loads with a config file
 ------------------------------
 
-
 Instead of typing a very long command line, you can create a configuration file
 and have Loads use it.
 
@@ -269,4 +268,3 @@ Here's an example::
 
 
 In this example, we're pushing a load test accross 4 agents.
-

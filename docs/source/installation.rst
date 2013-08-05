@@ -51,7 +51,7 @@ That's it. You should then find **load-runner** in your bin directory.
 Distributed
 -----------
 
-To install what's required to run distributed tests, you need to
+To install what's required to start :term:`distributed runs`, you need to
 run::
 
     $ make build_extras

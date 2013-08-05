@@ -29,14 +29,14 @@ The messages respect the following rules:
 - All the data is JSON encoded.
 - Dates are expressed in `ISO 8601 format
   <https://en.wikipedia.org/wiki/ISO_8601>`_, (YYYY-MM-DDTHH:MM:SS)
-- You should send along the worker id with every message. Each worker id should
+- You should send along the agent id with every message. Each agent id should
   be different from each other.
 
 A message generally looks like this::
   
     {
         data_type: 'something',
-        worker_id: '1',
+        agent_id: '1',
         other_key_1: 'foo'
         other_key_2: 'bar'
     }
