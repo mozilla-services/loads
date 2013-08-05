@@ -134,7 +134,7 @@ class Agent(object):
 
             if test_dir is not None:
                 if not os.path.exists(test_dir):
-                    logger.debug('Creating %r' % test_dir)
+                    logger.debug('Creating the test directory "%r"' % test_dir)
                     os.makedirs(test_dir)
 
                 logger.debug('Moving to %r' % test_dir)
@@ -201,10 +201,10 @@ class Agent(object):
             env['LOADS_WORKER_ID'] = str(args.get('worker_id'))
             env['LOADS_STATUS'] = loads_status
             env['LOADS_ZMQ_RECEIVER'] = self._receiver_socket
-            cmd_args = {'env': env, 'stdout': subprocess.PIPE}
-            cwd = args.get('cwd')
-            if cwd:
-                cmd_args['cwd'] = cwd
+            cmd_args = {'env': env,
+                        'stdout': subprocess.PIPE,
+                        'cwd': args.get('test_dir'),
+                        }
             procs.append(subprocess.Popen(cmd.split(' '), **cmd_args))
 
         return procs

@@ -164,9 +164,6 @@ def main(sysargs=None):
                         help='The output which will get the results',
                         choices=outputs)
 
-    parser.add_argument('--cwd', default=None,
-                        help='The base directory to run the tests from')
-
     parser.add_argument('--attach', help='Reattach to a distributed run',
                         action='store_true', default=False)
 
