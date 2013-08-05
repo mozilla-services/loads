@@ -13,7 +13,7 @@ from zmq.green.eventloop import ioloop, zmqstream
 
 from loads.util import set_logger, logger
 from loads.transport.util import (register_ipc_file, DEFAULT_FRONTEND,
-                                  DEFAULT_BACKEND, DEFAULT_HEARTBEAT,
+                                  DEFAULT_BACKEND,
                                   DEFAULT_REG, verify_broker,
                                   kill_ghost_brokers,
                                   DEFAULT_BROKER_RECEIVER,
@@ -41,11 +41,11 @@ class Broker(object):
     - **publisher**: the ZMQ socket to publish workers data
     """
     def __init__(self, frontend=DEFAULT_FRONTEND, backend=DEFAULT_BACKEND,
-                 heartbeat=DEFAULT_HEARTBEAT, register=DEFAULT_REG,
+                 heartbeat=None, register=DEFAULT_REG,
                  io_threads=DEFAULT_IOTHREADS,
                  worker_timeout=DEFAULT_TIMEOUT_MOVF,
                  receiver=DEFAULT_BROKER_RECEIVER, publisher=DEFAULT_PUBLISHER,
-                 dbdir=DEFAULT_DBDIR, use_heartbeat=False):
+                 dbdir=DEFAULT_DBDIR):
         # before doing anything, we verify if a broker is already up and
         # running
         logger.debug('Verifying if there is a running broker')
@@ -56,10 +56,12 @@ class Broker(object):
 
         self.endpoints = {'frontend': frontend,
                           'backend': backend,
-                          'heartbeat': heartbeat,
                           'register': register,
                           'receiver': receiver,
                           'publisher': publisher}
+
+        if heartbeat is not None:
+            self.endpoints['heartbeat'] = heartbeat
 
         logger.debug('Initializing the broker.')
 
@@ -94,10 +96,11 @@ class Broker(object):
         self._rcvstream.on_recv(self._handle_recv)
 
         # heartbeat
-        self.use_heartbeat = use_heartbeat
-        if use_heartbeat:
+        if heartbeat is not None:
             self.pong = Heartbeat(heartbeat, io_loop=self.loop,
                                   ctx=self.context)
+        else:
+            self.pong = None
 
         # status
         self.started = False
@@ -267,7 +270,7 @@ class Broker(object):
             return
 
         # running the heartbeat
-        if self.use_heartbeat:
+        if self.pong is not None:
             self.pong.start()
 
         # running the cleaner
@@ -304,7 +307,7 @@ class Broker(object):
         except IOError:
             pass
 
-        if self.use_heartbeat:
+        if self.pong is not None:
             logger.debug('Stopping the heartbeat')
             self.pong.stop()
 
@@ -330,7 +333,7 @@ def main(args=sys.argv):
                         help="ZMQ socket for workers.")
 
     parser.add_argument('--heartbeat', dest='heartbeat',
-                        default=DEFAULT_HEARTBEAT,
+                        default=None,
                         help="ZMQ socket for the heartbeat.")
 
     parser.add_argument('--register', dest='register',
@@ -403,7 +406,8 @@ def main(args=sys.argv):
 
     logger.info('Listening to incoming jobs at %r' % args.frontend)
     logger.info('Workers may register at %r' % args.backend)
-    logger.info('The heartbeat socket is at %r' % args.heartbeat)
+    if args.heartbeat is not None:
+        logger.info('The heartbeat socket is at %r' % args.heartbeat)
     try:
         broker.start()
     except KeyboardInterrupt:

@@ -175,7 +175,7 @@ class Agent(object):
         try:
             if test_runner is not None:
                 self._launched = nb_runs
-                procs = [self.launch_multiple_runners(nb_runs, args)]
+                procs = self.launch_multiple_runners(nb_runs, args)
             else:
                 self._launched = 1
                 cmd = 'from loads.main import run;'
@@ -216,7 +216,7 @@ class Agent(object):
         return procs
 
     def _handle_commands(self, message):
-        # we get the message from the broker here
+        # we get the messages from the broker here
         data = message.data
         command = data['command']
 

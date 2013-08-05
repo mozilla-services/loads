@@ -11,6 +11,7 @@ import time
 import requests
 import tempfile
 import shutil
+import sys
 
 from unittest2 import TestCase, skipIf
 
@@ -180,6 +181,19 @@ class FunctionalTest(TestCase):
                 return
 
         raise AssertionError('No data back')
+
+    def test_distributed_run_external_runner(self):
+        args = get_runner_args(
+            fqn='loads.examples.test_blog.TestWebSite.test_something',
+            agents=1,
+            users=1,
+            test_runner='%s -m loads.tests.runner {test}' % sys.executable)
+
+        start_runner(args)
+        client = Pool()
+        runs = client.list_runs()
+        data = client.get_data(runs.keys()[0])
+        self.assertTrue(len(data) > 5, len(data))
 
     @skipIf('TRAVIS' in os.environ, 'Travis')
     def test_distributed_detach(self):
