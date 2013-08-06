@@ -81,7 +81,7 @@ class BrokerDB(BaseDB):
             with open(filename, 'a+') as f:
                 for i in range(qsize):
                     line = queue.get()
-                    f.write(json.dumps(line) + '\n')
+                    f.write(json.dumps(line, sort_keys=True) + '\n')
 
             # counts
             filename = os.path.join(self.directory, run_id + '-counts.json')
@@ -105,13 +105,35 @@ class BrokerDB(BaseDB):
         with open(filename) as f:
             return json.load(f)
 
-    def get_data(self, run_id):
+    def get_data(self, run_id, data_type=None, groupby=False):
         self.flush()
         filename = os.path.join(self.directory, run_id)
 
         if not os.path.exists(filename):
             raise StopIteration()
 
-        with open(filename) as f:
-            for line in f:
-                yield json.loads(line)
+        if not groupby:
+            with open(filename) as f:
+                for line in f:
+                    data = json.loads(line)
+                    filtered = (data_type is not None and
+                                data_type != data.get('data_type'))
+                    if filtered:
+                        continue
+                    yield data
+        else:
+            grouped = defaultdict(int)
+            with open(filename) as f:
+                for line in f:
+                    data = json.loads(line)
+                    filtered = (data_type is not None and
+                                data_type != data.get('data_type'))
+                    if filtered:
+                        continue
+
+                    grouped[line] += 1
+
+            for data, count in grouped.items():
+                data = json.loads(data)
+                data['count'] = count
+                yield data

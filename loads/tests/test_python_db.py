@@ -62,6 +62,7 @@ class TestBrokerDB(unittest2.TestCase):
                 self.db.add(data)
 
         self.loop.add_callback(add_data)
+        self.loop.add_callback(add_data)
         self.loop.add_timeout(time.time() + .5, self.loop.stop)
         self.loop.start()
 
@@ -73,14 +74,26 @@ class TestBrokerDB(unittest2.TestCase):
         with open(os.path.join(self.db.directory, '2')) as f:
             data2 = [json.loads(line) for line in f]
 
-        self.assertEqual(len(data), 6)
-        self.assertEqual(len(data2), 6)
+        self.assertEqual(len(data), 12)
+        self.assertEqual(len(data2), 12)
         counts = self.db.get_counts('1')
 
         for type_ in ('addSuccess', 'stopTestRun', 'stopTest',
                       'startTest', 'startTestRun', 'add_hit'):
-            self.assertEqual(dict(counts)[type_], 1)
+            self.assertEqual(dict(counts)[type_], 2)
 
         data3 = list(self.db.get_data('1'))
         data3.sort()
         self.assertEqual(data3, data)
+
+        # filtered
+        data3 = list(self.db.get_data('1', data_type='add_hit'))
+        self.assertEqual(len(data3), 2)
+
+        # group by
+        res = list(self.db.get_data('1', groupby=True))
+        self.assertEqual(len(res), 6)
+        self.assertEqual(res[0]['count'], 2)
+
+        res = list(self.db.get_data('1', data_type='add_hit', groupby=True))
+        self.assertEqual(res[0]['count'], 2)

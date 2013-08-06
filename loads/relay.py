@@ -43,7 +43,8 @@ class ZMQRelay(object):
     def _transform_exc_info(self, exc):
         string_tb = StringIO()
         exc, exc_class, tb = exc
-        traceback.print_tb(tb, string_tb)
+        traceback.print_tb(tb, file=string_tb)
+        string_tb.seek(0)
         return str(exc), str(exc_class), string_tb.read()
 
     def addFailure(self, test, exc, loads_status):

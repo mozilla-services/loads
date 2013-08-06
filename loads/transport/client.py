@@ -43,7 +43,6 @@ class Client(object):
         self.frontend = frontend
         self.master = self.ctx.socket(zmq.REQ)
         self.master.connect(frontend)
-        logger.debug('Client connected to %s' % frontend)
         self.poller = zmq.Poller()
         self.poller.register(self.master, zmq.POLLIN)
         self.timeout = timeout * 1000
@@ -166,8 +165,10 @@ class Client(object):
         return self.execute({'command': 'PING'}, timeout=timeout,
                             log_exceptions=log_exceptions)
 
-    def get_data(self, run_id):
-        return self.execute({'command': 'GET_DATA', 'run_id': run_id})
+    def get_data(self, run_id, **kw):
+        cmd = {'command': 'GET_DATA', 'run_id': run_id}
+        cmd.update(kw)
+        return self.execute(cmd)
 
     def get_counts(self, run_id):
         res = self.execute({'command': 'GET_COUNTS', 'run_id': run_id})
