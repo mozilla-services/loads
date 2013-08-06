@@ -1,6 +1,7 @@
 import array
 import sys
 import traceback
+from collections import defaultdict
 
 from loads.relay import ZMQRelay
 
@@ -54,34 +55,54 @@ class StdOutput(object):
 
         if self.results.nb_errors:
             self._print_tb(self.results.errors)
+            write('\n')
 
         if self.results.nb_failures:
             self._print_tb(self.results.failures)
+            write('\n')
 
         sys.stdout.flush()
         sys.stderr.flush()
 
     def _print_tb(self, data):
-        data = data.next()
-        if len(data) == 0:
-            return
-        exc_class, exc, tb = data[0]
-        if isinstance(exc_class, basestring):
-            name = exc_class
-        else:
-            name = exc_class.__name__
-        sys.stderr.write("\n%s: %s" % (name, exc))
+        # 3 most commons
+        errors = defaultdict(int)
 
-        if tb not in (None, ''):   # XXX fix this
-            sys.stderr.write("\n Traceback: \n")
-            traceback.print_tb(tb, sys.stderr)
+        for line in data:
+            if len(line) == 0:
+                continue
+            exc_class, exc, tb = line[0]
+            if isinstance(exc_class, basestring):
+                name = exc_class
+            else:
+                name = exc_class.__name__
 
-    def refresh(self):
+            errors[name, exc, tb] += 1
+
+        errors = [(count, name, exc, tb) for (name, exc, tb), count
+                  in errors.items()]
+        errors.sort()
+
+        for count, name, exc, tb in errors[:3]:
+            sys.stderr.write("%d occurrences of: \n" % count)
+
+            if tb not in (None, ''):   # XXX fix this
+                if isinstance(tb, basestring):
+                    sys.stderr.write(tb.replace('\n', '    \n'))
+                else:
+                    sys.stderr.write("    Traceback: \n")
+                    traceback.print_tb(tb, file=sys.stderr)
+            else:
+                sys.stderr.write("    %s: %s" % (name, exc))
+
+    def refresh(self, run_id=None):
         if isinstance(self.results, ZMQRelay):
             return
-        self._duration_progress()
+        self._duration_progress(run_id)
 
-    def _duration_progress(self):
+    def _duration_progress(self, run_id=None):
+        if run_id is not None:
+            self.results.sync(run_id)
         duration = self.args.get('duration')
         if duration is not None:
             percent = int(float(self.results.duration)

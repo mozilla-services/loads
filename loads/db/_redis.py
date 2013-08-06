@@ -3,8 +3,10 @@ try:
 except ImportError:
     raise ImportError("You need to install http://pypi.python.org/pypi/redis")
 
-from loads.db import BaseDB
+import hashlib
 from json import dumps, loads
+
+from loads.db import BaseDB
 
 
 class RedisDB(BaseDB):
@@ -30,9 +32,17 @@ class RedisDB(BaseDB):
         return loads(self._redis.get(key))
 
     def add(self, data):
-        run_id = data.get('run_id', 'unknown')
-        data_type = data.get('data_type', 'unknown')
-        size = data.get('size', 1)
+        if 'run_id' not in data:
+            data['run_id'] = 'unknown'
+        run_id = data['run_id']
+
+        if 'data_type' not in data:
+            data['data_type'] = 'unknown'
+        data_type = data['data_type']
+
+        if 'size' not in data:
+            data['size'] = 1
+        size = data['size']
 
         pipeline = self._redis.pipeline()
 
@@ -41,8 +51,19 @@ class RedisDB(BaseDB):
         if not self._redis.sismember(counters, counter):
             pipeline.sadd(counters, counter)
 
+        dumped = dumps(data, sort_keys=True)
+
         pipeline.incrby('count:%s:%s' % (run_id, data_type), size)
-        pipeline.lpush('data:%s' % run_id, dumps(data))
+        pipeline.lpush('data:%s' % run_id, dumped)
+
+        # adding group by
+        md5 = hashlib.md5(dumped).hexdigest()
+        pipeline.incrby('bcount:%s:%s' % (run_id, md5), size)
+        pipeline.set('bvalue:%s:%s' % (run_id, md5), dumped)
+        bcounters = 'bcounters:%s' % run_id
+        if not self._redis.sismember(bcounters, md5):
+            pipeline.sadd(bcounters, md5)
+
         pipeline.execute()
 
     def flush(self):
@@ -59,10 +80,25 @@ class RedisDB(BaseDB):
             counts[name] = int(self._redis.get(member))
         return counts
 
-    def get_data(self, run_id):
+    def get_data(self, run_id, data_type=None, groupby=False):
         key = 'data:%s' % run_id
         len = self._redis.llen(key)
         if len == 0:
             raise StopIteration()
-        for index in range(len):
-            yield loads(self._redis.lindex(key, index))
+        if not groupby:
+            for index in range(len):
+                data = loads(self._redis.lindex(key, index))
+                if data_type is None or data_type == data.get('data_type'):
+                    yield data
+        else:
+            bcounters = 'bcounters:%s' % run_id
+            for hash in self._redis.smembers(bcounters):
+                data = loads(self._redis.get('bvalue:%s:%s' % (run_id, hash)))
+                filtered = (data_type is not None and
+                            data_type != data.get('data_type'))
+                if filtered:
+                    continue
+
+                counter = self._redis.get('bcount:%s:%s' % (run_id, hash))
+                data['count'] = int(counter)
+                yield data
