@@ -76,6 +76,8 @@ class DistributedRunner(Runner):
         try:
             data = json.loads(msg[0])
             data_type = data.pop('data_type')
+            run_id = data.pop('run_id', None)
+
             if hasattr(self.test_result, data_type):
                 method = getattr(self.test_result, data_type)
                 method(**data)
@@ -88,7 +90,7 @@ class DistributedRunner(Runner):
                     self.test_result.sync(self.run_id)
                     self.loop.stop()
             elif data_type == 'run-finished':
-                if data.get('run_id') == self.run_id:
+                if run_id == self.run_id:
                     self.test_result.sync(self.run_id)
                     self.loop.stop()
         except Exception:

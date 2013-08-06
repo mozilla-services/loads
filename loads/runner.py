@@ -149,7 +149,9 @@ class Runner(object):
         if self.duration is None:
             for hit in self.hits:
                 for current_hit in range(hit):
-                    loads_status = hit, user, current_hit + 1, num
+                    loads_status = self.args.get('loads_status',
+                                                 (hit, user, current_hit + 1,
+                                                  num))
                     test(loads_status=loads_status)
                     gevent.sleep(0)
         else:

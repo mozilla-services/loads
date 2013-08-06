@@ -5,6 +5,7 @@
 - sends back the results in real time.
 """
 import argparse
+import datetime
 import errno
 import json
 import logging
@@ -16,6 +17,7 @@ import sys
 import time
 import traceback
 import zlib
+from collections import defaultdict
 
 import zmq
 from zmq.eventloop import ioloop, zmqstream
@@ -75,6 +77,9 @@ class Agent(object):
         self.env = os.environ.copy()
         self.running = False
         self._workers = {}
+        self._run_args = {}
+        self._run_started_at = {}
+        self._max_id = defaultdict(int)
         self._started = self._stopped = self._launched = 0
 
         self.loop = ioloop.IOLoop()
@@ -158,6 +163,9 @@ class Agent(object):
     def _run(self, args, run_id=None):
         logger.debug('Starting a run.')
         self._started = self._stopped = 0
+        # for each run, store the options until the test is finished,
+        # we might need them again.
+        self._run_args[run_id] = args
 
         args['slave'] = True
         args['agent_id'] = self.pid
@@ -166,19 +174,28 @@ class Agent(object):
         test_runner = args.get('test_runner', None)
         if test_runner is not None:
             # we have a custom runner
-            nb_runs = (args['users'][0] or 1) * (args['hits'][0] or 1)
+            hits = args['hits']
+            if hits is not None:
+                hits = hits[0] or 1
+            else:
+                hits = 1
+            nb_runs = (args['users'][0] or 1) * hits
+
+        procs = []
 
         try:
             if test_runner is not None:
+                self._run_started_at[run_id] = datetime.datetime.now()
                 self._launched = nb_runs
-                procs = self.launch_multiple_runners(nb_runs, args)
+                for x in range(nb_runs):
+                    procs.append(self.spawn_external_runner(run_id, args, x))
             else:
                 self._launched = 1
                 cmd = 'from loads.main import run;'
                 cmd += 'run(%s)' % str(args)
                 cmd = sys.executable + ' -c "%s"' % cmd
                 cmd = shlex.split(cmd)
-                procs = [subprocess.Popen(cmd, cwd=args.get('test_dir'))]
+                procs.append(subprocess.Popen(cmd, cwd=args.get('test_dir')))
 
         except Exception, e:
             msg = 'Failed to start process ' + str(e)
@@ -191,25 +208,41 @@ class Agent(object):
 
         return pids
 
-    def launch_multiple_runners(self, nb, args):
+    def spawn_external_runner(self, run_id, args, x=None):
+        """Spawns an external runner with the given arguments.
+
+        All the options are passed via environment variables, that is:
+        - LOADS_AGENT_ID for the id of this agent
+        - LOADS_STATUS for the status of the run
+        - LOADS_ZMQ_RECEIVER for the address of the ZMQ socket to send the
+          results to.
+        """
+        if x is None:
+            self._max_id[run_id] += 1
+            x = self._max_id[run_id]
+        else:
+            self._max_id[run_id] = x
         cmd = args['test_runner'].format(test=args['fqn'])
 
-        procs = []
-        for x in range(nb):
-            loads_status = ','.join(map(str, (args['hits'][0],
-                                              args['users'][0],
-                                              x + 1, 1)))
-            env = os.environ.copy()
-            env['LOADS_AGENT_ID'] = str(args.get('agent_id'))
-            env['LOADS_STATUS'] = loads_status
-            env['LOADS_ZMQ_RECEIVER'] = self._receiver_socket
-            cmd_args = {'env': env,
-                        'stdout': subprocess.PIPE,
-                        'cwd': args.get('test_dir'),
-                        }
-            procs.append(subprocess.Popen(cmd.split(' '), **cmd_args))
+        hits = 1
+        users = 1
+        if args.get('hits') is not None:
+            hits = args['hits'][0]
+        if args.get('users') is not None:
+            users = args['users'][0]
 
-        return procs
+        loads_status = ','.join(map(str, (hits, users, x + 1, 1)))
+
+        env = os.environ.copy()
+        env['LOADS_AGENT_ID'] = str(args.get('agent_id'))
+        env['LOADS_STATUS'] = loads_status
+        env['LOADS_ZMQ_RECEIVER'] = self._receiver_socket
+        env['LOADS_RUN_ID'] = run_id
+        cmd_args = {'env': env,
+                    'stdout': subprocess.PIPE,
+                    'cwd': args.get('test_dir'),
+                    }
+        return subprocess.Popen(cmd.split(' '), **cmd_args)
 
     def _handle_commands(self, message):
         # we get the messages from the broker here
@@ -283,6 +316,7 @@ class Agent(object):
         # before sending these signals there (as they stop the whole test run)
         data = json.loads(msg[0])
         data_type = data['data_type']
+        run_id = data['run_id']
 
         if data_type == 'startTestRun':
             if self._started == 0:
@@ -292,14 +326,31 @@ class Agent(object):
 
         elif data_type == 'stopTestRun':
             self._stopped += 1
-            if self._stopped == self._launched:
-                self._push.send(msg[0])
 
-                # reinitialize the counters
-                self._started = 0
-                self._stopped = 0
+            args = self._run_args[run_id]
+            if (args.get('test_runner') is not None
+                    and args.get('duration') is not None):
+                # If we're running a test with --duration, we want to be sure
+                # to relaunch tests as they finish.
+                duration = datetime.timedelta(seconds=args.get('duration'))
+                now = datetime.datetime.now()
+                if now - self._run_started_at[run_id] < duration:
+                    proc = self.spawn_external_runner(run_id, args)
+                    self._launched += 1
+                    self._workers[proc.pid] = proc, run_id
+                else:
+                    self._check_tests_ended(msg)
+            else:
+                self._check_tests_ended(msg)
         else:
             self._push.send(msg[0])
+
+    def _check_tests_ended(self, msg):
+        if self._stopped == self._launched:
+            self._push.send(msg[0])
+            # reinitialize the counters
+            self._started = 0
+            self._stopped = 0
 
     def _handle_recv_back(self, msg):
         # do the message and send the result
