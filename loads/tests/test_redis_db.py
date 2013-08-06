@@ -14,7 +14,8 @@ except Exception:
 from loads.tests.test_python_db import ONE_RUN
 
 
-_KEYS = ['data:1', 'data:2', 'counters:1', 'counters:2']
+_KEYS = ['data:1', 'data:2', 'counters:1', 'counters:2', 'bcounters:1',
+         'bcounters:2']
 
 
 for type_ in ('addSuccess', 'stopTestRun', 'stopTest',
@@ -33,6 +34,12 @@ class TestRedisDB(unittest2.TestCase):
 
     def tearDown(self):
         self.loop.close()
+        for md5 in self._redis.smembers('bcounters:1'):
+            self._redis.delete('bcount:1:%s' % md5)
+
+        for md5 in self._redis.smembers('bcounters:2'):
+            self._redis.delete('bcount:1:%s' % md5)
+
         for key in _KEYS:
             self._redis.delete(key)
 
@@ -48,6 +55,8 @@ class TestRedisDB(unittest2.TestCase):
                 self.db.add(data)
 
         self.loop.add_callback(add_data)
+        self.loop.add_callback(add_data)
+
         self.loop.add_timeout(time.time() + .5, self.loop.stop)
         self.loop.start()
 
@@ -60,14 +69,26 @@ class TestRedisDB(unittest2.TestCase):
                  for i in range(self._redis.llen('data:2'))]
         data2.sort()
 
-        self.assertEqual(len(data), 6)
-        self.assertEqual(len(data2), 6)
+        self.assertEqual(len(data), 12)
+        self.assertEqual(len(data2), 12)
         counts = self.db.get_counts('1')
 
         for type_ in ('addSuccess', 'stopTestRun', 'stopTest',
                       'startTest', 'startTestRun', 'add_hit'):
-            self.assertEqual(dict(counts)[type_], 1)
+            self.assertEqual(dict(counts)[type_], 2)
 
         data3 = list(self.db.get_data('1'))
         data3.sort()
         self.assertEqual(data3, data)
+
+        # filtered
+        data3 = list(self.db.get_data('1', data_type='add_hit'))
+        self.assertEqual(len(data3), 2)
+
+        # group by
+        res = list(self.db.get_data('1', groupby=True))
+        self.assertEqual(len(res), 6)
+        self.assertEqual(res[0]['count'], 2)
+
+        res = list(self.db.get_data('1', data_type='add_hit', groupby=True))
+        self.assertEqual(res[0]['count'], 2)
