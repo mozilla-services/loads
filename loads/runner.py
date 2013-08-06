@@ -58,7 +58,7 @@ class Runner(object):
         self.fqn = args.get('fqn')
         self.test = None
         self.slave = args.get('slave', False)
-
+        self.run_id = None
         # Only resolve the name of the test if we're using the default python
         # test-runner.
         if args.get('test_runner') is None and self.fqn:
@@ -255,7 +255,7 @@ class Runner(object):
     def refresh(self):
         for output in self.outputs:
             if hasattr(output, 'refresh'):
-                output.refresh()
+                output.refresh(self.run_id)
 
     def _grefresh(self):
         self.refresh()

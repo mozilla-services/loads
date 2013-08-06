@@ -48,6 +48,7 @@ class DistributedRunner(Runner):
             self.register_output(output)
 
         self._client = None
+        self.refresh_rate = 100
 
     @property
     def client(self):
@@ -60,6 +61,7 @@ class DistributedRunner(Runner):
         if self._test_result is None:
             if self.args.get('attach', False):
                 self._test_result = LazyTestResult(args=self.args)
+                self.refresh_rate = 500
             else:
                 self._test_result = TestResult(args=self.args)
 
@@ -83,9 +85,11 @@ class DistributedRunner(Runner):
                 # loop.
                 self._stopped_agents += 1
                 if self._stopped_agents == self._nb_agents:
+                    self.test_result.sync(self.run_id)
                     self.loop.stop()
             elif data_type == 'run-finished':
                 if data.get('run_id') == self.run_id:
+                    self.test_result.sync(self.run_id)
                     self.loop.stop()
         except Exception:
             self.loop.stop()
@@ -128,7 +132,8 @@ class DistributedRunner(Runner):
         detached = self.args.get('detach')
 
         if not detached:
-            cb = ioloop.PeriodicCallback(self.refresh, 100, self.loop)
+            cb = ioloop.PeriodicCallback(self.refresh, self.refresh_rate,
+                                         self.loop)
             cb.start()
 
         try:
@@ -145,7 +150,6 @@ class DistributedRunner(Runner):
                 logger.info('Detached. run --attach to reattach')
 
         finally:
-            logger.debug('Loop ended.')
             if not detached:
                 # end..
                 cb.stop()
@@ -164,7 +168,8 @@ class DistributedRunner(Runner):
         for output in self.outputs:
             output.args = args
 
-        cb = ioloop.PeriodicCallback(self.refresh, 100, self.loop)
+        cb = ioloop.PeriodicCallback(self.refresh, self.refresh_rate,
+                                     self.loop)
         cb.start()
 
         self.run_id = run_id

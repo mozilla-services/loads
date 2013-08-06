@@ -1,4 +1,6 @@
 from unittest import TestCase
+import traceback
+from StringIO import StringIO
 
 from loads.relay import ZMQRelay
 from loads.tests.support import get_tb, hush
@@ -28,23 +30,33 @@ class TestZmqRelay(TestCase):
     @hush
     def test_add_failure(self):
         exc = get_tb()
+        __, __, tb = exc
+        string_tb = StringIO()
+        traceback.print_tb(tb, file=string_tb)
+        string_tb.seek(0)
+
         self.relay.addFailure(mock.sentinel.test, exc,
                               mock.sentinel.loads_status)
         self.relay.push.assert_called_with(
             'addFailure',
             test='sentinel.test',
-            exc_info=("<type 'exceptions.Exception'>", '', ''),
+            exc_info=("<type 'exceptions.Exception'>", '', string_tb.read()),
             loads_status=mock.sentinel.loads_status)
 
     @hush
     def test_add_error(self):
         exc = get_tb()
+        __, __, tb = exc
+        string_tb = StringIO()
+        traceback.print_tb(tb, file=string_tb)
+        string_tb.seek(0)
+
         self.relay.addError(mock.sentinel.test, exc,
                             mock.sentinel.loads_status)
         self.relay.push.assert_called_with(
             'addError',
             test='sentinel.test',
-            exc_info=("<type 'exceptions.Exception'>", '', ''),
+            exc_info=("<type 'exceptions.Exception'>", '', string_tb.read()),
             loads_status=mock.sentinel.loads_status)
 
     def test_start_test(self):

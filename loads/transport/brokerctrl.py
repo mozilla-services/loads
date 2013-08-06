@@ -172,8 +172,8 @@ class BrokerController(object):
             break
         self._db.add(data)
 
-    def get_data(self, run_id):
-        return list(self._db.get_data(run_id))
+    def get_data(self, run_id, **kw):
+        return list(self._db.get_data(run_id, **kw))
 
     def get_counts(self, run_id):
         return self._db.get_counts(run_id)

@@ -165,7 +165,8 @@ class Broker(object):
             # we send back the data we have in the db
             # XXX stream ?
             db_data = self.ctrl.get_data(data['run_id'],
-                                         data.get('data_type'))
+                                         data_type=data.get('data_type'),
+                                         groupby=data.get('groupby', False))
             self._send_json(target, {'result': db_data})
             return
         elif cmd == 'GET_COUNTS':
