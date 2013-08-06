@@ -62,7 +62,7 @@ class TestCase(unittest.TestCase):
     def tearDown(self):
         for ws in self._ws:
             if ws._th.dead:
-                ws._th.get()  # re-raise any exception swallowed
+                ws._th.get()  # re-raise any exception swallowed by gevent
 
     def run(self, result=None, loads_status=None):
         if (loads_status is not None
