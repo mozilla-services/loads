@@ -208,7 +208,7 @@ class Agent(object):
 
         return pids
 
-    def spawn_external_runner(self, run_id, args, x=None):
+    def spawn_external_runner(self, run_id, args, current_run=None):
         """Spawns an external runner with the given arguments.
 
         All the options are passed via environment variables, that is:
@@ -217,21 +217,22 @@ class Agent(object):
         - LOADS_ZMQ_RECEIVER for the address of the ZMQ socket to send the
           results to.
         """
-        if x is None:
+        if current_run is None:
             self._max_id[run_id] += 1
-            x = self._max_id[run_id]
+            current_run = self._max_id[run_id]
         else:
-            self._max_id[run_id] = x
+            self._max_id[run_id] = current_run
         cmd = args['test_runner'].format(test=args['fqn'])
 
         hits = 1
         users = 1
+        # hits and users are lists that can be None.
         if args.get('hits') is not None:
             hits = args['hits'][0]
         if args.get('users') is not None:
             users = args['users'][0]
 
-        loads_status = ','.join(map(str, (hits, users, x + 1, 1)))
+        loads_status = ','.join(map(str, (hits, users, current_run + 1, 1)))
 
         env = os.environ.copy()
         env['LOADS_AGENT_ID'] = str(args.get('agent_id'))
