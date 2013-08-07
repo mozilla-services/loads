@@ -182,7 +182,21 @@ Here is the content of the `loads.ini` file::
     numprocesses = 5
     copy_env = 1
 
-What happened? You have just started a Loads broker with 5 agents.
+What happened? You have just started a Loads broker with 5 agents - a cluster.
+
+Let's control the cluster by pinging the broker for its status::
+
+    $ bin/loads-runner --ping-broker
+    Broker running on pid 11154
+    5 agents registered
+    endpoints:
+    - publisher: ipc:///tmp/loads-publisher.ipc
+    - frontend: ipc:///tmp/loads-front.ipc
+    - register: ipc:///tmp/loads-reg.ipc
+    - receiver: ipc:///tmp/loads-broker-receiver.ipc
+    - heartbeat: ipc:///tmp/hb.ipc
+    - backend: ipc:///tmp/loads-back.ipc
+    Nothing is running right now
 
 Let's use them now, with the **agents** option::
 
