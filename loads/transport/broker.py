@@ -98,7 +98,8 @@ class Broker(object):
         # heartbeat
         if heartbeat is not None:
             self.pong = Heartbeat(heartbeat, io_loop=self.loop,
-                                  ctx=self.context)
+                                  ctx=self.context,
+                                  onregister=self._deregister)
         else:
             self.pong = None
 
@@ -119,6 +120,10 @@ class Broker(object):
         data = json.loads(msg[0])
         agent_id = str(data.get('agent_id'))
         self.ctrl.save_data(agent_id, data)
+
+    def _deregister(self):
+        logger.debug('Unregistering all agents')
+        self.ctrl.unregister_agents()
 
     def _handle_reg(self, msg):
         if msg[0] == 'REGISTER':

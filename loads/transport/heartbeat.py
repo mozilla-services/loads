@@ -25,10 +25,12 @@ class Stethoscope(object):
       If the callable returns **True**, the ping quits. Defaults to None.
     - **onbeat**: a callable that will be called when a ping succeeds.
       Defaults to None.
+    - **onregister**: a callable that will be called on a register ping.
     """
     def __init__(self, endpoint=DEFAULT_HEARTBEAT, warmup_delay=.5, delay=10.,
                  retries=3,
-                 onbeatlost=None, onbeat=None, io_loop=None, ctx=None):
+                 onbeatlost=None, onbeat=None, io_loop=None, ctx=None,
+                 onregister=None):
         self.loop = io_loop or ioloop.IOLoop.instance()
         self._stop_loop = io_loop is None
         self.daemon = True
@@ -44,6 +46,7 @@ class Stethoscope(object):
         self._stream = None
         self._timer = None
         self.tries = 0
+        self.onregister = onregister
 
     def _initialize(self):
         logger.debug('Subscribing to ' + self.endpoint)
@@ -67,9 +70,13 @@ class Stethoscope(object):
 
     def _handle_recv(self, msg):
         self.tries = 0
-        if self.onbeat is not None:
+        msg = msg[0]
+        if msg == 'BEAT' and self.onbeat is not None:
             self.onbeat()
-        logger.debug(msg[0])
+        elif self.onregister is not None:
+            self.onregister()
+
+        logger.debug(msg)
 
     def start(self):
         """Starts the loop"""
@@ -102,9 +109,13 @@ class Heartbeat(object):
 
     - **endpoint** : The ZMQ socket to call.
     - **interval** : Interval between two beat.
+    - **register** : Number of beats between two register beats
+    - **onregister**: if provided, a callable that will be called
+      prior to the REGISTER call
     """
     def __init__(self, endpoint=DEFAULT_HEARTBEAT, interval=10.,
-                 io_loop=None, ctx=None):
+                 io_loop=None, ctx=None, register=5,
+                 onregister=None):
         self.loop = io_loop or ioloop.IOLoop.instance()
         self.daemon = True
         self.kill_context = ctx is None
@@ -120,6 +131,9 @@ class Heartbeat(object):
         self._endpoint.bind(self.endpoint)
         self._cb = ioloop.PeriodicCallback(self._ping, interval * 1000,
                                            io_loop=self.loop)
+        self.register = register
+        self.current_register = 0
+        self.onregister = onregister
 
     def start(self):
         """Starts the Pong service"""
@@ -128,7 +142,16 @@ class Heartbeat(object):
 
     def _ping(self):
         logger.debug('*beat*')
-        self._endpoint.send('BEAT')
+        if self.current_register == 0:
+            if self.onregister is not None:
+                self.onregister()
+            self._endpoint.send('REGISTER')
+        else:
+            self._endpoint.send('BEAT')
+
+        self.current_register += 1
+        if self.current_register == self.register:
+            self.current_register = 0
 
     def stop(self):
         """Stops the Pong service"""

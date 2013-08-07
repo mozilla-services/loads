@@ -120,7 +120,8 @@ class Agent(object):
         if heartbeat is not None:
             self.ping = Stethoscope(heartbeat, onbeatlost=self.lost,
                                     delay=ping_delay, retries=ping_retries,
-                                    ctx=self.ctx, io_loop=self.loop)
+                                    ctx=self.ctx, io_loop=self.loop,
+                                    onregister=self.register)
         else:
             self.ping = None
 
@@ -425,6 +426,10 @@ class Agent(object):
         self.ctx.destroy(0)
         logger.debug('Agent is stopped')
 
+    def register(self):
+        # telling the broker we are ready
+        self._reg.send_multipart(['REGISTER', str(self.pid)])
+
     def start(self):
         """Starts the agent
         """
@@ -438,7 +443,7 @@ class Agent(object):
         self.running = True
 
         # telling the broker we are ready
-        self._reg.send_multipart(['REGISTER', str(self.pid)])
+        self.register()
 
         # arming the exit callback
         if self.max_age != -1:
