@@ -67,6 +67,9 @@ class BrokerController(object):
             self._agents.append(agent_id)
             logger.debug('%r registered' % agent_id)
 
+    def unregister_agents(self):
+        self._agents[:] = []
+
     def unregister_agent(self, agent_id):
         if agent_id in self._agents:
             self._remove_agent(agent_id)

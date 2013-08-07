@@ -60,6 +60,12 @@ class TestHeartbeat(unittest.TestCase):
         lost = []
         loop = ioloop.IOLoop()
 
+        def _hbreg():
+            beats.append('o')
+
+        def _onregister():
+            beats.append('+')
+
         def _onbeat():
             beats.append('.')
 
@@ -67,11 +73,11 @@ class TestHeartbeat(unittest.TestCase):
             lost.append('.')
 
         hb = Heartbeat('ipc:///tmp/stetho.ipc', interval=0.1,
-                       io_loop=loop)
+                       io_loop=loop, onregister=_hbreg)
 
         stetho = Stethoscope('ipc:///tmp/stetho.ipc', onbeat=_onbeat,
                              onbeatlost=_onbeatlost, delay=0.1,
-                             io_loop=loop)
+                             io_loop=loop, onregister=_onregister)
 
         # scenario
         def start():
@@ -97,4 +103,5 @@ class TestHeartbeat(unittest.TestCase):
         loop.start()
 
         self.assertTrue(len(beats) > 0)
+        self.assertEqual(beats[:2], ['o', '+'])
         self.assertTrue(len(lost) > 3)
