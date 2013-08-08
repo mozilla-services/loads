@@ -1,11 +1,11 @@
 .. _zmq-api:
 
-Using loads with a different language
+Using Loads with a different language
 #####################################
 
 Loads is built in a way that makes it possible to have runners written in
 different languages. It's perfectly possible to have a runner in javascript or
-ruby, sending data to loads.
+ruby, sending data to Loads.
 
 This is made possible by the use of `zeromq <http://zeromq.org/>`_ to send
 inter-process (or even inter-machines!) messages.
@@ -17,13 +17,13 @@ the format described in this document.
 Implementations in other languages
 ==================================
 
-* Integration of loads with javascript, named `loads.js
+* Integration of Loads with javascript, named `loads.js
   <https://github.com/mozilla-services/loads.js>`_
 
 Loads messaging format
 ======================
 
-The messages sent to **loads** always contain a `data_type` key, which
+The messages sent to **Loads** always contain a `data_type` key, which
 describes the type of that that's being sent.
 
 The messages respect the following rules:
@@ -79,7 +79,7 @@ Before and after you run the tests, you need to tell that you're doing so:
 Tests
 -----
 
-When using loads, you usually run a test suite. Tests start, stop, succeed and
+When using Loads, you usually run a test suite. Tests start, stop, succeed and
 fail. Here are the APIs you can use:
 
 - addFailure(test_name, `exc *`, loads_status)

@@ -19,7 +19,7 @@ Glossary
      the requests) to create some actual load on the system under test.
 
    system under test
-     The website or service you want to test with loads.
+     The website or service you want to test with Loads.
 
    broker
      The process which routes the jobs to the agents. It contains a broker
@@ -31,7 +31,7 @@ Glossary
 
    outputs
      Some python code in charge of generating reports (in real time or not)
-     about a loads run. Outputs are running on the client side.
+     about a Loads run. Outputs are running on the client side.
 
    workers
      Each agent can spawn a number of workers, which does the actual queries.

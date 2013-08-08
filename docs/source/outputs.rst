@@ -1,7 +1,7 @@
 Outputs
 =======
 
-By default, loads reports the status of the load in real time onthe standard
+By default, Loads reports the status of the load in real time onthe standard
 output of the client machine. Depending what you are trying to achieve, that
 may or may not be what you want.
 
