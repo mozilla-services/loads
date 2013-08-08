@@ -9,10 +9,11 @@ _SOCKETS = defaultdict(list)
 
 class WebSocketClient(_WS):
     def __init__(self, url, test_result, protocols=None, extensions=None,
-                 callback=None):
+                 callback=None, test_case=None):
         super(WebSocketClient, self).__init__(url, protocols, extensions)
         self.callback = callback
         self._test_result = test_result
+        self.test_case = test_case
 
     def received_message(self, m):
         if self.callback is not None:
@@ -38,14 +39,15 @@ def cleanup(greenlet):
 
 
 def create_ws(url, test_result, callback=None, protocols=None,
-              extensions=None, klass=None):
+              extensions=None, klass=None, test_case=None):
     custom_klass = klass is not None
     if klass is None:
         klass = WebSocketClient
 
     socket = klass(url=url, test_result=test_result,
                    protocols=protocols, extensions=extensions,
-                   callback=callback)
+                   callback=callback,
+                   test_case=test_case)
 
     socket.daemon = True
     if not custom_klass:

@@ -55,7 +55,8 @@ class TestCase(unittest.TestCase):
                        callback=callback,
                        protocols=protocols,
                        extensions=extensions,
-                       klass=klass)
+                       klass=klass,
+                       test_case=self)
         self._ws.append(ws)
         return ws
 
