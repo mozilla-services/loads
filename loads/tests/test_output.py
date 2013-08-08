@@ -7,10 +7,16 @@ import tempfile
 import unittest
 
 from loads.output import (create_output, output_list, register_output,
-                          StdOutput, NullOutput, FileOutput)
+                          StdOutput, NullOutput, FileOutput,
+                          FunkloadOutput)
 from loads import output
 
 from loads.tests.support import get_tb, hush
+from loads.test_result import Hit, Test
+
+
+TIME1 = datetime.datetime(2013, 5, 14, 0, 51, 8)
+_1 = datetime.timedelta(seconds=1)
 
 
 class FakeTestResult(object):
@@ -28,6 +34,8 @@ class FakeTestResult(object):
         self.nb_finished_tests = 0
         self.errors = []
         self.failures = []
+        self.hits = []
+        self.tests = {}
 
 
 class FakeOutput(object):
@@ -120,6 +128,55 @@ class TestFileOutput(unittest.TestCase):
             with open('%s/loads' % tmpdir) as f:
                 self.assertEquals('something - {}', f.read())
 
+        finally:
+            shutil.rmtree(tmpdir)
+
+
+class TestFunkloadOutput(unittest.TestCase):
+
+    def test_file_is_written(self):
+
+        # Create a fake test result object
+        test_result = FakeTestResult()
+
+        # populate it with some fake hits...
+        hit = Hit(url='http://notmyidea.org',
+                  method='GET',
+                  status=200,
+                  started=TIME1,
+                  elapsed=_1,
+                  loads_status=(1, 2, 3, 4))
+        test_result.hits.append(hit)
+
+        # ...and some fake tests.
+        test_result.tests['bacon', 1] = Test(TIME1, name='bacon',
+                                             series=1, hit=1, user=1)
+        test_result.tests['bacon', 1].success = 1
+
+        tmpdir = tempfile.mkdtemp()
+        try:
+            output = FunkloadOutput(
+                test_result,
+                {'output_funkload_filename': '%s/funkload.xml' % tmpdir,
+                 'fqn': 'MyTest',
+                 'hits': 200})
+            output.flush()
+
+            with open('%s/funkload.xml' % tmpdir) as f:
+                content = f.read()
+                hit = ('<response cycle="000" cvus="2" thread="000" '
+                       'suite="" name="" step="001" number="001" type="GET" '
+                       'result="Successful" url="http://notmyidea.org" '
+                       'code="200" description="" time="1368485468.0" '
+                       'duration="1.0" />')
+                self.assertIn(hit, content)
+
+                test = ('<testResult cycle="000" cvus="1" thread="000" '
+                        'suite="" name="" time="1368485468.0" '
+                        'result="Success" steps="1" duration="0" '
+                        'connection_duration="" requests="" pages="" '
+                        'xmlrpc="" redirects="" images="" links="" />')
+                self.assertIn(test, content)
         finally:
             shutil.rmtree(tmpdir)
 
