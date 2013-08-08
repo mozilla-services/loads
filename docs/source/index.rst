@@ -8,26 +8,32 @@ Python unit tests which are calling the service(s) you want to send load to.
 
 It also comes with a command line to run the actual load.
 
-Loads tries its best to avoid reinventing the wheel, so we offer integration
-with 3 existing libraries: **Requests**, **WebTest** and **ws4py**.
+Loads tries its best to avoid reinventing the wheel, so we offer an
+integration with 3 existing libraries: **Requests**, **WebTest** and
+**ws4py**. You just need to write your tests with one
+or several of those libraries, and **Loads** will do the rest.
 
-Here's a really simple test example::
+Here's a really simple example where we check that a
+local Elastic Search server is answering to HTTP calls:
+
+.. code-block:: python
 
     from loads.case import TestCase
 
     class TestWebSite(TestCase):
 
         def test_es(self):
-            self.session.get('http://localhost:9200')
+            res = self.session.get('http://localhost:9200')
+            self.assertEqual(res.status_code, 200)
 
-If you don't want to write your load tests in python, or if you want to use any
-other library to describe the testing, **Loads** allows you to use your
-own formalism. see :doc:zmq-api.
 
-With such a test, running loads simply consists of doing::
+With such a test, running **Loads** is done by pointing the
+*test_es* method:
+
+.. code-block:: bash
 
     $ bin/loads-runner example.TestWebSite.test_es
-    [======================================================================]  100%
+    [===============================================]  100%
 
     Hits: 1
     Started: 2013-06-14 12:15:42.860586
@@ -43,6 +49,12 @@ With such a test, running loads simply consists of doing::
 
 
 See :ref:`guide` for more options and information.
+
+.. info::
+
+   If you don't want to write your load tests using Python, or if
+   you want to use any other library to describe the testing,
+   **Loads** allows you to use your own formalism. See :ref:`zmq-api`.
 
 
 More documentation

@@ -1,3 +1,5 @@
+.. _zmq-api:
+
 Using loads in a different language
 ###################################
 
