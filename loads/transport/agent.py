@@ -191,6 +191,7 @@ class Agent(object):
                 for x in range(nb_runs):
                     procs.append(self.spawn_external_runner(run_id, args, x))
             else:
+                args['run_id'] = run_id
                 self._launched = 1
                 cmd = 'from loads.main import run;'
                 cmd += 'run(%s)' % str(args)
@@ -328,7 +329,6 @@ class Agent(object):
 
         elif data_type == 'stopTestRun':
             self._stopped += 1
-
             args = self._run_args[run_id]
             if (args.get('test_runner') is not None
                     and args.get('duration') is not None):
