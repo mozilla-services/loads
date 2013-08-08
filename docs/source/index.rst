@@ -12,12 +12,19 @@ Loads — Load testing for dummies
 With **Loads**, your load tests are classical
 Python unit tests which are calling the service(s) you want to send load to.
 
-It also comes with a command line to run the actual load.
-
 Loads tries its best to avoid reinventing the wheel, so we offer an
-integration with 3 existing libraries: **Requests**, **WebTest** and
-**ws4py**. You just need to write your tests with one
-or several of those libraries, and **Loads** will do the rest.
+integration with 3 existing libraries: `Requests <http://docs.python-requests.org>`_,
+`WebTest <http://webtest.readthedocs.org>`_ and
+`ws4py <https://ws4py.readthedocs.org>`_.
+You just need to write your tests with one or several of
+those libraries, and **Loads** will do the rest.
+
+.. note::
+
+   If you don't want to write your load tests using Python, or if
+   you want to use any other library to describe the testing,
+   **Loads** allows you to use your own formalism. See :ref:`zmq-api`.
+
 
 Here's a really simple example where we check that a
 local Elastic Search server is answering to HTTP calls:
@@ -55,13 +62,6 @@ With such a test, running **Loads** is done by pointing the
 
 
 See :ref:`guide` for more options and information.
-
-.. warning::
-
-   If you don't want to write your load tests using Python, or if
-   you want to use any other library to describe the testing,
-   **Loads** allows you to use your own formalism. See :ref:`zmq-api`.
-
 
 More documentation
 ------------------
