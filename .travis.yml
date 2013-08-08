@@ -17,3 +17,7 @@ notifications:
         - alexis@mozilla.com
     irc: "irc.mozilla.org#services-dev"
     on_success: change
+after_success:
+  # Report coverage results to coveralls.io
+  - pip install coveralls
+  - coveralls
