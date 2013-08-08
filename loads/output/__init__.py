@@ -20,6 +20,7 @@ def output_list():
 from null import NullOutput
 from _file import FileOutput
 from std import StdOutput
+from funkload import FunkloadOutput
 
-for output in (NullOutput, FileOutput, StdOutput):
+for output in (NullOutput, FileOutput, StdOutput, FunkloadOutput):
     register_output(output)
