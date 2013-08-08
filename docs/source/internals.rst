@@ -1,8 +1,8 @@
-Under the hood — How loads is designed
-######################################
+How Loads is designed
+#####################
 
 Hopefully, it's not really complicated to dig into the code and have a good
-overview of how *loads* is designed, but sometimes a good document explaining
+overview of how *Loads* is designed, but sometimes a good document explaining
 how things are done is a good starting point, so let's try!
 
 You can run loads either in *distributed mode* or in *non-distributed* mode.

@@ -1,7 +1,7 @@
 .. _zmq-api:
 
-Using loads in a different language
-###################################
+Using loads with a different language
+#####################################
 
 Loads is built in a way that makes it possible to have runners written in
 different languages. It's perfectly possible to have a runner in javascript or

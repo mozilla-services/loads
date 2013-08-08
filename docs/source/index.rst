@@ -7,24 +7,29 @@ Loads — Load testing for dummies
 
    by Juan Pablo Bravo
 
-**Loads** is a tool to load test your HTTP services.
+**Loads** is a tool to load test your HTTP services, including
+web sockets.
 
 With **Loads**, your load tests are classical
-Python unit tests which are calling the service(s) you want to send load to.
+Python functional tests which are calling the service(s) you want to
+exercise.
 
-Loads tries its best to avoid reinventing the wheel, so we offer an
+Loads is not asking you to use an ad-hoc API. The tool offers an
 integration with 3 existing libraries: `Requests <http://docs.python-requests.org>`_,
 `WebTest <http://webtest.readthedocs.org>`_ and
 `ws4py <https://ws4py.readthedocs.org>`_.
-You just need to write your tests with one or several of
-those libraries, and **Loads** will do the rest.
+You just need to write your tests using them, and **Loads**
+will do the rest.
 
-.. note::
+**Loads** can run tests from a single box or distributed across
+many nodes, from the same command line tool. All tests results
+are coming back to you in real time while the load is
+progressing.
 
-   If you don't want to write your load tests using Python, or if
-   you want to use any other library to describe the testing,
-   **Loads** allows you to use your own formalism. See :ref:`zmq-api`.
-
+Since you are using Python to build your tests, you can
+write very complex scenarii, and use **Loads** options to
+run them using as many concurrent users as your hardware
+(or cloud service) allows you.
 
 Here's a really simple example where we check that a
 local Elastic Search server is answering to HTTP calls:
@@ -38,6 +43,17 @@ local Elastic Search server is answering to HTTP calls:
         def test_es(self):
             res = self.session.get('http://localhost:9200')
             self.assertEqual(res.status_code, 200)
+
+
+The test is also checking that the page is sending back a 200.
+In case it's not behaving properly, **Loads** will let you know.
+
+
+.. note::
+
+   If you don't want to write your load tests using Python, or if
+   you want to use any other library to describe the testing,
+   **Loads** allows you to use your own formalism. See :ref:`zmq-api`.
 
 
 With such a test, running **Loads** is done by pointing the
