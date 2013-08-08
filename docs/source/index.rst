@@ -1,6 +1,12 @@
 Loads — Load testing for dummies
 ================================
 
+.. figure:: logo.jpg
+   :align: right
+   :target: http://thenounproject.com/noun/riot/#icon-No15381
+
+   by Juan Pablo Bravo
+
 **Loads** is a tool to load test your HTTP services.
 
 With **Loads**, your load tests are classical
@@ -50,7 +56,7 @@ With such a test, running **Loads** is done by pointing the
 
 See :ref:`guide` for more options and information.
 
-.. info::
+.. warning::
 
    If you don't want to write your load tests using Python, or if
    you want to use any other library to describe the testing,
@@ -65,7 +71,6 @@ More documentation
 
    installation
    guide
-   next-level
    internals
    zmq-api
    glossary
