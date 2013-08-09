@@ -82,11 +82,13 @@ Now let's run a series of 10, 20 then 30 users, each one running 20 hits::
 That's 1200 hits total.
 
 You can use all Requests API to GET, PUT, DELETE, POST or do whatever
-you need on the server.
+you need on the service.
 
 Don't forget to control all responses with assertions, so you can
-catch any issue that may occur on your service on high load. Most
-services will break with 500s errors when they can't cope
+catch any issue that may occur on your service on high load.
+
+To do this, use the unit test `assert methods <http://docs.python.org/2/library/unittest.html#assert-methods>`_
+provided by Python. Most services will break with 500s errors when they can't cope
 with the load.
 
 
@@ -125,7 +127,8 @@ write a test that uses a web socket against it::
 
             self.assertEqual(results, ['something', 'happened'])
 
-See ws4py documentation for more info.
+See `ws4py documentation <https://ws4py.readthedocs.org>`_
+for more info.
 
 
 Using Loads with WebTest
@@ -133,7 +136,7 @@ Using Loads with WebTest
 
 If you are a **WebTest** fan, you can use it instead of Requests. If you don't
 know what WebTest is, `you should have a look at it
-<http://webtest.pythonpaste.org/en/latest/>`_ ;).
+<http://webtest.pythonpaste.org>`_ ;).
 
 WebTest is really handy to exercise an HTTP service because it includes
 tools to easiky control the responses status codes and values.
@@ -155,7 +158,6 @@ define it outside the tests, on the command line, with **--server-url**
 when you run your load test::
 
     $ bin/loads-runner example.TestWebSite.test_something --server-url http://blog.ziade.org
-
 
 
 Changing the server URL
