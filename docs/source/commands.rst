@@ -132,6 +132,10 @@ are other options that may be useful to run your test.
   channel or to a given recipient when the test
   is done.
 
+- **--no-patching**: use this flag to prevent
+  Gevent monkey patching. see :ref:`async` for
+  more information on this.
+
 
 Configuration file
 ::::::::::::::::::

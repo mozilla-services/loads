@@ -8,6 +8,16 @@ Writing load tests can be done with Requests, WebTest or ws4py.
 Loads provides a test case class that includes bridges to
 the three libraries.
 
+.. warning::
+
+   Loads uses Gevent to spawn concurrent users. Most of the time,
+   Gevent will play nicely with your tests and make sure that
+   they are run asynchronously - but in case Loads is not
+   sending the load it's supposed to, it probably means
+   some of your code is blocking the Gevent loop.
+
+   Read :ref:`async` to troubleshoot this issue.
+
 
 Using Requests
 --------------

@@ -210,8 +210,9 @@ class Runner(object):
         self._resolve_name()
         exception = None
         try:
-            from gevent import monkey
-            monkey.patch_all()
+            if not self.args.get('no_patching', False):
+                from gevent import monkey
+                monkey.patch_all()
 
             if not hasattr(self.test, 'im_class'):
                 raise ValueError("The FQN of the test doesn't point to a test "

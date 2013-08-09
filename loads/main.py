@@ -134,6 +134,11 @@ def main(sysargs=None):
                         help='Callable that will receive the final results. '
                              'Only in distributed mode (runs on the broker)')
 
+    parser.add_argument('--no-patching',
+                        help='Deactivate Gevent monkey patching.',
+                        action='store_true', default=False)
+
+
     #
     # distributed options
     #

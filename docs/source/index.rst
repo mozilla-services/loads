@@ -94,6 +94,7 @@ More documentation
    guide
    commands
    distributed
+   async
    internals
    zmq-api
    glossary

@@ -6,7 +6,7 @@ Distributed test
 .. warning::
 
    Loads comes with no security whatsoever. If you run
-   a broker make sure that you secure access to the box
+   a broker, make sure that you secure access to the box
    because any code can be executed remotely through the
    loads-runner command.
 
@@ -25,7 +25,9 @@ a **Loads cluster**.
 The typical limiting factor will be the number of sockets each
 box will be able to open on each node that will call your service.
 This number can be tweaked by changing the **ulimit** value to
-a higher number - like 8096.
+a higher number - like 8096. You can read this
+`page <http://urbanairship.com/blog/2010/09/29/linux-kernel-tuning-for-c500k>`_
+for more tips on tweaking your servers.
 
 
 Setting up a Loads cluster
