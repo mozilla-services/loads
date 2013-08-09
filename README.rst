@@ -15,3 +15,8 @@ Installation::
     $ bin/pip install loads
 
 See the docs at http://loads.readthedocs.org
+
+.. image:: https://secure.travis-ci.org/mozilla-services/loads.png?branch=master
+   :alt: Build Status
+   :target: https://secure.travis-ci.org/mozilla-services/loads
+

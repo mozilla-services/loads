@@ -10,6 +10,10 @@ Loads — Conterit Omnia Tua Application
 **Loads** is a tool to load test your HTTP services, including
 web sockets.
 
+.. image:: https://secure.travis-ci.org/mozilla-services/loads.png?branch=master
+   :alt: Build Status
+   :target: https://secure.travis-ci.org/mozilla-services/loads
+
 With **Loads**, your load tests are classical
 Python functional tests which are calling the service(s) you want to
 exercise.
