@@ -40,23 +40,23 @@ This is useful for trying out a test, but to do a real
 load test, you will need more options.
 
 Common options
-==============
+::::::::::::::
 
 Loads has 3 options you can use to define how much of
 a load you are sending.
 
-- *-u / --users*: the number of concurrent users spawned for
+- **-u / --users**: the number of concurrent users spawned for
   the test. You can provide several values separated by ":".
   Example: "10:20:30". In that case, Loads will spawn 10, then
   20 then 30 users. That's what we call a **cycle**
   Defaults to 1.
 
-- *--hits*: the number of times the test is executed per user.
-  Like for *--users*, you can provide a *cycle*. The number
+- **--hits**: the number of times the test is executed per user.
+  Like for **--users**, you can provide a *cycle*. The number
   of tests will be the cartesian product of hits by users.
   Defaults to 1.
 
-- *-d / --duration*: number of seconds the test is run. This
+- **-d / --duration**: number of seconds the test is run. This
   option is mutually exclusive with hits. You will have to decide
   if you want to run test a certain number of times or for a
   certain amount of times. When using *duration*, Loads will
@@ -65,7 +65,8 @@ a load you are sending.
 
 
 Distributed mode options
-========================
+::::::::::::::::::::::::
+
 
 When running in distributed mode, the most important options
 are **--broker** and **--agents**, that will let you point
@@ -73,13 +74,13 @@ a cluster and define the number of nodes to use, but they
 are other options that may be useful to run your test.
 
 
-- *-b / --broker*: Point to the broker's ZMQ front socket.
+- **-b / --broker**: Point to the broker's ZMQ front socket.
   defaults to *ipc:///tmp/loads-front.ipc*. We call it *front*
   socket because the broker has many other socket, and this
   one is used by the broker to receive all queries that are
   then dispatched to backends.
 
-- *-a / --agents*: Defines the number of nodes you want to
+- **-a / --agents**: Defines the number of nodes you want to
   use to run a load test. This option triggers the distributed
   mode: if you use it, then *Loads* makes the assumption that
   you are in distributed mode. When you use agents, the
@@ -88,19 +89,19 @@ are other options that may be useful to run your test.
   product = [agents x users x (hits or duration)].
   Defaults to None.
 
-- *--test-dir*: when provided, the broker will ask every agent
+- **--test-dir**: when provided, the broker will ask every agent
   to create the directory on the slave box, and chdir to it.
   For example, you can pass a value like "/tmp/mytest".
   Loads will create all intermediate directories if they don't
   exist.
 
-- *--python-dep*: points a Python project name, that will be
+- **--python-dep**: points a Python project name, that will be
   installed on each slave prior to running the test, using pip.
   You can provide the usual version
   notation if needed. You can also provide several *--python-dep*
   arguments if you need them - or None.
 
-- *--include-file*: give that option a filename or a directory
+- **--include-file**: give that option a filename or a directory
   and Loads will recursively upload the files on each slave.
   That option needs to be used with *--test-dir*. You can
   also use glob-style patterns to include several files.
@@ -108,24 +109,24 @@ are other options that may be useful to run your test.
   in the current directory. Like *--python-deps** you
   can provide one or several options, or None.
 
-- *--detach*: when this flag is used, the runner will
+- **--detach**: when this flag is used, the runner will
   call the broker and quit immediatly. The test will be
   running in detached mode. This can also be done
   by hitting Ctrl-C after the run has started.
 
-- *--attach*: use this flag to reattach a console to
+- **--attach**: use this flag to reattach a console to
   an existing run. If several runs are active, you will
   have to choose which one to get attached to.
 
-- *--ping-broker*: use this flag to display the broker
+- **--ping-broker**: use this flag to display the broker
   status: the number of workers, the active runs
   and the broker options.
 
-- *--purge-broker*: use this flag to stop all
+- **--purge-broker**: use this flag to stop all
   active runs.
 
 
-- *--observer*: you can point a fully qualified name
+- **--observer**: you can point a fully qualified name
   that will be called from the broker when the test
   is over. *Loads* provides built-in observers: *irc*
   and *email*. They will send a message on a given
