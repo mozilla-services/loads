@@ -89,6 +89,7 @@ More documentation
 
    installation
    guide
+   commands
    internals
    zmq-api
    glossary

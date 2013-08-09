@@ -15,6 +15,7 @@ Glossary
      trought the broker and one or more agents.
 
    agent
+   agents
      A process, running on a distant machine, waiting to run the tests (send
      the requests) to create some actual load on the system under test.
 
