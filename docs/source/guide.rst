@@ -12,8 +12,9 @@ the three libraries.
 Using Requests
 --------------
 
-Requests is a popular library to query an HTTP service, and is
-widely used in the Python community.
+`Requests <http://www.python-requests.org>`_ is a popular
+library to query an HTTP service, and is widely used in the
+Python community.
 
 Let's say you want to load test the Elastic Search root page
 that's running on your local host.
@@ -139,7 +140,7 @@ know what WebTest is, `you should have a look at it
 <http://webtest.pythonpaste.org>`_ ;).
 
 WebTest is really handy to exercise an HTTP service because it includes
-tools to easiky control the responses status codes and values.
+tools to easily control the responses status code and content.
 
 You just need to use **app** instead of **session** in the test case
 class. **app** is a `webtest.TestApp` object, providing all the APIs to interact
