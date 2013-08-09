@@ -1,5 +1,5 @@
-Loads — Load testing for dummies
-================================
+Loads — Conterit Omnia Tua Application
+======================================
 
 .. figure:: logo.jpg
    :align: right
