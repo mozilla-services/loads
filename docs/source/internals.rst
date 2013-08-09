@@ -1,16 +1,18 @@
-How Loads is designed
-#####################
+Design
+######
 
 Hopefully, it's not really complicated to dig into the code and have a good
 overview of how *Loads* is designed, but sometimes a good document explaining
 how things are done is a good starting point, so let's try!
 
-You can run loads either in *distributed mode* or in *non-distributed* mode.
-The vast majority of the time, you want to spawn a number of agents and let
-them hammer the site you want to test. That's what we call the distributed
-mode. Alternatively, you may want to run things in a single process, for
-instance while writing your functional tests, that's the *non-distributed*
-mode.
+You can run Loads either in *distributed mode* or in *non-distributed* mode.
+The vast majority of the time, you want to run several of agents to
+hammer the service you want to load test. That's what we call
+the *distributed mode*.
+
+Alternatively, you may want to run things from a single process, just
+to smoke test your service - or simply because you don't need
+to send a huge load. That's the *non-distributed* mode.
 
 
 What happens during a non-distributed run
@@ -49,46 +51,53 @@ What happens during a non-distributed run
 What happens during a distributed run
 =====================================
 
-When you run in distributed mode, you have a distributed runner (master) which,
-rather than running the tests locally, asks an `Agent` to run them. It is
-possible to run a number of agents at the same time.
+When you run in distributed mode, you have a distributed runner (the
+:term:`broker`) which defer the execution to one or several
+:term:`agents`.
 
-These agents are just simple runners, but instead of reporting everything
-locally, using a *TestResult* object, they relay all the data to the master
-instance using a 0MQ stream.
+These agents are simple runners that will redirect their results
+to the broker using a ZeroMQ stream.
 
-It means that the code in `loads/relay.py` is a drop-in replacement for
-a TestResult object.
+The relay can be found in the `loads/relay.py` module. It's a
+drop-in replacement for the *TestResult* class.
 
-Once the results are back to the master, it populates its local *test_runner*,
-which will in turn call the outputs to generate the reports.
+The broker gets back the results and store them in a database,
+then publishes them in turn, so the caller can get them.
 
 A schema might help you to get things right:
 
 .. image:: loads.png
 
 
-All the inter-process communications (IPC) are handled by ZeroMQ, as you can
-see on the schema. Here is the caption:
+All the communication is handled through ZeroMQ sockets, as you can
+see in the diagram.
 
-1. The distributed loads runner (**the master**) sends a message to the broker,
+In more details:
+
+1. The distributed runner sends a message to the broker,
    asking it to run the tests on N agents.
-2. The broker selects the spare agents and send them the job.
-   The agents start a loads-runner instance in slave mode (**the slave**),
-   proxying all the calls to the `test_result` objects to the zmq push socket.
-3. The **master** receives the calls and pass them to its local `test_results`
-   instance.
+2. The broker selects available agents and send them the job.
+   Every agent starts a loads-runner instance in slave mode
+3. The broker receives the results back from every agent.
+4. The broker publishes the results so the distributed runner
+   can get them.
+
 
 The TestResult object
 =====================
 
-The TestResult object follows the APIs of unittest. That's why you can see
-methods such as `addSuccess`, `addFailure`, etc.
+The TestResult object follows the APIs of unittest. That's why you can
+use all assertions methods such as `addSuccess`, `addFailure`, etc.
 
-It is done this way so that you actually can just replace the normal unittest
-object by the one coming from loads, and gather data this way.
+Hopefully, people that are used to write Python tests should be familiar
+with these API and they can use Loads' TestCase class in lieu of
+the usual `unittest.TestCase class`.
 
-If you have a look at what you can find in `loads/case.py`, you will find that
-we create a `TestResultProxy` object. This is done so that the test_result
-object we pass to the TestCase have the exact same APIs than the one in
-unittest (it used to contain extra arguments).
+Loads' `TestCase` class is located in `loads/case.py`, and implements
+the same APIs than unittest's one.
+
+The extra benefit of keeping our class compatible with unittest
+is that you can also run Loads tests with third party test runners
+like Nose or unittest2. They will be recognized as classical functional
+tests.
+
