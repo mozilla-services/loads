@@ -3,6 +3,17 @@
 Distributed test
 ================
 
+.. warning::
+
+   Loads comes with no security whatsoever. If you run
+   a broker make sure that you secure access to the box
+   because any code can be executed remotely through the
+   loads-runner command.
+
+   The best way to avoid any issue is to protect the
+   server access through firewall rules.
+
+
 If you want to send a lot of load, you need to run a :term:`distributed test`.
 A distributed test uses multiple :term:`agents` to do the requests.
 The agents can be spread across several boxes called nodes.
