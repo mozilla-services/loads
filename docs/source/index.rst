@@ -77,9 +77,11 @@ With such a test, running **Loads** is done by pointing the
     Failures: 0
 
 
-See :ref:`guide` for a complete walkthrough. :ref:`commands`.
+See :ref:`guide` for a complete walkthrough. :ref:`commands`
 provides a detailed documentation on all the options you can
 use.
+
+If want to contribute to the project see :ref:`contributing`.
 
 
 More documentation
@@ -95,3 +97,4 @@ More documentation
    internals
    zmq-api
    glossary
+   contributing
