@@ -4,7 +4,7 @@ Writing asynchronous tests
 ==========================
 
 When **loads-runner** is executing your tests, it calls
-Gevent `monkey patching <http://www.gevent.org/gevent.monkey.html>`
+Gevent `monkey patching <http://www.gevent.org/gevent.monkey.html>`_
 to make the Python standard library cooperative.
 
 That feature works well when you are making classical
