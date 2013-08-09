@@ -20,7 +20,7 @@ build: $(PYTHON)
 	$(PYTHON) setup.py develop
 
 build_extras: build
-	$(BIN)/pip install circus paramiko boto
+	$(BIN)/pip install circus
 
 clean:
 	rm -rf $(BUILD_DIRS)

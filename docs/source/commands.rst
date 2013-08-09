@@ -13,14 +13,14 @@ Loads comes with 3 commands:
 loads-runner
 ------------
 
-loads-runner only mandatory argument is the *fully qualified name**
-(FQN) or the test method you want to call. *Fully Qualified Name* means
+loads-runner only mandatory argument is the *fully qualified name*
+(FQN) of the test method you want to call. *Fully Qualified Name* means
 that you provide a string that contains the package, sub packages,
 module, class and test name, all separated by dots - like an
 import statement.
 
 For example, if your test module is called *test_server* and
-located in the *tests** package under the *project* package,
+located in the *tests* package under the *project* package,
 the FQN for the *test_es* method in the *TestSite* class will be:
 **project.tests.test_server.TestSite.test_es**.
 
@@ -57,9 +57,9 @@ a load you are sending.
   Defaults to 1.
 
 - **-d / --duration**: number of seconds the test is run. This
-  option is mutually exclusive with hits. You will have to decide
+  option is mutually exclusive with --hits. You will have to decide
   if you want to run test a certain number of times or for a
-  certain amount of times. When using *duration*, Loads will
+  certain amount of time. When using *duration*, Loads will
   loop on the test for each user indefinitely. Defaults
   to None.
 
@@ -125,13 +125,43 @@ are other options that may be useful to run your test.
 - **--purge-broker**: use this flag to stop all
   active runs.
 
-
 - **--observer**: you can point a fully qualified name
   that will be called from the broker when the test
   is over. *Loads* provides built-in observers: *irc*
   and *email*. They will send a message on a given
   channel or to a given recipient when the test
   is done.
+
+
+Configuration file
+::::::::::::::::::
+
+Instead of typing a very long command line, you can create a configuration
+file and have Loads use it.
+
+Here's an example::
+
+
+    [loads]
+    fqn = example.TestWebSite.test_something
+    agents = 4
+
+    include_file = *.py
+                pushtest
+
+    test_dir = /tmp/tests
+    users = 5
+    duration = 30
+    observer = irc
+    detach = True
+
+
+In this example, we're pushing a load test accross 4 agents.
+
+Using this config file is done with the **--config** option::
+
+    $ loads-runner --config config.ini
+
 
 
 loads-broker

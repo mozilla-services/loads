@@ -6,7 +6,8 @@ Installation
 Prerequisites
 -------------
 
-**Loads** is developed and tested with Python 2.7.
+**Loads** is developed and tested with Python 2.7.x and
+Python 2.6.x. We encourage you to use the latest 2.7 version.
 
 **Loads** uses ZeroMQ and Gevent, so you need to have libzmq and libev on
 your system. You also need the Python headers.
@@ -38,20 +39,32 @@ This will also install it globally on your system.
 Basic installation
 ------------------
 
-Now we can build **Loads** locally::
+You can install **Loads** through Pip::
 
+    $ pip install loads
 
+Or build **Loads** from the Git repo::
+
+    $ git clone https://github.com/mozilla-services/loads
+    $ cd loads
     $ make build
 
 This will compile Gevent 1.0rc2 using Cython, and all the dependencies
 required by Loads - into a local virtualenv.
 
-That's it. You should then find **load-runner** in your bin directory.
+That's it. You should then find the **load-runner** command
+in your bin directory.
 
 Distributed
 -----------
 
-To install what's required to start :term:`distributed runs`, you need to
-run::
+To install what's required to start a :term:`distributed run`,
+it is encouraged to install Circus::
+
+    $ pip install circus
+
+Or if you build Loads from the source, simply run::
 
     $ make build_extras
+
+Then you can read :ref:`distributed`.

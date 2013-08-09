@@ -52,8 +52,8 @@ In case it's not behaving properly, **Loads** will let you know.
 .. note::
 
    If you don't want to write your load tests using Python, or if
-   you want to use any other library to describe the testing,
-   **Loads** allows you to use your own formalism. See :ref:`zmq-api`.
+   you want to use any other library to write tests,
+   **Loads** can be extended. See :ref:`zmq-api`.
 
 
 With such a test, running **Loads** is done by pointing the
@@ -77,8 +77,9 @@ With such a test, running **Loads** is done by pointing the
     Failures: 0
 
 
-See :ref:`guide` for a complete walkthrough and more options and
-information in :ref:`commands`.
+See :ref:`guide` for a complete walkthrough. :ref:`commands`.
+provides a detailed documentation on all the options you can
+use.
 
 
 More documentation
@@ -90,6 +91,7 @@ More documentation
    installation
    guide
    commands
+   distributed
    internals
    zmq-api
    glossary

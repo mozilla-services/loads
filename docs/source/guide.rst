@@ -1,25 +1,35 @@
 .. _guide:
 
-User Guide
-==========
+Writing load tests
+==================
 
-Using Loads with Requests
--------------------------
 
-Let's say you want to load test the Elastic Search root page on your
-system, just to be sure.
+Writing load tests can be done with Requests, WebTest or ws4py.
+Loads provides a test case class that includes bridges to
+the three libraries.
 
-Write a unittest like this one and save it in an **example.py** file::
+
+Using Requests
+--------------
+
+Requests is a popular library to query an HTTP service, and is
+widely used in the Python community.
+
+Let's say you want to load test the Elastic Search root page
+that's running on your local host.
+
+Write a test case like this one and save it in an **example.py** file::
 
     from loads.case import TestCase
 
     class TestWebSite(TestCase):
 
         def test_es(self):
-            self.session.get('http://localhost:9200')
+            res = self.session.get('http://localhost:9200')
+            self.assertEqual(res.status_code, 200)
 
 
-The *TestCase* class provided by **Load** has a *session* attribute you
+The *TestCase* class provided by **Loads** has a *session* attribute you
 can use to interact with an HTTP server. It's a **Session** instance
 from Requests.
 
@@ -41,7 +51,8 @@ Now run **loads-runner** against it::
     Failures: 0
 
 
-This will execute your test just once - so you can control it works well.
+This will execute your test just once - so you can control that your test
+works as expected.
 
 Now, try to run it using 100 :term:`virtual users` (-u), each of them running the test
 10 times (--hits)::
@@ -65,18 +76,28 @@ Congrats, you've just sent a load of 1000 hits, using 100 virtual users.
 
 Now let's run a series of 10, 20 then 30 users, each one running 20 hits::
 
-    $ bin/loads-runner loads.examples.test_blog.TestWebSite.test_something --hits 20 -u 10:20:30
+    $ bin/loads-runner example.TestWebSite.test_something --hits 20 -u 10:20:30
+    ...
 
 That's 1200 hits total.
+
+You can use all Requests API to GET, PUT, DELETE, POST or do whatever
+you need on the server.
+
+Don't forget to control all responses with assertions, so you can
+catch any issue that may occur on your service on high load. Most
+services will break with 500s errors when they can't cope
+with the load.
 
 
 Using Loads with ws4py
 ----------------------
 
 **Loads** provides web sockets API through the **ws4py** library. You can
-initialize a new socket connection using the **create_ws** method.
+initialize a new socket connection using the **create_ws** method provided
+in the test case class.
 
-Run the echo_server.py file located in the examples directory, then
+Run the echo_server.py file located in Loads' examples directory, then
 write a test that uses a web socket against it::
 
 
@@ -104,18 +125,22 @@ write a test that uses a web socket against it::
 
             self.assertEqual(results, ['something', 'happened'])
 
+See ws4py documentation for more info.
 
 
 Using Loads with WebTest
 ------------------------
 
 If you are a **WebTest** fan, you can use it instead of Requests. If you don't
-know what webtest is, `you should have a look at it
+know what WebTest is, `you should have a look at it
 <http://webtest.pythonpaste.org/en/latest/>`_ ;).
 
-You just need to use **app** instead of **session** in the test class, that's
-a `webtest.TestApp` object, providing all the APIs to interact with a web
-application::
+WebTest is really handy to exercise an HTTP service because it includes
+tools to easiky control the responses status codes and values.
+
+You just need to use **app** instead of **session** in the test case
+class. **app** is a `webtest.TestApp` object, providing all the APIs to interact
+with an HTTP service::
 
     from loads.case import TestCase
 
@@ -142,143 +167,3 @@ tests. To do so, change the `server_url` attribute of the app object::
     self.app.server_url = 'http://new-server'
 
 
-Distributed test
-----------------
-
-If you want to send a lot of load, you need to run a :term:`distributed test`.
-A distributed test uses multiple :term:`agents` to do the requests. The agents can be
-on the same machine, or on a different physical hardware.
-
-The **Loads** command line is able to interact with several **agents**
-through a :term:`broker`.
-
-To run a broker and some agents, let's use Circus.
-
-Install Circus::
-
-    $ bin/pip install circus
-
-And run it against the provided **loads.ini** configuration file that's
-located in the Loads source repository in **conf**::
-
-    $ bin/circusd --daemon conf/loads.ini
-
-Here is the content of the `loads.ini` file::
-
-    [circus]
-    check_delay = 5
-    httpd = 0
-    statsd = 1
-    debug = 0
-
-    [watcher:broker]
-    cmd = bin/loads-broker
-    warmup_delay = 0
-    numprocesses = 1
-
-    [watcher:agents]
-    cmd = bin/loads-agent
-    warmup_delay = 0
-    numprocesses = 5
-    copy_env = 1
-
-What happened? You have just started a Loads broker with 5 agents - a cluster.
-
-Let's control the cluster by pinging the broker for its status::
-
-    $ bin/loads-runner --ping-broker
-    Broker running on pid 11154
-    5 agents registered
-    endpoints:
-    - publisher: ipc:///tmp/loads-publisher.ipc
-    - frontend: ipc:///tmp/loads-front.ipc
-    - register: ipc:///tmp/loads-reg.ipc
-    - receiver: ipc:///tmp/loads-broker-receiver.ipc
-    - heartbeat: ipc:///tmp/hb.ipc
-    - backend: ipc:///tmp/loads-back.ipc
-    Nothing is running right now
-
-Let's use them now, with the **agents** option::
-
-    $ bin/load-runner example.TestWebSite.test_something -u 10:20:30 -c 20 --agents 5
-    [======================================================================]  100%
-
-Congrats, you have just sent 6000 hits from 5 different agents. Easy, no?
-
-To stop your cluster::
-
-    $ bin/circusctl quit
-
-
-Detach mode
-~~~~~~~~~~~
-
-When you are running a long test in distributed mode, you might want to detach
-the console and come back later to check the status of the load test.
-
-To do this, you can simply hit Ctrl+C. **Loads** will ask you if
-you want to detach the console and continue the test, or simply stop it::
-
-
-    $ bin/load-runner example.TestWebSite.test_something -u 10:20:30 -c 20 --agents 5
-    ^C
-    ...
-    Duration: 2.04 seconds
-    Hits: 964
-    Started: 2013-07-22 07:12:30.139814
-    Approximate Average RPS: 473
-    Average request time: 0.00s
-    Opened web sockets: 0
-    Bytes received via web sockets : 0
-
-    Success: 964
-    Errors: 0
-    Failures: 0
-
-    Do you want to (s)top the test or (d)etach ? d
-
-
-Then you can use **--attach** to reattach the console::
-
-    $ bin/loads-runner --attach
-    [                                       ]   4%
-    Duration: 43.68 seconds
-    Hits: 19233
-    Started: 2013-07-22 07:12:30.144859
-    Approximate Average RPS: 0
-    Average request time: 0.00s
-    Opened web sockets: 0
-    Bytes received via web sockets : 0
-
-    Success: 0
-    Errors: 0
-    Failures: 0
-
-    Do you want to (s)top the test or (d)etach ? s
-
-
-
-Using Loads with a config file
-------------------------------
-
-Instead of typing a very long command line, you can create a configuration file
-and have Loads use it.
-
-Here's an example::
-
-
-    [loads]
-    fqn = example.TestWebSite.test_something
-    agents = 4
-
-    include_file = *.py
-                pushtest
-
-    test_dir = /tmp/tests
-    users = 5
-    duration = 30
-    observer = irc
-    detach = True
-
-
-In this example, we're pushing a load test accross 4 agents.
