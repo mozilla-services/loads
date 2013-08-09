@@ -1,3 +1,5 @@
+.. _commands:
+
 Loads commands
 ==============
 
@@ -106,19 +108,29 @@ are other options that may be useful to run your test.
   in the current directory. Like *--python-deps** you
   can provide one or several options, or None.
 
+- *--detach*: when this flag is used, the runner will
+  call the broker and quit immediatly. The test will be
+  running in detached mode. This can also be done
+  by hitting Ctrl-C after the run has started.
 
-XXX
+- *--attach*: use this flag to reattach a console to
+  an existing run. If several runs are active, you will
+  have to choose which one to get attached to.
 
-usage: loads-runner
-[--config CONFIG]
-[--test-runner TEST_RUNNER]
-[--server-url SERVER_URL]
-[--observer OBSERVER] [-a AGENTS]
-[--zmq-receiver ZMQ_RECEIVER]
-[--zmq-publisher ZMQ_PUBLISHER] [--ping-broker]
-[--purge-broker] [-b BROKER] [--quiet]
-[--output {file,null,stdout}] [--attach] [--detach]
-[--output-file-filename OUTPUT_FILE_FILENAME]
+- *--ping-broker*: use this flag to display the broker
+  status: the number of workers, the active runs
+  and the broker options.
+
+- *--purge-broker*: use this flag to stop all
+  active runs.
+
+
+- *--observer*: you can point a fully qualified name
+  that will be called from the broker when the test
+  is over. *Loads* provides built-in observers: *irc*
+  and *email*. They will send a message on a given
+  channel or to a given recipient when the test
+  is done.
 
 
 loads-broker

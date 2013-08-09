@@ -77,7 +77,9 @@ With such a test, running **Loads** is done by pointing the
     Failures: 0
 
 
-See :ref:`guide` for more options and information.
+See :ref:`guide` for a complete walkthrough and more options and
+information in :ref:`commands`.
+
 
 More documentation
 ------------------
