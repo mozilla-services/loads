@@ -17,10 +17,10 @@ def output_list():
 
 
 # register our own plugins
-from null import NullOutput
-from _file import FileOutput
-from std import StdOutput
-from funkload import FunkloadOutput
+from loads.output.null import NullOutput
+from loads.output._file import FileOutput
+from loads.output.std import StdOutput
+from loads.output._funkload import FunkloadOutput
 
 for output in (NullOutput, FileOutput, StdOutput, FunkloadOutput):
     register_output(output)

@@ -6,6 +6,8 @@ import sys
 import tempfile
 import unittest
 
+from mock import patch
+
 from loads.output import (create_output, output_list, register_output,
                           StdOutput, NullOutput, FileOutput,
                           FunkloadOutput)
@@ -134,6 +136,7 @@ class TestFileOutput(unittest.TestCase):
 
 class TestFunkloadOutput(unittest.TestCase):
 
+    @patch('loads.output._funkload.print_tb', lambda x, file: file.write(x))
     def test_file_is_written(self):
 
         # Create a fake test result object
@@ -152,6 +155,10 @@ class TestFunkloadOutput(unittest.TestCase):
         test_result.tests['bacon', 1] = Test(TIME1, name='bacon',
                                              series=1, hit=1, user=1)
         test_result.tests['bacon', 1].success = 1
+
+        test_result.tests['egg', 1] = Test(TIME1, name='egg',
+                                           series=1, hit=1, user=1)
+        test_result.tests['egg', 1].errors = [(None, None, 'youpi yeah'), ]
 
         tmpdir = tempfile.mkdtemp()
         try:
@@ -177,6 +184,15 @@ class TestFunkloadOutput(unittest.TestCase):
                         'connection_duration="" requests="" pages="" '
                         'xmlrpc="" redirects="" images="" links="" />')
                 self.assertIn(test, content)
+
+                test = ('<testResult cycle="000" cvus="1" thread="000" '
+                        'suite="" name="" time="1368485468.0" '
+                        'result="Failure" steps="1" duration="0" '
+                        'connection_duration="" requests="" pages="" '
+                        'xmlrpc="" redirects="" images="" links="" '
+                        'traceback="youpi yeah" />')
+                self.assertIn(test, content)
+
         finally:
             shutil.rmtree(tmpdir)
 

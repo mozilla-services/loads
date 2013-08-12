@@ -1,6 +1,8 @@
 import itertools
 import platform
 import uuid
+from traceback import print_tb
+from StringIO import StringIO
 
 from datetime import datetime
 from time import mktime
@@ -73,7 +75,13 @@ class FunkloadOutput(object):
                     duration=duration,
                     result=status.capitalize())
         if traceback:
-            node += ' traceback="{0}"'.format(traceback)
+            klass, error, tb = traceback
+            container = StringIO()
+            print_tb(tb, file=container)
+            container.seek(0)
+            tb = container.read()
+            tb = tb.replace('"', '\'')
+            node += ' traceback="{0}"'.format(tb)
         node += ' />'
         self.nodes.append(node)
         return node
@@ -139,6 +147,7 @@ class FunkloadOutput(object):
                                      time=test.start,
                                      duration=test.duration)
 
+        self.nodes.append('</funkload>')
         with open(self.filename, 'w') as f:
             for node in self.nodes:
                 f.write(node + '\n')
