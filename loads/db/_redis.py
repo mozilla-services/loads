@@ -45,7 +45,7 @@ class RedisDB(BaseDB):
         size = data['size']
 
         pipeline = self._redis.pipeline()
-
+        pipeline.sadd('runs', run_id)
         counter = 'count:%s:%s' % (run_id, data_type)
         counters = 'counters:%s' % run_id
         if not self._redis.sismember(counters, counter):
@@ -79,6 +79,9 @@ class RedisDB(BaseDB):
             name = member.split(':')[-1]
             counts[name] = int(self._redis.get(member))
         return counts
+
+    def get_runs(self):
+        return self._redis.smembers('runs')
 
     def get_data(self, run_id, data_type=None, groupby=False):
         key = 'data:%s' % run_id
