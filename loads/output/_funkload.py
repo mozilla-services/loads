@@ -45,12 +45,12 @@ class FunkloadOutput(object):
                 'step="001" number="001" type="{method}" result="Successful" '
                 'url="{url}" code="{status}" description="" '
                 'time="{started}" duration="{elapsed}" />').format(
-                    cvus=cvus,
-                    method=method,
-                    url=url,
-                    status=status,
-                    started=mktime(started.timetuple()),
-                    elapsed=elapsed.total_seconds())
+            cvus=cvus,
+            method=method,
+            url=url,
+            status=status,
+            started=mktime(started.timetuple()),
+            elapsed=elapsed.total_seconds())
         self.nodes.append(node)
         return node
 
@@ -69,11 +69,11 @@ class FunkloadOutput(object):
                 'connection_duration="" requests="" '
                 'pages="" xmlrpc="" redirects="" images="" '
                 'links=""').format(
-                    cvus=cvus,
-                    traceback=traceback,
-                    time=mktime(time.timetuple()),
-                    duration=duration,
-                    result=status.capitalize())
+            cvus=cvus,
+            traceback=traceback,
+            time=mktime(time.timetuple()),
+            duration=duration,
+            result=status.capitalize())
         if traceback:
             klass, error, tb = traceback
             container = StringIO()
