@@ -7,6 +7,7 @@ from StringIO import StringIO
 from datetime import datetime
 from time import mktime
 
+from loads.util import total_seconds
 
 # This may be compatible with earlier versions of funkload, but that's the
 # one that had been used when writing this output class.
@@ -50,7 +51,7 @@ class FunkloadOutput(object):
             url=url,
             status=status,
             started=mktime(started.timetuple()),
-            elapsed=elapsed.total_seconds())
+            elapsed=total_seconds(elapsed))
         self.nodes.append(node)
         return node
 
