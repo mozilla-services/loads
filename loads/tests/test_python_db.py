@@ -67,11 +67,11 @@ class TestBrokerDB(unittest2.TestCase):
         self.loop.start()
 
         # let's check if we got the data in the file
-        with open(os.path.join(self.db.directory, '1')) as f:
+        with open(os.path.join(self.db.directory, '1-db.json')) as f:
             data = [json.loads(line) for line in f]
         data.sort()
 
-        with open(os.path.join(self.db.directory, '2')) as f:
+        with open(os.path.join(self.db.directory, '2-db.json')) as f:
             data2 = [json.loads(line) for line in f]
 
         self.assertEqual(len(data), 12)
@@ -97,3 +97,5 @@ class TestBrokerDB(unittest2.TestCase):
 
         res = list(self.db.get_data('1', data_type='add_hit', groupby=True))
         self.assertEqual(res[0]['count'], 2)
+
+        self.assertEqual(self.db.get_runs(), set(['1', '2']))

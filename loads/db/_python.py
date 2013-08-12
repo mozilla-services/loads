@@ -76,7 +76,7 @@ class BrokerDB(BaseDB):
             if run_id is None:
                 run_id = 'unknown'
 
-            filename = os.path.join(self.directory, run_id)
+            filename = os.path.join(self.directory, run_id + '-db.json')
 
             with open(filename, 'a+') as f:
                 for i in range(qsize):
@@ -105,9 +105,14 @@ class BrokerDB(BaseDB):
         with open(filename) as f:
             return json.load(f)
 
+    def get_runs(self):
+        return set([path[:-len('-db.json')]
+                    for path in os.listdir(self.directory)
+                    if path.endswith('-db.json')])
+
     def get_data(self, run_id, data_type=None, groupby=False):
         self.flush()
-        filename = os.path.join(self.directory, run_id)
+        filename = os.path.join(self.directory, run_id + '-db.json')
 
         if not os.path.exists(filename):
             raise StopIteration()
