@@ -92,3 +92,5 @@ class TestRedisDB(unittest2.TestCase):
 
         res = list(self.db.get_data('1', data_type='add_hit', groupby=True))
         self.assertEqual(res[0]['count'], 2)
+
+        self.assertEqual(self.db.get_runs(), set(['1', '2']))
