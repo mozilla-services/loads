@@ -20,7 +20,7 @@ class DistributedRunner(Runner):
     """
     def __init__(self, args):
         super(DistributedRunner, self).__init__(args)
-        self.loop = self.run_id = None
+        self.run_id = None
         self._test_result = None
         self._stopped_agents = 0
         self._nb_agents = args.get('agents')
