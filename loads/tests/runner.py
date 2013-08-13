@@ -2,7 +2,7 @@
 import sys
 import os
 
-from loads.runner import Runner
+from loads.runners import LocalRunner
 from loads.tests.support import get_runner_args
 
 
@@ -15,7 +15,7 @@ def main():
                            run_id=os.environ['LOADS_RUN_ID'],
                            externally_managed=True,
                            loads_status=status, slave=True)
-    Runner(args).execute()
+    LocalRunner(args).execute()
 
 
 if __name__ == '__main__':

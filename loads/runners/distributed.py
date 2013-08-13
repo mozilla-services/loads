@@ -3,14 +3,14 @@ import json
 import zmq.green as zmq
 from zmq.green.eventloop import ioloop, zmqstream
 
-from loads.runner import Runner
+from loads.runners.local import LocalRunner
 from loads.transport.util import DEFAULT_PUBLISHER
 from loads.util import logger, split_endpoint
 from loads.test_result import TestResult, LazyTestResult
 from loads.transport.client import Client
 
 
-class DistributedRunner(Runner):
+class DistributedRunner(LocalRunner):
     """Test runner distributing the load on a cluster of agents, collecting the
     results via a ZMQ stream.
 

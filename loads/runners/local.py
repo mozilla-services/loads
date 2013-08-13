@@ -44,7 +44,7 @@ def _compute_arguments(args):
     return total, hits, duration, users, agents
 
 
-class Runner(object):
+class LocalRunner(object):
     """Local tests runner.
 
     Runs the tests for the given number of users.

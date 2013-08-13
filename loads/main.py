@@ -10,9 +10,7 @@ from loads.util import logger, set_logger
 from loads.output import output_list
 from loads import __version__
 from loads.transport.util import DEFAULT_FRONTEND, DEFAULT_PUBLISHER
-from loads.runner import Runner
-from loads.distributed import DistributedRunner
-from loads.external import ExternalRunner
+from loads.runners import LocalRunner, DistributedRunner, ExternalRunner
 from loads.transport.client import Client, TimeoutError
 
 
@@ -35,7 +33,7 @@ def run(args):
         if args.get('test_runner', None) is not None:
             runner = ExternalRunner
         else:
-            runner = Runner
+            runner = LocalRunner
         try:
             return runner(args).execute()
         except Exception:

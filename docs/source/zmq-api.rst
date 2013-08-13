@@ -1,23 +1,24 @@
 .. _zmq-api:
 
-Pluging-in external runners
+Plugin-in external runners
 ###########################
 
 By default, Loads is built in a way which makes it possible to have tests
-runners written in different languages. To do that, it uses
-`ZeroMQ <http://zeromq.org>`_ to do the inter process communication (IPC).
+runners written in any languages. To do that, it uses `ZeroMQ
+<http://zeromq.org>`_ to do communicate.
 
-This document describes the protocol you need to implement if you want to use
-a different test runner.
+This document describes the protocol you need to implement if you want to
+create your own runner.
 
 Existing implementations
 ========================
 
-Currently, there is only a python implementation and a javascript
-implementation (using the mocha test framework). The project is named
-`loads.js <https://github.com/mozilla-services/loads.js>`_.
+Currently, there is only a Python implementation and a JavaScript
+implementation (using the Mocha test framework for the latter). The JS runner
+is provided in a separate project named `loads.js
+<https://github.com/mozilla-services/loads.js>`_.
 
-If you have implemented another external runner, feel free to submit us a
+If you have implemented your own runner, feel free to submit us a
 patch or a pull request.
 
 The protocol
@@ -81,7 +82,7 @@ fail. Here are the APIs you can use:
 - startTest(test_name, loads_status)
 - stopTest(test_name, loads_status)
 
-You need to **not** send the `startTestRun` and `stopTestRun` messages.
+You should **not** send the `startTestRun` and `stopTestRun` messages.
 
 Requests
 --------

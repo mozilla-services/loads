@@ -16,7 +16,7 @@ import sys
 from unittest2 import TestCase, skipIf
 
 from loads.main import run as start_runner
-from loads.runner import Runner
+from loads.runners import LocalRunner
 from loads.tests.support import (get_runner_args, start_process, stop_process,
                                  hush)
 from loads.transport.client import Pool, Client
@@ -109,7 +109,7 @@ class FunctionalTest(TestCase):
             output=['null'], users=2, hits=2))
 
     def test_concurent_session_access(self):
-        runner = Runner(get_runner_args(
+        runner = LocalRunner(get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_concurrency',
             output=['null'], users=2))
         runner.execute()
@@ -119,7 +119,7 @@ class FunctionalTest(TestCase):
         assert runner.test_result.nb_failures == 0
 
     def test_duration_updates_counters(self):
-        runner = Runner(get_runner_args(
+        runner = LocalRunner(get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_concurrency',
             output=['null'], duration=2.))
         runner.execute()
@@ -127,7 +127,7 @@ class FunctionalTest(TestCase):
         assert nb_success > 2, nb_success
 
     def _test_observer(self):
-        runner = Runner(get_runner_args(
+        runner = LocalRunner(get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_something',
             #output=['null'],
             users=1,

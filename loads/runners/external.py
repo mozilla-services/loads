@@ -6,17 +6,18 @@ import subprocess
 import zmq
 from zmq.eventloop import ioloop, zmqstream
 
-from loads.runner import Runner
+from loads.runners.local import LocalRunner
 
 
 DEFAULT_EXTERNAL_RUNNER_RECEIVER = "ipc:///tmp/loads-external-receiver.ipc"
 
 
-class ExternalRunner(Runner):
-    """Test runner which actually uses a subprocess to do the actual job.
+class ExternalRunner(LocalRunner):
+    """Test runner which uses a subprocess to do the actual job.
 
-    When ran locally, this runner makes the spawned processes report to itself,
-    otherwise it makes them report to the broker if the run is using a cluster.
+    When ran locally, this runner makes the spawned processes report to this
+    instance, otherwise it makes them report to the broker if the run is
+    using a cluster.
 
     This runner watches the state of the underlying processes to determine if
     the runs are finished or not. Once all the runs are done, it exits.
@@ -41,7 +42,7 @@ class ExternalRunner(Runner):
 
         self._processes = []
 
-         # hits and users are lists that can be None.
+        # hits and users are lists that can be None.
         hits, users = 1, 1
         if self.args.get('hits') is not None:
             hits = self.args['hits'][0]
@@ -116,7 +117,10 @@ class ExternalRunner(Runner):
         def _process_result(msg):
             data = json.loads(msg[0])
             data_type = data.pop('data_type')
-            data.pop('run_id', None)
+
+            # run_id is only used when in distributed mode, which isn't the
+            # case here, so we get rid of it.
+            data.pop('run_id')
 
             if hasattr(self.test_result, data_type):
                 method = getattr(self.test_result, data_type)
