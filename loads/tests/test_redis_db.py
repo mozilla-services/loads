@@ -15,7 +15,7 @@ from loads.tests.test_python_db import ONE_RUN
 
 
 _KEYS = ['data:1', 'data:2', 'counters:1', 'counters:2', 'bcounters:1',
-         'bcounters:2']
+         'bcounters:2', 'metadata:1', 'metadata:2']
 
 
 for type_ in ('addSuccess', 'stopTestRun', 'stopTest',
@@ -92,6 +92,10 @@ class TestRedisDB(unittest2.TestCase):
 
         res = list(self.db.get_data('1', data_type='add_hit', groupby=True))
         self.assertEqual(res[0]['count'], 2)
-
         self.assertTrue('1' in self.db.get_runs())
         self.assertTrue('2' in self.db.get_runs())
+
+    def test_metadata(self):
+        self.assertEqual(self.db.get_metadata('1'), {})
+        self.db.save_metadata('1', {'hey': 'ho'})
+        self.assertEqual(self.db.get_metadata('1'), {'hey': 'ho'})
