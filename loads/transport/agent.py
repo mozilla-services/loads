@@ -5,7 +5,6 @@
 - sends back the results in real time.
 """
 import argparse
-import datetime
 import errno
 import json
 import logging
@@ -25,8 +24,7 @@ from zmq.eventloop import ioloop, zmqstream
 from loads.transport import util
 from loads.util import logger, set_logger
 from loads.transport.util import (DEFAULT_FRONTEND, DEFAULT_TIMEOUT_MOVF,
-                                  DEFAULT_MAX_AGE, DEFAULT_MAX_AGE_DELTA,
-                                  DEFAULT_AGENT_RECEIVER, register_ipc_file)
+                                  DEFAULT_MAX_AGE, DEFAULT_MAX_AGE_DELTA)
 from loads.transport.message import Message
 from loads.transport.util import decode_params, timed
 from loads.transport.heartbeat import Stethoscope
@@ -43,10 +41,6 @@ class Agent(object):
     Options:
 
     - **broker**: The ZMQ socket to connect to the broker.
-    - **receiver**: The ZMQ socket which will receive data about the test run.
-                    this one should contain a "{pid}" section which will be
-                    replaced by the pid of the agent, since each receiving
-                    socket between the agent and the workers should be unique.
     - **ping_delay**: the delay in seconds betweem two pings.
     - **ping_retries**: the number of attempts to ping the broker before
       quitting.
@@ -62,7 +56,6 @@ class Agent(object):
       Defaults to 0. The value must be an integer.
     """
     def __init__(self, broker=DEFAULT_FRONTEND,
-                 receiver=DEFAULT_AGENT_RECEIVER,
                  ping_delay=10., ping_retries=3,
                  params=None, timeout=DEFAULT_TIMEOUT_MOVF,
                  max_age=DEFAULT_MAX_AGE, max_age_delta=DEFAULT_MAX_AGE_DELTA):
@@ -77,10 +70,7 @@ class Agent(object):
         self.env = os.environ.copy()
         self.running = False
         self._workers = {}
-        self._run_args = {}
-        self._run_started_at = {}
         self._max_id = defaultdict(int)
-        self._started = self._stopped = self._launched = 0
 
         self.loop = ioloop.IOLoop()
         self.ctx = zmq.Context()
@@ -102,18 +92,6 @@ class Agent(object):
         self._reg = self.ctx.socket(zmq.PUSH)
         self._reg.connect(self.endpoints['register'])
 
-        # receiver socket - used to receive results from workers
-        self._receiver_socket = receiver.format(pid=self.pid)
-        register_ipc_file(self._receiver_socket)
-        self._receiver = self.ctx.socket(zmq.PULL)
-        self._receiver.bind(self._receiver_socket)
-
-        # push socket - used to send back results to the broker
-        self._push = self.ctx.socket(zmq.PUSH)
-        self._push.set_hwm(8096 * 10)
-        self._push.setsockopt(zmq.LINGER, -1)
-        self._push.connect(self.endpoints['receiver'])
-
         # hearbeat socket - used to check if the broker is alive
         heartbeat = self.endpoints.get('heartbeat')
 
@@ -128,8 +106,6 @@ class Agent(object):
         # Setup the zmq streams.
         self._backstream = zmqstream.ZMQStream(self._backend, self.loop)
         self._backstream.on_recv(self._handle_recv_back)
-        self._rcvstream = zmqstream.ZMQStream(self._receiver, self.loop)
-        self._rcvstream.on_recv(self._handle_events)
 
         self._check = ioloop.PeriodicCallback(self._check_proc,
                                               ping_delay * 1000,
@@ -163,89 +139,28 @@ class Agent(object):
 
     def _run(self, args, run_id=None):
         logger.debug('Starting a run.')
-        self._started = self._stopped = 0
-        # for each run, store the options until the test is finished,
-        # we might need them again.
-        self._run_args[run_id] = args
 
         args['slave'] = True
         args['agent_id'] = self.pid
-        args['zmq_receiver'] = self._receiver_socket
+        args['zmq_receiver'] = self.endpoints['receiver']
+        args['run_id'] = run_id
 
-        test_runner = args.get('test_runner', None)
-        if test_runner is not None:
-            # we have a custom runner
-            hits = args['hits']
-            if hits is not None:
-                hits = hits[0] or 1
-            else:
-                hits = 1
-            nb_runs = (args['users'][0] or 1) * hits
+        cmd = 'from loads.main import run;'
+        cmd += 'run(%s)' % str(args)
+        cmd = sys.executable + ' -c "%s"' % cmd
 
-        procs = []
+        print cmd
+
+        cmd = shlex.split(cmd)
 
         try:
-            if test_runner is not None:
-                self._run_started_at[run_id] = datetime.datetime.now()
-                self._launched = nb_runs
-                for x in range(nb_runs):
-                    procs.append(self.spawn_external_runner(run_id, args, x))
-            else:
-                args['run_id'] = run_id
-                self._launched = 1
-                cmd = 'from loads.main import run;'
-                cmd += 'run(%s)' % str(args)
-                cmd = sys.executable + ' -c "%s"' % cmd
-                cmd = shlex.split(cmd)
-                procs.append(subprocess.Popen(cmd, cwd=args.get('test_dir')))
-
+            proc = subprocess.Popen(cmd, cwd=args.get('test_dir'))
         except Exception, e:
             msg = 'Failed to start process ' + str(e)
             raise ExecutionError(msg)
 
-        pids = []
-        for proc in procs:
-            self._workers[proc.pid] = proc, run_id
-            pids.append(proc.pid)
-
-        return pids
-
-    def spawn_external_runner(self, run_id, args, current_run=None):
-        """Spawns an external runner with the given arguments.
-
-        All the options are passed via environment variables, that is:
-        - LOADS_AGENT_ID for the id of this agent
-        - LOADS_STATUS for the status of the run
-        - LOADS_ZMQ_RECEIVER for the address of the ZMQ socket to send the
-          results to.
-        """
-        if current_run is None:
-            self._max_id[run_id] += 1
-            current_run = self._max_id[run_id]
-        else:
-            self._max_id[run_id] = current_run
-        cmd = args['test_runner'].format(test=args['fqn'])
-
-        hits = 1
-        users = 1
-        # hits and users are lists that can be None.
-        if args.get('hits') is not None:
-            hits = args['hits'][0]
-        if args.get('users') is not None:
-            users = args['users'][0]
-
-        loads_status = ','.join(map(str, (hits, users, current_run + 1, 1)))
-
-        env = os.environ.copy()
-        env['LOADS_AGENT_ID'] = str(args.get('agent_id'))
-        env['LOADS_STATUS'] = loads_status
-        env['LOADS_ZMQ_RECEIVER'] = self._receiver_socket
-        env['LOADS_RUN_ID'] = run_id
-        cmd_args = {'env': env,
-                    'stdout': subprocess.PIPE,
-                    'cwd': args.get('test_dir'),
-                    }
-        return subprocess.Popen(cmd.split(' '), **cmd_args)
+        self._workers[proc.pid] = proc, run_id
+        return proc.pid
 
     def _handle_commands(self, message):
         # we get the messages from the broker here
@@ -262,9 +177,9 @@ class Agent(object):
 
             args = data['args']
             run_id = data.get('run_id')
-            pids = self._run(args, run_id)
+            pid = self._run(args, run_id)
 
-            return {'result': {'pids': pids,
+            return {'result': {'pids': [pid],
                                'agent_id': str(self.pid),
                                'command': command}}
 
@@ -311,48 +226,6 @@ class Agent(object):
         for pid, (proc, run_id) in self._workers.items():
             if not proc.poll() is None:
                 del self._workers[pid]
-
-    def _handle_events(self, msg):
-        # Here we receive all the events from the runners.
-        # Proxy them to the broker unless they are startTestRun / stopTestRun,
-        # because we want to be sure all the test runs are actually finished
-        # before sending these signals there (as they stop the whole test run)
-        data = json.loads(msg[0])
-        data_type = data['data_type']
-        run_id = data['run_id']
-
-        if data_type == 'startTestRun':
-            if self._started == 0:
-                self._stopped = 0
-                self._push.send(msg[0])
-            self._started += 1
-
-        elif data_type == 'stopTestRun':
-            self._stopped += 1
-            args = self._run_args[run_id]
-            if (args.get('test_runner') is not None
-                    and args.get('duration') is not None):
-                # If we're running a test with --duration, we want to be sure
-                # to relaunch tests as they finish.
-                duration = datetime.timedelta(seconds=args.get('duration'))
-                now = datetime.datetime.now()
-                if now - self._run_started_at[run_id] < duration:
-                    proc = self.spawn_external_runner(run_id, args)
-                    self._launched += 1
-                    self._workers[proc.pid] = proc, run_id
-                else:
-                    self._check_tests_ended(msg)
-            else:
-                self._check_tests_ended(msg)
-        else:
-            self._push.send(msg[0])
-
-    def _check_tests_ended(self, msg):
-        if self._stopped == self._launched:
-            self._push.send(msg[0])
-            # reinitialize the counters
-            self._started = 0
-            self._stopped = 0
 
     def _handle_recv_back(self, msg):
         # do the message and send the result
@@ -485,10 +358,6 @@ def main(args=sys.argv):
                         default=DEFAULT_FRONTEND,
                         help="ZMQ socket to the broker.")
 
-    parser.add_argument('--receiver', dest='receiver',
-                        default=DEFAULT_AGENT_RECEIVER,
-                        help="ZMQ socket to get results from workers.")
-
     parser.add_argument('--debug', action='store_true', default=False,
                         help="Debug mode")
 
@@ -524,8 +393,8 @@ def main(args=sys.argv):
         params = decode_params(args.params)
 
     logger.info('Connecting to %s' % args.broker)
-    agent = Agent(broker=args.broker, receiver=args.receiver,
-                  params=params, timeout=args.timeout, max_age=args.max_age,
+    agent = Agent(broker=args.broker, params=params,
+                  timeout=args.timeout, max_age=args.max_age,
                   max_age_delta=args.max_age_delta)
 
     try:
