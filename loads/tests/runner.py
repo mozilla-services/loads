@@ -13,6 +13,7 @@ def main():
                            zmq_endpoint=os.environ['LOADS_ZMQ_RECEIVER'],
                            agent_id=os.environ['LOADS_AGENT_ID'],
                            run_id=os.environ['LOADS_RUN_ID'],
+                           externally_managed=True,
                            loads_status=status, slave=True)
     Runner(args).execute()
 
