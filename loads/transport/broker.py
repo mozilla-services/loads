@@ -7,6 +7,7 @@ import argparse
 import os
 import json
 from uuid import uuid4
+import time
 
 import zmq.green as zmq
 from zmq.green.eventloop import ioloop, zmqstream
@@ -215,6 +216,9 @@ class Broker(object):
             data['args']['zmq_receiver'] = self.endpoints['receiver']
 
             msg[2] = json.dumps(data)
+
+            # notice when the test was started
+            data['args']['started'] = time.time()
 
             # save the tests metadata in the db
             self.ctrl.save_metadata(run_id, data['args'])

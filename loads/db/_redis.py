@@ -25,11 +25,14 @@ class RedisDB(BaseDB):
     #
     def save_metadata(self, run_id, metadata):
         key = 'metadata:%s' % run_id
-        self._redis.set(key, loads(metadata))
+        self._redis.set(key, dumps(metadata))
 
     def get_metadata(self, run_id):
         key = 'metadata:%s' % run_id
-        return loads(self._redis.get(key))
+        metadata = self._redis.get(key)
+        if metadata is None:
+            return {}
+        return loads(metadata)
 
     def add(self, data):
         if 'run_id' not in data:
