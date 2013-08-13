@@ -101,3 +101,24 @@ is that you can also run Loads tests with third party test runners
 like Nose or unittest2. They will be recognized as classical functional
 tests.
 
+
+The Runners
+===========
+
+As mentionned earlier, Loads is implemented with more than one Runner class.
+Each of these classes share an implicit interface, allowing us to have more
+than one implementation of a runner.
+
+For instance, you can see that we have a `Runner` and a `DistributedRunner`.
+The former is a "local" runner: it is able to runs the tests locally and
+either proxy the results to a ZMQ backend or call its outputs with the results.
+
+The latter, the `DistributedRunner` runs the tests on a Loads cluster, using
+a :term:`broker` and one or more :term:`agents`.
+
+A runner has a constructor, which takes an ``arg`` argument, a dict, with all
+the useful options it may need. It is then started with the `execute` method.
+
+If you want to add a specific behavior, you may need to subclass it and change
+the `_execute` method (notice how it's prefixed with an underscore). This
+method is where all the actual execution happens.
