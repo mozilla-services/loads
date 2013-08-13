@@ -98,4 +98,6 @@ class TestBrokerDB(unittest2.TestCase):
         res = list(self.db.get_data('1', data_type='add_hit', groupby=True))
         self.assertEqual(res[0]['count'], 2)
 
-        self.assertEqual(self.db.get_runs(), set(['1', '2']))
+        self.assertTrue('1' in self.db.get_runs())
+        self.assertTrue('2' in self.db.get_runs())
+
