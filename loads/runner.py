@@ -221,7 +221,9 @@ class Runner(object):
             agent_id = self.args.get('agent_id', None)
 
             gevent.spawn(self._grefresh)
-            self.test_result.startTestRun(agent_id)
+
+            if not self.args.get('externally_managed'):
+                self.test_result.startTestRun(agent_id)
 
             for user in self.users:
                 if self.stop:
@@ -232,7 +234,9 @@ class Runner(object):
                 gevent.joinall(group)
 
             gevent.sleep(0)
-            self.test_result.stopTestRun(agent_id)
+
+            if not self.args.get('externally_managed'):
+                self.test_result.stopTestRun(agent_id)
         except KeyboardInterrupt:
             pass
         except Exception as e:
