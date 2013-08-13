@@ -1,8 +1,9 @@
 import os
-import gevent
 import subprocess
 import sys
 import shutil
+
+import gevent
 
 from loads.util import resolve_name, glob, logger
 from loads.test_result import TestResult
@@ -46,12 +47,14 @@ def _compute_arguments(args):
 class Runner(object):
     """Local tests runner.
 
-    Runs in parallel a number of tests and pass the results to the outputs.
+    Runs the tests for the given number of users.
 
-    It can be run in two different modes:
+    This runner can be used in two different modes:
 
-    - "Classical" mode: Results are collected and passed to the outputs.
-    - "Slave" mode: Results are sent to a ZMQ endpoint and no output is called.
+    - The "classical" mode where the results are collected and passed to the
+      outputs.
+    - The "slave" mode where the results are sent to a ZMQ endpoint and no
+      output is called.
     """
     def __init__(self, args):
         self.args = args
@@ -59,6 +62,7 @@ class Runner(object):
         self.test = None
         self.slave = args.get('slave', False)
         self.run_id = None
+
         # Only resolve the name of the test if we're using the default python
         # test-runner.
         if args.get('test_runner') is None and self.fqn:
@@ -102,8 +106,13 @@ class Runner(object):
         self.outputs.append(output)
         self.test_result.add_observer(output)
 
-    def _deploy_python_deps(self, deps):
+    def _deploy_python_deps(self, deps=None):
         # XXX pip hack to avoid uninstall
+        # deploy python deps if asked
+        deps = deps or self.args.get('python_dep', [])
+        if deps == []:
+            return
+
         nil = "lambda *args, **kw: None"
         code = ["from pip.req import InstallRequirement",
                 "InstallRequirement.uninstall = %s" % nil,
@@ -125,6 +134,7 @@ class Runner(object):
         sys.path.insert(0, 'deps')
 
     def execute(self):
+        """The method to start the load runner."""
         old_location = os.getcwd()
         self.running = True
         try:
@@ -138,6 +148,9 @@ class Runner(object):
             os.chdir(old_location)
 
     def _run(self, num, user):
+        """This method is actually spawned by gevent so there is more than
+        one actual test suite running in parallel.
+        """
         # creating the test case instance
         test = self.test.im_class(test_name=self.test.__name__,
                                   test_result=self.test_result,
@@ -170,9 +183,7 @@ class Runner(object):
             except (gevent.Timeout, KeyboardInterrupt):
                 pass
 
-    def _execute(self):
-        """Spawn all the tests needed and wait for them to finish.
-        """
+    def _prepare_filesystem(self):
         test_dir = self.args.get('test_dir')
 
         # in standalone mode we take care of creating
@@ -201,13 +212,18 @@ class Runner(object):
             logger.debug('chdir %r' % test_dir)
             os.chdir(test_dir)
 
-        # deploy python deps if asked
-        python_deps = self.args.get('python_dep', [])
-        if python_deps != []:
-            self._deploy_python_deps(python_deps)
+    def _execute(self):
+        """Spawn all the tests needed and wait for them to finish.
+        """
+        self._prepare_filesystem()
+        self._deploy_python_deps()
+        self._run_python_tests()
 
+    def _run_python_tests(self):
         # resolve the name now
         self._resolve_name()
+
+        agent_id = self.args.get('agent_id')
         exception = None
         try:
             if not self.args.get('no_patching', False):
@@ -217,8 +233,6 @@ class Runner(object):
             if not hasattr(self.test, 'im_class'):
                 raise ValueError("The FQN of the test doesn't point to a test "
                                  "class (%s)." % self.test)
-
-            agent_id = self.args.get('agent_id', None)
 
             gevent.spawn(self._grefresh)
 
