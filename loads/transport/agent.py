@@ -149,8 +149,6 @@ class Agent(object):
         cmd += 'run(%s)' % str(args)
         cmd = sys.executable + ' -c "%s"' % cmd
 
-        print cmd
-
         cmd = shlex.split(cmd)
 
         try:
