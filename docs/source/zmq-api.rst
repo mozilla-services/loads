@@ -1,32 +1,30 @@
 .. _zmq-api:
 
-Using Loads with a different language
-#####################################
+Plugin-in external runners
+###########################
 
-Loads is built in a way that makes it possible to have runners written in
-different languages. It's perfectly possible to have a runner in javascript or
-ruby, sending data to Loads.
+By default, Loads is built in a way which makes it possible to have tests
+runners written in any languages. To do that, it uses `ZeroMQ
+<http://zeromq.org>`_ to do communicate.
 
-This is made possible by the use of `zeromq <http://zeromq.org/>`_ to send
-inter-process (or even inter-machines!) messages.
+This document describes the protocol you need to implement if you want to
+create your own runner.
 
-This means you can write your load tests with whatever language you want, as
-long as the test-runner sends back its results in the zmq pipeline, respecting
-the format described in this document.
+Existing implementations
+========================
 
-Implementations in other languages
-==================================
+Currently, there is only a Python implementation and a JavaScript
+implementation (using the Mocha test framework for the latter). The JS runner
+is provided in a separate project named `loads.js
+<https://github.com/mozilla-services/loads.js>`_.
 
-* Integration of Loads with javascript, named `loads.js
-  <https://github.com/mozilla-services/loads.js>`_
+If you have implemented your own runner, feel free to submit us a
+patch or a pull request.
 
-Loads messaging format
-======================
+The protocol
+============
 
-The messages sent to **Loads** always contain a `data_type` key, which
-describes the type of that that's being sent.
-
-The messages respect the following rules:
+Each message sent to Loads needs to respect the following rules:
 
 - All the data is JSON encoded.
 - Dates are expressed in `ISO 8601 format
@@ -34,6 +32,8 @@ The messages respect the following rules:
 - You should send along the agent id with every message. Each agent id should
   be different from each other.
 - You should also send the id of the run.
+- Additionally, each message contains a **data_type**, with the type of the
+  data.
 
 A message generally looks like this::
 
@@ -70,12 +70,6 @@ wire, as well. When you see an `exc *`, it is a list containing this:
 Data types
 ==========
 
-Before and after you run the tests, you need to tell that you're doing so:
-
-- startTestRun()
-- stopTestRun()
-
-
 Tests
 -----
 
@@ -88,6 +82,7 @@ fail. Here are the APIs you can use:
 - startTest(test_name, loads_status)
 - stopTest(test_name, loads_status)
 
+You should **not** send the `startTestRun` and `stopTestRun` messages.
 
 Requests
 --------
