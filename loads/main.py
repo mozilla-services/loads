@@ -10,8 +10,7 @@ from loads.util import logger, set_logger
 from loads.output import output_list
 from loads import __version__
 from loads.transport.util import DEFAULT_FRONTEND, DEFAULT_PUBLISHER
-from loads.runner import Runner
-from loads.distributed import DistributedRunner
+from loads.runners import LocalRunner, DistributedRunner, ExternalRunner
 from loads.transport.client import Client, TimeoutError
 
 
@@ -31,13 +30,16 @@ def run(args):
     has_agents = args.get('agents', None)
     attach = args.get('attach', False)
     if not attach and (is_slave or not has_agents):
+        if args.get('test_runner', None) is not None:
+            runner = ExternalRunner
+        else:
+            runner = LocalRunner
         try:
-            return Runner(args).execute()
+            return runner(args).execute()
         except Exception:
             print traceback.format_exc()
             raise
     else:
-
         if attach:
             # find out what's running
             client = Client(args['broker'])

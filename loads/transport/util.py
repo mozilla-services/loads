@@ -17,7 +17,6 @@ DEFAULT_HEARTBEAT = "ipc:///tmp/loads-beat.ipc"
 DEFAULT_REG = "ipc:///tmp/loads-reg.ipc"
 DEFAULT_PUBLISHER = "ipc:///tmp/loads-publisher.ipc"
 DEFAULT_BROKER_RECEIVER = "ipc:///tmp/loads-broker-receiver.ipc"
-DEFAULT_AGENT_RECEIVER = "ipc:///tmp/loads-agent-receiver-{pid}.ipc"
 
 DEFAULT_TIMEOUT = 5.
 DEFAULT_TIMEOUT_MOVF = 7.5
