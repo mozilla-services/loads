@@ -29,9 +29,9 @@ class ExternalRunner(LocalRunner):
         # there is a need to count the number of runs so each of them is able
         # to distinguish from the others when sending the loads_status
         # information.
-        self._current_run = 0
-        self._run_started_at = None
-        self._terminated = None
+        self._initialize()
+        self._terminated_processes = []
+        self._current_step = 0
 
         timeout = args.get('process_timeout', 2)  # Default timeout: 2s
         self._timeout = datetime.timedelta(seconds=timeout)
@@ -40,18 +40,17 @@ class ExternalRunner(LocalRunner):
         if self.args.get('duration') is not None:
             self._duration = datetime.timedelta(seconds=args['duration'])
 
-        self._processes = []
-
         # hits and users are lists that can be None.
-        hits, users = 1, 1
+        hits, users = [1], [1]
         if self.args.get('hits') is not None:
-            hits = self.args['hits'][0]
+            hits = self.args['hits']
 
         if self.args.get('users') is not None:
-            users = self.args['users'][0]
+            users = self.args['users']
 
         self.args['hits'] = hits
         self.args['users'] = users
+        self._nb_steps = max(len(hits), len(users))
 
         self._loop = loop or ioloop.IOLoop()
 
@@ -74,6 +73,30 @@ class ExternalRunner(LocalRunner):
             self._rcvstream = zmqstream.ZMQStream(self._receiver, self._loop)
             self._rcvstream.on_recv(self._recv_result)
 
+    def _initialize(self):
+        self._current_run = 0
+        self._run_started_at = None
+        self._terminated = None
+        self._processes = []
+
+    @property
+    def step_hits(self):
+        # Take the last value or fallback on the last one.
+        if len(self.args['hits']) >= self._current_step + 1:
+            step = self._current_step
+        else:
+            step = -1
+        return self.args['hits'][step]
+
+    @property
+    def step_users(self):
+        # Take the last value or fallback on the last one.
+        if len(self.args['users']) >= self._current_step + 1:
+            step = self._current_step
+        else:
+            step = -1
+        return self.args['users'][step]
+
     def _check_processes(self):
         """When all the processes are finished or the duration of the test is
         more than the wanted duration, stop the loop and exit.
@@ -87,25 +110,39 @@ class ExternalRunner(LocalRunner):
                 # Re-spawn new tests, the party need to continue.
                 for _ in terminated:
                     self.spawn_external_runner()
+                return
             else:
                 # Wait for all the tests to finish and exit
                 if self._terminated is not None:
                     self._terminated = now
 
-            if (len(terminated) == len(self._processes)
-                    or self._terminated is not None
-                    and self._terminated + self._timeout > now):
-                self.stop_run()
+                if (len(terminated) == len(self._processes)
+                        or self._terminated is not None
+                        and self._terminated + self._timeout > now):
+                    self._start_next_step()
 
         elif (len(terminated) == len(self._processes)
-                or now > self._run_started_at + self._timeout):
+              or now > self._run_started_at + self._timeout):
             # All the tests are finished, let's exit.
-            self.stop_run()
+            self._start_next_step()
 
         # Refresh the outputs every time we check the processes status,
         # but do it only if we're not in slave mode.
         if not self.slave:
             self.refresh()
+
+    def _start_next_step(self):
+        # Reinitialize some variables and start a new run, or exit.
+        if self._current_step + 1 >= self._nb_steps:
+            self.stop_run()
+        else:
+            self._terminated_processes.extend(self._processes)
+            self._initialize()
+            self._run_started_at = datetime.datetime.now()
+            self._current_step += 1
+
+            for _ in range(self.step_users * self.step_hits):
+                self.spawn_external_runner()
 
     def _recv_result(self, msg):
         """Called each time the underlying processes send a message via ZMQ.
@@ -136,7 +173,7 @@ class ExternalRunner(LocalRunner):
         self._prepare_filesystem()
 
         self._run_started_at = datetime.datetime.now()
-        nb_runs = self.args['hits'] * self.args['users']
+        nb_runs = self.step_hits * self.step_users
 
         self.test_result.startTestRun(self.args.get('agent_id'))
         for _ in range(nb_runs):
@@ -163,9 +200,8 @@ class ExternalRunner(LocalRunner):
 
         cmd = self.args['test_runner'].format(test=self.args['fqn'])
 
-        hits, users = 1, 1
-
-        loads_status = ','.join(map(str, (hits, users, self._current_run, 1)))
+        loads_status = ','.join(map(str, (self.step_hits, self.step_users,
+                                          self._current_run, 1)))
 
         env = os.environ.copy()
 
