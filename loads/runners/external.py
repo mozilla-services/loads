@@ -81,20 +81,20 @@ class ExternalRunner(LocalRunner):
 
     @property
     def step_hits(self):
-        # Take the last value or fallback on the first one.
+        # Take the last value or fallback on the last one.
         if len(self.args['hits']) >= self._current_step + 1:
             step = self._current_step
         else:
-            step = 0
+            step = -1
         return self.args['hits'][step]
 
     @property
     def step_users(self):
-        # Take the last value or fallback on the first one.
+        # Take the last value or fallback on the last one.
         if len(self.args['users']) >= self._current_step + 1:
             step = self._current_step
         else:
-            step = 0
+            step = -1
         return self.args['users'][step]
 
     def _check_processes(self):
@@ -110,19 +110,19 @@ class ExternalRunner(LocalRunner):
                 # Re-spawn new tests, the party need to continue.
                 for _ in terminated:
                     self.spawn_external_runner()
+                return
             else:
                 # Wait for all the tests to finish and exit
                 if self._terminated is not None:
                     self._terminated = now
 
-            if (len(terminated) == len(self._processes)
-                    or self._terminated is not None
-                    and self._terminated + self._timeout > now):
-                self._start_next_step()
+                if (len(terminated) == len(self._processes)
+                        or self._terminated is not None
+                        and self._terminated + self._timeout > now):
+                    self._start_next_step()
 
-        elif (len(self._processes) != 0
-              and (len(terminated) == len(self._processes)
-              or now > self._run_started_at + self._timeout)):
+        elif (len(terminated) == len(self._processes)
+              or now > self._run_started_at + self._timeout):
             # All the tests are finished, let's exit.
             self._start_next_step()
 
