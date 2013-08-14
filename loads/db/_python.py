@@ -32,6 +32,12 @@ class BrokerDB(BaseDB):
         self._dirty = False
         self._metadata = defaultdict(dict)
 
+    def update_metadata(self, run_id, **metadata):
+        existing = self._metadata.get(run_id, {})
+        existing.update(metadata)
+        self._dirty = True
+        self._metadata[run_id] = existing
+
     def save_metadata(self, run_id, metadata):
         self._metadata[run_id] = metadata
         self._dirty = True

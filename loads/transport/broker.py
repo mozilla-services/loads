@@ -219,6 +219,7 @@ class Broker(object):
 
             # notice when the test was started
             data['args']['started'] = time.time()
+            data['args']['active'] = True
 
             # save the tests metadata in the db
             self.ctrl.save_metadata(run_id, data['args'])

@@ -100,3 +100,13 @@ class TestBrokerDB(unittest2.TestCase):
 
         self.assertTrue('1' in self.db.get_runs())
         self.assertTrue('2' in self.db.get_runs())
+
+    def test_metadata(self):
+        self.assertEqual(self.db.get_metadata('1'), {})
+        self.db.save_metadata('1', {'hey': 'ho'})
+        self.assertEqual(self.db.get_metadata('1'), {'hey': 'ho'})
+
+        self.db.update_metadata('1', one=2)
+        meta = self.db.get_metadata('1').items()
+        meta.sort()
+        self.assertEqual(meta, [('hey', 'ho'), ('one', 2)])
