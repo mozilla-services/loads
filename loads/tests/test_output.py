@@ -176,14 +176,14 @@ class TestFunkloadOutput(unittest.TestCase):
                        'result="Successful" url="http://notmyidea.org" '
                        'code="200" description="" time="1368485468.0" '
                        'duration="1.0" />')
-                self.assertIn(hit, content)
+                self.assertTrue(hit in content)
 
                 test = ('<testResult cycle="000" cvus="1" thread="000" '
                         'suite="" name="" time="1368485468.0" '
                         'result="Success" steps="1" duration="0" '
                         'connection_duration="" requests="" pages="" '
                         'xmlrpc="" redirects="" images="" links="" />')
-                self.assertIn(test, content)
+                self.assertTrue(test in content)
 
                 test = ('<testResult cycle="000" cvus="1" thread="000" '
                         'suite="" name="" time="1368485468.0" '
@@ -191,7 +191,7 @@ class TestFunkloadOutput(unittest.TestCase):
                         'connection_duration="" requests="" pages="" '
                         'xmlrpc="" redirects="" images="" links="" '
                         'traceback="youpi yeah" />')
-                self.assertIn(test, content)
+                self.assertTrue(test in content)
 
         finally:
             shutil.rmtree(tmpdir)
