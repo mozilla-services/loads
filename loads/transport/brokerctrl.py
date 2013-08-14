@@ -161,6 +161,9 @@ class BrokerController(object):
     def save_metadata(self, run_id, data):
         self._db.save_metadata(run_id, data)
 
+    def update_metadata(self, run_id, **metadata):
+        self._db.update_metadata(run_id, **metadata)
+
     def get_metadata(self, run_id):
         return self._db.get_metadata(run_id)
 
@@ -230,6 +233,9 @@ class BrokerController(object):
     # Observers
     #
     def test_ended(self, run_id):
+        # first of all, we want to mark it done in the DB
+        self.update_metadata(run_id, stopped=True)
+
         # we want to ping all observers that things are done
         # for a given test.
         # get the list of observers

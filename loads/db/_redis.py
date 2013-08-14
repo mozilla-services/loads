@@ -27,6 +27,11 @@ class RedisDB(BaseDB):
         key = 'metadata:%s' % run_id
         self._redis.set(key, dumps(metadata))
 
+    def update_metadata(self, run_id, **metadata):
+        existing = self.get_metadata(run_id)
+        existing.update(metadata)
+        self.save_metadata(run_id, existing)
+
     def get_metadata(self, run_id):
         key = 'metadata:%s' % run_id
         metadata = self._redis.get(key)
