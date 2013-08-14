@@ -100,4 +100,3 @@ class TestBrokerDB(unittest2.TestCase):
 
         self.assertTrue('1' in self.db.get_runs())
         self.assertTrue('2' in self.db.get_runs())
-
