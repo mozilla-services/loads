@@ -73,8 +73,9 @@ class Session(_Session):
         """Do the actual request from within the session, doing some
         measures at the same time about the request (duration, status, etc).
         """
-        request.url, original, resolved = dns_resolve(request.url)
-        request.headers['Host'] = original
+        if not request.url.startswith('https://'):
+            request.url, original, resolved = dns_resolve(request.url)
+            request.headers['Host'] = original
 
         # attach some information to the request object for later use.
         start = datetime.datetime.utcnow()
