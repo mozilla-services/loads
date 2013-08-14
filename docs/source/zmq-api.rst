@@ -29,7 +29,7 @@ Each message sent to Loads needs to respect the following rules:
 - All the data is JSON encoded.
 - Dates are expressed in `ISO 8601 format
   <https://en.wikipedia.org/wiki/ISO_8601>`_, (YYYY-MM-DDTHH:MM:SS)
-- You should send along the agent-id with every message. Each agent-id should
+- You should send along the agent id with every message. Each agent id should
   be different from each other.
 - You should also send the id of the run.
 - Additionally, each message contains a **data_type**, with the type of the
