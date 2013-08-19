@@ -1,4 +1,4 @@
-import unittest
+import unittest2
 import mock
 from loads.case import TestCase, TestResult
 
@@ -14,7 +14,7 @@ class _MyTestCase(TestCase):
         self.assertTrue(False)
 
 
-class TestTestCase(unittest.TestCase):
+class TestTestCase(unittest2.TestCase):
 
     def test_fake(self):
         results = TestResult()

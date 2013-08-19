@@ -1,4 +1,4 @@
-import unittest
+import unittest2
 import functools
 import mock
 
@@ -51,7 +51,7 @@ class _TestResult(object):
         self.data.append(data)
 
 
-class TestMeasure(unittest.TestCase):
+class TestMeasure(unittest2.TestCase):
 
     def setUp(self):
         self.old_dns = measure.dns_resolve

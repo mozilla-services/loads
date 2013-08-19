@@ -4,7 +4,7 @@ import mock
 import shutil
 import sys
 import tempfile
-import unittest
+from unittest2 import TestCase
 
 from mock import patch
 
@@ -49,7 +49,7 @@ class FakeOutput(object):
         self.test_result = test_result
 
 
-class TestStdOutput(unittest.TestCase):
+class TestStdOutput(TestCase):
 
     def test_std(self):
         old = sys.stdout
@@ -109,7 +109,7 @@ class TestStdOutput(unittest.TestCase):
         self.assertEquals(output.std.get_screen_relative_value(23, 80), 10)
 
 
-class TestNullOutput(unittest.TestCase):
+class TestNullOutput(TestCase):
 
     def test_api_works(self):
         output = NullOutput(mock.sentinel.test_result, mock.sentinel.args)
@@ -117,7 +117,7 @@ class TestNullOutput(unittest.TestCase):
         output.flush()
 
 
-class TestFileOutput(unittest.TestCase):
+class TestFileOutput(TestCase):
 
     def test_file_is_written(self):
         tmpdir = tempfile.mkdtemp()
@@ -134,7 +134,7 @@ class TestFileOutput(unittest.TestCase):
             shutil.rmtree(tmpdir)
 
 
-class TestFunkloadOutput(unittest.TestCase):
+class TestFunkloadOutput(TestCase):
 
     @patch('loads.output._funkload.print_tb', lambda x, file: file.write(x))
     def test_file_is_written(self):
@@ -176,14 +176,14 @@ class TestFunkloadOutput(unittest.TestCase):
                        'result="Successful" url="http://notmyidea.org" '
                        'code="200" description="" time="1368485468.0" '
                        'duration="1.0" />')
-                self.assertTrue(hit in content, content)
+                self.assertIn(hit, content)
 
                 test = ('<testResult cycle="000" cvus="1" thread="000" '
                         'suite="" name="" time="1368485468.0" '
                         'result="Success" steps="1" duration="0" '
                         'connection_duration="" requests="" pages="" '
                         'xmlrpc="" redirects="" images="" links="" />')
-                self.assertTrue(test in content, content)
+                self.assertIn(hit, content)
 
                 test = ('<testResult cycle="000" cvus="1" thread="000" '
                         'suite="" name="" time="1368485468.0" '
@@ -191,13 +191,13 @@ class TestFunkloadOutput(unittest.TestCase):
                         'connection_duration="" requests="" pages="" '
                         'xmlrpc="" redirects="" images="" links="" '
                         'traceback="youpi yeah" />')
-                self.assertTrue(test in content, content)
+                self.assertIn(test, content)
 
         finally:
             shutil.rmtree(tmpdir)
 
 
-class TestOutputPlugins(unittest.TestCase):
+class TestOutputPlugins(TestCase):
 
     def test_unexistant_output_raises_exception(self):
         self.assertRaises(NotImplementedError, create_output, 'xxx', None,

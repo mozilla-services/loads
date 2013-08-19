@@ -1,4 +1,4 @@
-import unittest
+import unittest2
 import os
 
 from loads.main import main
@@ -9,7 +9,7 @@ from loads.tests.support import hush
 config = os.path.join(os.path.dirname(__file__), 'config.ini')
 
 
-class TestRunner(unittest.TestCase):
+class TestRunner(unittest2.TestCase):
 
     def setUp(self):
         start_servers()
