@@ -1,4 +1,4 @@
-import unittest
+import unittest2
 import socket
 import select
 import os
@@ -37,7 +37,7 @@ class FakeSocket(object):
         return self.data.pop()
 
 
-class TestIRC(unittest.TestCase):
+class TestIRC(unittest2.TestCase):
 
     def setUp(self):
         self.old = socket.socket

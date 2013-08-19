@@ -1,12 +1,12 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
-import unittest
+import unittest2
 from zmq.green.eventloop import ioloop
 from loads.transport.heartbeat import Stethoscope, Heartbeat
 
 
-class TestHeartbeat(unittest.TestCase):
+class TestHeartbeat(unittest2.TestCase):
 
     def test_working(self):
         loop = ioloop.IOLoop()

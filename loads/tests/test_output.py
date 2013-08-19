@@ -4,13 +4,23 @@ import mock
 import shutil
 import sys
 import tempfile
-import unittest
+
+from unittest2 import TestCase
+from mock import patch
+from pytz import timezone
 
 from loads.output import (create_output, output_list, register_output,
-                          StdOutput, NullOutput, FileOutput)
+                          StdOutput, NullOutput, FileOutput,
+                          FunkloadOutput)
 from loads import output
 
 from loads.tests.support import get_tb, hush
+from loads.test_result import Hit, Test
+
+
+TIME1 = datetime.datetime(2013, 5, 14, 0, 51, 8,
+                          tzinfo=timezone('Europe/Paris'))
+_1 = datetime.timedelta(seconds=1)
 
 
 class FakeTestResult(object):
@@ -28,6 +38,8 @@ class FakeTestResult(object):
         self.nb_finished_tests = 0
         self.errors = []
         self.failures = []
+        self.hits = []
+        self.tests = {}
 
 
 class FakeOutput(object):
@@ -39,7 +51,7 @@ class FakeOutput(object):
         self.test_result = test_result
 
 
-class TestStdOutput(unittest.TestCase):
+class TestStdOutput(TestCase):
 
     def test_std(self):
         old = sys.stdout
@@ -99,7 +111,7 @@ class TestStdOutput(unittest.TestCase):
         self.assertEquals(output.std.get_screen_relative_value(23, 80), 10)
 
 
-class TestNullOutput(unittest.TestCase):
+class TestNullOutput(TestCase):
 
     def test_api_works(self):
         output = NullOutput(mock.sentinel.test_result, mock.sentinel.args)
@@ -107,7 +119,7 @@ class TestNullOutput(unittest.TestCase):
         output.flush()
 
 
-class TestFileOutput(unittest.TestCase):
+class TestFileOutput(TestCase):
 
     def test_file_is_written(self):
         tmpdir = tempfile.mkdtemp()
@@ -124,7 +136,73 @@ class TestFileOutput(unittest.TestCase):
             shutil.rmtree(tmpdir)
 
 
-class TestOutputPlugins(unittest.TestCase):
+class TestFunkloadOutput(TestCase):
+
+    @patch('loads.output._funkload.print_tb', lambda x, file: file.write(x))
+    def test_file_is_written(self):
+
+        # Create a fake test result object
+        test_result = FakeTestResult()
+
+        # populate it with some fake hits...
+        hit = Hit(url='http://notmyidea.org',
+                  method='GET',
+                  status=200,
+                  started=TIME1,
+                  elapsed=_1,
+                  loads_status=(1, 2, 3, 4))
+        test_result.hits.append(hit)
+
+        # ...and some fake tests.
+        test_result.tests['bacon', 1] = Test(TIME1, name='bacon',
+                                             series=1, hit=1, user=1)
+        test_result.tests['bacon', 1].success = 1
+
+        test_result.tests['egg', 1] = Test(TIME1, name='egg',
+                                           series=1, hit=1, user=1)
+        test_result.tests['egg', 1].errors = [(None, None, 'youpi yeah'), ]
+
+        tmpdir = tempfile.mkdtemp()
+        try:
+            output = FunkloadOutput(
+                test_result,
+                {'output_funkload_filename': '%s/funkload.xml' % tmpdir,
+                 'fqn': 'MyTest',
+                 'hits': 200})
+            output.flush()
+
+            with open('%s/funkload.xml' % tmpdir) as f:
+                content = f.read()
+                test = (('<response cycle="000" cvus="2" thread="000" '
+                         'suite="" name="" step="001" number="001" type="GET" '
+                         'result="Successful" url="http://notmyidea.org" '
+                         'code="200" description="" time="'),
+                        ('" duration="1.0" />'))
+                for t in test:
+                    self.assertIn(t, content)
+
+                test = (('<testResult cycle="000" cvus="1" thread="000" '
+                         'suite="" name="" time="'),
+                        ('" result="Success" steps="1" duration="0" '
+                         'connection_duration="" requests="" pages="" '
+                         'xmlrpc="" redirects="" images="" links="" />'))
+                for t in test:
+                    self.assertIn(t, content)
+
+                test = (('<testResult cycle="000" cvus="1" thread="000" '
+                         'suite="" name="" time="'),
+                        ('result="Failure" steps="1" duration="0" '
+                         'connection_duration="" requests="" pages="" '
+                         'xmlrpc="" redirects="" images="" links="" '
+                         'traceback="youpi yeah" />'))
+                for t in test:
+                    self.assertIn(t, content)
+
+        finally:
+            shutil.rmtree(tmpdir)
+
+
+class TestOutputPlugins(TestCase):
 
     def test_unexistant_output_raises_exception(self):
         self.assertRaises(NotImplementedError, create_output, 'xxx', None,
