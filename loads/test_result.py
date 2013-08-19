@@ -175,6 +175,13 @@ class TestResult(object):
         else:
             return 0
 
+    def get_url_metrics(self):
+        urls = defaultdict(dict)
+        for url in self.urls:
+            for metric in ('average_request_time', 'hits_success_rate'):
+                urls[url][metric] = getattr(self, metric)(url)
+        return urls
+
     def tests_per_second(self):
         delta = self.stop_time - self.start_time
         return self.nb_tests / total_seconds(delta)
