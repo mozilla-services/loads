@@ -7,7 +7,6 @@ import tempfile
 
 from unittest2 import TestCase
 from mock import patch
-from pytz import timezone
 
 from loads.output import (create_output, output_list, register_output,
                           StdOutput, NullOutput, FileOutput,
@@ -18,8 +17,7 @@ from loads.tests.support import get_tb, hush
 from loads.test_result import Hit, Test
 
 
-TIME1 = datetime.datetime(2013, 5, 14, 0, 51, 8,
-                          tzinfo=timezone('Europe/Paris'))
+TIME1 = datetime.datetime(2013, 5, 14, 0, 51, 8)
 _1 = datetime.timedelta(seconds=1)
 
 
