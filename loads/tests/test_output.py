@@ -173,27 +173,30 @@ class TestFunkloadOutput(TestCase):
 
             with open('%s/funkload.xml' % tmpdir) as f:
                 content = f.read()
-                hit = ('<response cycle="000" cvus="2" thread="000" '
-                       'suite="" name="" step="001" number="001" type="GET" '
-                       'result="Successful" url="http://notmyidea.org" '
-                       'code="200" description="" time="1368489068.0" '
-                       'duration="1.0" />')
-                self.assertIn(hit, content)
+                test = (('<response cycle="000" cvus="2" thread="000" '
+                         'suite="" name="" step="001" number="001" type="GET" '
+                         'result="Successful" url="http://notmyidea.org" '
+                         'code="200" description="" time="'),
+                        ('" duration="1.0" />'))
+                for t in test:
+                    self.assertIn(t, content)
 
-                test = ('<testResult cycle="000" cvus="1" thread="000" '
-                        'suite="" name="" time="1368489068.0" '
-                        'result="Success" steps="1" duration="0" '
-                        'connection_duration="" requests="" pages="" '
-                        'xmlrpc="" redirects="" images="" links="" />')
-                self.assertIn(hit, content)
+                test = (('<testResult cycle="000" cvus="1" thread="000" '
+                         'suite="" name="" time="'),
+                        ('" result="Success" steps="1" duration="0" '
+                         'connection_duration="" requests="" pages="" '
+                         'xmlrpc="" redirects="" images="" links="" />'))
+                for t in test:
+                    self.assertIn(t, content)
 
-                test = ('<testResult cycle="000" cvus="1" thread="000" '
-                        'suite="" name="" time="1368489068.0" '
-                        'result="Failure" steps="1" duration="0" '
-                        'connection_duration="" requests="" pages="" '
-                        'xmlrpc="" redirects="" images="" links="" '
-                        'traceback="youpi yeah" />')
-                self.assertIn(test, content)
+                test = (('<testResult cycle="000" cvus="1" thread="000" '
+                         'suite="" name="" time="'),
+                        ('result="Failure" steps="1" duration="0" '
+                         'connection_duration="" requests="" pages="" '
+                         'xmlrpc="" redirects="" images="" links="" '
+                         'traceback="youpi yeah" />'))
+                for t in test:
+                    self.assertIn(t, content)
 
         finally:
             shutil.rmtree(tmpdir)
