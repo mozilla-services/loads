@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 
 from mock import Mock
 
-from loads.test_result import TestResult, Hit, Test
 
 TIME1 = datetime(2013, 5, 14, 0, 51, 8)
 TIME2 = datetime(2013, 5, 14, 0, 53, 8)
