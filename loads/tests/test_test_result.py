@@ -1,6 +1,9 @@
-from loads.test_result import TestResult, Hit, Test
 from unittest import TestCase
 from datetime import datetime, timedelta
+
+from mock import Mock
+
+from loads.test_result import TestResult, Hit, Test
 
 TIME1 = datetime(2013, 5, 14, 0, 51, 8)
 TIME2 = datetime(2013, 5, 14, 0, 53, 8)
@@ -180,6 +183,22 @@ class TestTestResult(TestCase):
     def test_requests_per_second_if_not_started(self):
         test_result = TestResult()
         self.assertEquals(test_result.requests_per_second(), 0)
+
+    def test_get_url_metrics(self):
+        test_result = TestResult()
+        test_result.average_request_time = Mock(return_value=0.5)
+        test_result.hits_success_rate = Mock(return_value=0.9)
+        test_result.add_hit(**self._get_data('http://notmyidea.org'))
+        test_result.add_hit(**self._get_data('http://lolnet.org'))
+
+        metrics = test_result.get_url_metrics()
+        self.assertEquals(metrics['http://notmyidea.org'], {
+            'average_request_time': 0.5,
+            'hits_success_rate': 0.9})
+
+        self.assertEquals(metrics['http://lolnet.org'], {
+            'average_request_time': 0.5,
+            'hits_success_rate': 0.9})
 
 
 class TestHits(TestCase):
