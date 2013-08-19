@@ -2,7 +2,7 @@ from tempfile import mkstemp
 import datetime
 import mock
 import os
-import unittest2 as unittest
+import unittest2 as unittest2
 import sys
 
 import zmq
@@ -33,7 +33,7 @@ class _BadSocket(object):
         raise err
 
 
-class TestUtil(unittest.TestCase):
+class TestUtil(unittest2.TestCase):
 
     def test_resolve(self):
         ob = resolve_name('loads.tests.test_util.TestUtil')
@@ -50,7 +50,7 @@ class TestUtil(unittest.TestCase):
     def test_resolve_adds_path(self):
         ob = resolve_name('loads.tests.test_util.TestUtil')
         self.assertTrue(ob is TestUtil)
-        self.assertIn('', sys.path)
+        self.assertTrue('' in sys.path)
         old_len = len(sys.path)
 
         # And checks that it's not added twice

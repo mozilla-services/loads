@@ -1,4 +1,5 @@
-from unittest import TestCase
+from loads.test_result import TestResult, Hit, Test
+from unittest2 import TestCase
 from datetime import datetime, timedelta
 
 from mock import Mock

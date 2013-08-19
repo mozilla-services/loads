@@ -1,4 +1,4 @@
-import unittest
+import unittest2
 import tempfile
 import shutil
 
@@ -18,7 +18,7 @@ class FakeBroker(object):
     _backstream = Stream()
 
 
-class TestBrokerController(unittest.TestCase):
+class TestBrokerController(unittest2.TestCase):
 
     def setUp(self):
         self.dbdir = tempfile.mkdtemp()
