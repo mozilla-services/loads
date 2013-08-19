@@ -4,9 +4,10 @@ import mock
 import shutil
 import sys
 import tempfile
-from unittest2 import TestCase
 
+from unittest2 import TestCase
 from mock import patch
+from pytz import timezone
 
 from loads.output import (create_output, output_list, register_output,
                           StdOutput, NullOutput, FileOutput,
@@ -17,7 +18,8 @@ from loads.tests.support import get_tb, hush
 from loads.test_result import Hit, Test
 
 
-TIME1 = datetime.datetime(2013, 5, 14, 0, 51, 8)
+TIME1 = datetime.datetime(2013, 5, 14, 0, 51, 8,
+                          tzinfo=timezone('Europe/Paris'))
 _1 = datetime.timedelta(seconds=1)
 
 
@@ -174,19 +176,19 @@ class TestFunkloadOutput(TestCase):
                 hit = ('<response cycle="000" cvus="2" thread="000" '
                        'suite="" name="" step="001" number="001" type="GET" '
                        'result="Successful" url="http://notmyidea.org" '
-                       'code="200" description="" time="1368485468.0" '
+                       'code="200" description="" time="1368489068.0" '
                        'duration="1.0" />')
                 self.assertIn(hit, content)
 
                 test = ('<testResult cycle="000" cvus="1" thread="000" '
-                        'suite="" name="" time="1368485468.0" '
+                        'suite="" name="" time="1368489068.0" '
                         'result="Success" steps="1" duration="0" '
                         'connection_duration="" requests="" pages="" '
                         'xmlrpc="" redirects="" images="" links="" />')
                 self.assertIn(hit, content)
 
                 test = ('<testResult cycle="000" cvus="1" thread="000" '
-                        'suite="" name="" time="1368485468.0" '
+                        'suite="" name="" time="1368489068.0" '
                         'result="Failure" steps="1" duration="0" '
                         'connection_duration="" requests="" pages="" '
                         'xmlrpc="" redirects="" images="" links="" '
