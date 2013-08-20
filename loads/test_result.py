@@ -239,6 +239,13 @@ class TestResult(object):
         test = self._get_test(test, loads_status, agent_id)
         test.success += 1
 
+    def incr_counter(self, test, loads_status, name, agent_id=None):
+        test = self._get_test(test, loads_status, agent_id)
+        test.incr_counter(name)
+
+    def get_counter(self, name, test=None):
+        return sum([t.get_counter(name) for t in self._get_tests(name=test)])
+
     def add_hit(self, **data):
         self.hits.append(Hit(**data))
 
@@ -257,7 +264,7 @@ class TestResult(object):
         attr = object.__getattribute__(self, name)
         if name in ('startTestRun', 'stopTestRun', 'startTest', 'stopTest',
                     'addError', 'addFailure', 'addSuccess', 'add_hit',
-                    'socket_open', 'socket_message'):
+                    'socket_open', 'socket_message', 'incr_counter'):
 
             def wrapper(*args, **kwargs):
                 ret = attr(*args, **kwargs)
@@ -380,8 +387,13 @@ class Test(object):
         self.failures = []
         self.errors = []
         self.success = 0
+        self._counters = defaultdict(int)
+
         for key, value in kwargs.items():
             setattr(self, key, value)
+
+    def incr_counter(self, name):
+        self._counters[name] += 1
 
     @property
     def finished(self):
@@ -419,3 +431,6 @@ class Test(object):
             return
 
         return self.failures[0]
+
+    def get_counter(self, name):
+        return self._counters[name]

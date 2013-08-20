@@ -22,6 +22,7 @@ class TestWebSite(TestCase):
         results = []
 
         def callback(m):
+            self.incr_counter('socket')
             results.append(m.data)
 
         ws = self.create_ws('ws://localhost:9000/ws',
@@ -70,6 +71,7 @@ class TestWebSite(TestCase):
         raise ValueError(res)
 
     def test_concurrency(self):
+        self.incr_counter('beau')
         user = 'user%s' % random.randint(1, 200)
         self.session.auth = (user, 'X' * 10)
         self.app.server_url = 'http://localhost:9000'
@@ -78,3 +80,4 @@ class TestWebSite(TestCase):
         self.assertTrue(user in res.body)
         res = self.app.get('/auth')
         self.assertTrue(user in res.body)
+        self.incr_counter('lavabo')

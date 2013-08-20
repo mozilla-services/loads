@@ -200,6 +200,18 @@ class TestTestResult(TestCase):
             'average_request_time': 0.5,
             'hits_success_rate': 0.9})
 
+    def test_counters(self):
+        test_result = TestResult()
+        loads_status = (1, 1, 1, 1)
+        test_result.incr_counter('bacon', loads_status, 'sent')
+        test_result.incr_counter('bacon', loads_status, 'sent')
+        test_result.incr_counter('bacon', loads_status, 'received')
+
+        self.assertEqual(test_result.get_counter('sent'), 2)
+        self.assertEqual(test_result.get_counter('received', test='bacon'), 1)
+        self.assertEqual(test_result.get_counter('bacon', 'xxxx'), 0)
+        self.assertEqual(test_result.get_counter('xxx', 'xxxx'), 0)
+
 
 class TestHits(TestCase):
 

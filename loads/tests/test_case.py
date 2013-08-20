@@ -1,11 +1,11 @@
 import unittest2
 import mock
-from loads.case import TestCase, TestResult
+from loads.case import TestCase, DefaultTestResult
 
 
 class _MyTestCase(TestCase):
     def test_one(self):
-        pass
+        self.incr_counter('meh')
 
     def test_two(self):
         raise AttributeError()
@@ -17,7 +17,7 @@ class _MyTestCase(TestCase):
 class TestTestCase(unittest2.TestCase):
 
     def test_fake(self):
-        results = TestResult()
+        results = DefaultTestResult()
         loads_status = 1, 1, 1, 1
 
         case = _MyTestCase('test_one', test_result=results)
