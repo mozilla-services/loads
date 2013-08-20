@@ -13,7 +13,7 @@ import tempfile
 import shutil
 import sys
 
-from unittest2 import TestCase, skipIf
+from unittest2 import TestCase
 
 from loads.main import run as start_runner
 from loads.runners import LocalRunner
