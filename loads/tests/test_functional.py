@@ -73,7 +73,7 @@ def start_servers():
     return procs
 
 
-@skipIf('TRAVIS' in os.environ, 'Travis')
+#@skipIf('TRAVIS' in os.environ, 'Travis')
 class FunctionalTest(TestCase):
 
     @classmethod
@@ -195,7 +195,7 @@ class FunctionalTest(TestCase):
         data = client.get_data(runs.keys()[0])
         self.assertTrue(len(data) > 5, len(data))
 
-    @skipIf('TRAVIS' in os.environ, 'Travis')
+    #@skipIf('TRAVIS' in os.environ, 'Travis')
     def test_distributed_detach(self):
         args = get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_something',
