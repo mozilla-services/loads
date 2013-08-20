@@ -221,3 +221,27 @@ def glob(patterns, location='.'):
         for file_ in os.listdir(location):
             if fnmatch.fnmatch(file_, pattern):
                 yield os.path.join(location, file_)
+
+
+def null_streams(streams):
+    """Set the given outputs to /dev/null to be sure we don't store their
+    content in memory.
+
+    This is useful when you want to spawn new processes and don't care about
+    their outputs. The other approach, using subprocess.PIPE can slow down
+    things and uses memory without any rationale.
+    """
+    devnull = os.open(os.devnull, os.O_RDWR)
+    try:
+        for stream in streams:
+            if not hasattr(stream, 'fileno'):
+                # we're probably dealing with a file-like
+                continue
+            try:
+                stream.flush()
+                os.dup2(devnull, stream.fileno())
+            except IOError:
+                # some streams, like stdin - might be already closed.
+                pass
+    finally:
+        os.close(devnull)
