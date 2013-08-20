@@ -44,9 +44,13 @@ class TestCase(unittest.TestCase):
             self.app = FakeTestApp()
 
         self._ws = []
+        self._loads_status = None
 
     def defaultTestResult(self):
-        return TestResult()
+        return DefaultTestResult()
+
+    def incr_counter(self, name):
+        self._test_result.incr_counter(self, self._loads_status, name)
 
     def create_ws(self, url, callback=None, protocols=None, extensions=None,
                   klass=None):
@@ -72,7 +76,7 @@ class TestCase(unittest.TestCase):
             result = TestResultProxy(loads_status, self._test_result)
 
         if loads_status is not None:
-            self.session.loads_status = loads_status
+            self._loads_status = self.session.loads_status = loads_status
 
         return super(TestCase, self).run(result)
 
@@ -87,14 +91,14 @@ class TestResultProxy(object):
         result = super(TestResultProxy, self).__getattribute__('result')
         attr = getattr(result, name)
         if name in ('startTest', 'stopTest', 'addSuccess', 'addException',
-                    'addError', 'addFailure'):
+                    'addError', 'addFailure', 'incr_counter'):
             status = (super(TestResultProxy, self).
                       __getattribute__('loads_status'))
             return functools.partial(attr, loads_status=status)
         return attr
 
 
-class TestResult(unittest.TestResult):
+class DefaultTestResult(unittest.TestResult):
     def startTest(self, test, *args, **kw):
         unittest.TestResult.startTest(self, test)
 
@@ -109,6 +113,9 @@ class TestResult(unittest.TestResult):
 
     def addSuccess(self, test, *args, **kw):
         unittest.TestResult.addSuccess(self, test)
+
+    def incr_counter(self, test, *args, **kw):
+        pass
 
 
 def _patching():
@@ -161,7 +168,7 @@ def _patching():
     # patch unittest TestResult object
     try:
         import unittest2.runner
-        unittest2.runner.TextTestResult = TestResult
+        unittest2.runner.TextTestResult = DefaultTestResult
     except ImportError:
         pass
 

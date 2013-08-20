@@ -117,6 +117,8 @@ class FunctionalTest(TestCase):
         assert nb_success == 2, nb_success
         assert runner.test_result.nb_errors == 0
         assert runner.test_result.nb_failures == 0
+        assert runner.test_result.get_counter('lavabo') == 2
+        assert runner.test_result.get_counter('beau') == 2
 
     def test_duration_updates_counters(self):
         runner = LocalRunner(get_runner_args(
