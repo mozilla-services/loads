@@ -14,6 +14,12 @@ web sockets.
    :alt: Build Status
    :target: https://secure.travis-ci.org/mozilla-services/loads
 
+.. image:: https://coveralls.io/repos/mozilla-services/loads/badge.png?branch=master
+   :target: https://coveralls.io/r/mozilla-services/loads
+
+.. image:: https://pypip.in/v/loads/badge.png
+   :target: https://crate.io/packages/loads/
+
 With **Loads**, your load tests are classical
 Python functional tests which are calling the service(s) you want to
 exercise.
