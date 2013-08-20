@@ -8,6 +8,7 @@ import zmq
 from zmq.eventloop import ioloop, zmqstream
 
 from loads.runners.local import LocalRunner
+from loads.util import null_streams
 
 
 DEFAULT_EXTERNAL_RUNNER_RECEIVER = "ipc:///tmp/loads-external-receiver.ipc"
@@ -182,22 +183,6 @@ class ExternalRunner(LocalRunner):
 
         self._loop.start()
 
-    def _null_streams(self, streams):
-        devnull = os.open(os.devnull, os.O_RDWR)
-        try:
-            for stream in streams:
-                if not hasattr(stream, 'fileno'):
-                    # we're probably dealing with a file-like
-                    continue
-                try:
-                    stream.flush()
-                    os.dup2(devnull, stream.fileno())
-                except IOError:
-                    # some streams, like stdin - might be already closed.
-                    pass
-        finally:
-            os.close(devnull)
-
     def spawn_external_runner(self):
         """Spawns an external runner with the given arguments.
 
@@ -227,13 +212,13 @@ class ExternalRunner(LocalRunner):
         env['LOADS_ZMQ_RECEIVER'] = self._receiver_socket
         env['LOADS_RUN_ID'] = self.args.get('run_id', '')
 
-        def preexec_fn():
-            self._null_streams([sys.stdout, sys.stderr, sys.stdin])
-            os.setsid()
+        def silent_output():
+            null_streams([sys.stdout, sys.stderr, sys.stdin])
+            os.setsid()  # Run the subprocess in a new session.
 
         cmd_args = {
             'env': env,
-            'preexec_fn': preexec_fn,
+            'preexec_fn': silent_output,
             'cwd': self.args.get('test_dir'),
         }
 
