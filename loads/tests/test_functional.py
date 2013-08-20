@@ -16,7 +16,7 @@ import sys
 from unittest2 import TestCase
 
 from loads.main import run as start_runner
-from loads.runners import LocalRunner
+from loads.runners import LocalRunner, DistributedRunner
 from loads.tests.support import (get_runner_args, start_process, stop_process,
                                  hush)
 from loads.transport.client import Pool, Client
@@ -208,7 +208,6 @@ class FunctionalTest(TestCase):
         def _recv(self, msg):
             raise KeyboardInterrupt
 
-        from loads.distributed import DistributedRunner
         old = DistributedRunner._recv_result
         DistributedRunner._recv_result = _recv
 
