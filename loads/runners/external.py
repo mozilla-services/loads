@@ -2,6 +2,7 @@ import datetime
 import json
 import os
 import subprocess
+import sys
 
 import zmq
 from zmq.eventloop import ioloop, zmqstream
@@ -181,6 +182,22 @@ class ExternalRunner(LocalRunner):
 
         self._loop.start()
 
+    def _null_streams(self, streams):
+        devnull = os.open(os.devnull, os.O_RDWR)
+        try:
+            for stream in streams:
+                if not hasattr(stream, 'fileno'):
+                    # we're probably dealing with a file-like
+                    continue
+                try:
+                    stream.flush()
+                    os.dup2(devnull, stream.fileno())
+                except IOError:
+                    # some streams, like stdin - might be already closed.
+                    pass
+        finally:
+            os.close(devnull)
+
     def spawn_external_runner(self):
         """Spawns an external runner with the given arguments.
 
@@ -210,11 +227,16 @@ class ExternalRunner(LocalRunner):
         env['LOADS_ZMQ_RECEIVER'] = self._receiver_socket
         env['LOADS_RUN_ID'] = self.args.get('run_id', '')
 
+        def preexec_fn():
+            self._null_streams([sys.stdout, sys.stderr, sys.stdin])
+            os.setsid()
+
         cmd_args = {
             'env': env,
-            'stdout': subprocess.PIPE,  # To silent the output.
+            'preexec_fn': preexec_fn,
             'cwd': self.args.get('test_dir'),
         }
+
         self._processes.append(subprocess.Popen(cmd.split(' '), **cmd_args))
 
     def stop_run(self):
