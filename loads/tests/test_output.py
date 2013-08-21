@@ -14,7 +14,7 @@ from loads.output import (create_output, output_list, register_output,
 from loads import output
 
 from loads.tests.support import get_tb, hush
-from loads.test_result import Hit, Test
+from loads.results.base import Hit, Test
 
 
 TIME1 = datetime.datetime(2013, 5, 14, 0, 51, 8)

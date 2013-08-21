@@ -1,8 +1,9 @@
 import unittest
-import functools
 
 from requests.adapters import HTTPAdapter
+
 from loads.measure import Session, TestApp
+from loads.results import LoadsTestResult, UnitTestTestResult
 
 
 class FakeTestApp(object):
@@ -47,7 +48,7 @@ class TestCase(unittest.TestCase):
         self._loads_status = None
 
     def defaultTestResult(self):
-        return DefaultTestResult()
+        return LoadsTestResult()
 
     def incr_counter(self, name):
         self._test_result.incr_counter(self, self._loads_status, name)
@@ -72,50 +73,13 @@ class TestCase(unittest.TestCase):
     def run(self, result=None, loads_status=None):
         if (loads_status is not None
                 and result is None
-                and not isinstance(self._test_result, TestResultProxy)):
-            result = TestResultProxy(loads_status, self._test_result)
+                and not isinstance(self._test_result, LoadsTestResult)):
+            result = LoadsTestResult(loads_status, self._test_result)
 
         if loads_status is not None:
             self._loads_status = self.session.loads_status = loads_status
 
         return super(TestCase, self).run(result)
-
-
-class TestResultProxy(object):
-
-    def __init__(self, loads_status, result):
-        self.result = result
-        self.loads_status = loads_status
-
-    def __getattribute__(self, name):
-        result = super(TestResultProxy, self).__getattribute__('result')
-        attr = getattr(result, name)
-        if name in ('startTest', 'stopTest', 'addSuccess', 'addException',
-                    'addError', 'addFailure', 'incr_counter'):
-            status = (super(TestResultProxy, self).
-                      __getattribute__('loads_status'))
-            return functools.partial(attr, loads_status=status)
-        return attr
-
-
-class DefaultTestResult(unittest.TestResult):
-    def startTest(self, test, *args, **kw):
-        unittest.TestResult.startTest(self, test)
-
-    def stopTest(self, test, *args, **kw):
-        unittest.TestResult.stopTest(self, test)
-
-    def addError(self, test, exc_info, *args, **kw):
-        unittest.TestResult.addError(self, test, exc_info)
-
-    def addFailure(self, test, exc_info, *args, **kw):
-        unittest.TestResult.addFailure(self, test, exc_info)
-
-    def addSuccess(self, test, *args, **kw):
-        unittest.TestResult.addSuccess(self, test)
-
-    def incr_counter(self, test, *args, **kw):
-        pass
 
 
 def _patching():
@@ -168,7 +132,7 @@ def _patching():
     # patch unittest TestResult object
     try:
         import unittest2.runner
-        unittest2.runner.TextTestResult = DefaultTestResult
+        unittest2.runner.TextTestResult = UnitTestTestResult
     except ImportError:
         pass
 
