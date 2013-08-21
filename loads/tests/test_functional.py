@@ -197,6 +197,8 @@ class FunctionalTest(TestCase):
         self.assertTrue(len(data) > 5, len(data))
 
     def test_distributed_detach(self):
+        time.sleep(.5)
+
         args = get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_something',
             agents=1,
@@ -220,7 +222,6 @@ class FunctionalTest(TestCase):
 
         # start the runner
         start_runner(args)
-
         # we detached.
         time.sleep(.2)
 
