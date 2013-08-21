@@ -9,6 +9,13 @@ Loads
 
 **Loads** is a framework for load testing an HTTP service.
 
+.. figure:: https://loads.readthedocs.org/en/latest/_images/logo.jpg
+   :align: right
+   :target: http://thenounproject.com/noun/riot/#icon-No15381
+
+   by Juan Pablo Bravo
+
+
 
 Installation::
 
