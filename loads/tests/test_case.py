@@ -1,6 +1,8 @@
 import unittest2
 import mock
-from loads.case import TestCase, DefaultTestResult
+
+from loads.case import TestCase
+from loads.results import UnitTestTestResult
 
 
 class _MyTestCase(TestCase):
@@ -17,7 +19,7 @@ class _MyTestCase(TestCase):
 class TestTestCase(unittest2.TestCase):
 
     def test_fake(self):
-        results = DefaultTestResult()
+        results = UnitTestTestResult()
         loads_status = 1, 1, 1, 1
 
         case = _MyTestCase('test_one', test_result=results)

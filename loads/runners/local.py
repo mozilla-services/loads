@@ -6,8 +6,7 @@ import shutil
 import gevent
 
 from loads.util import resolve_name, glob, logger
-from loads.test_result import TestResult
-from loads.relay import ZMQRelay
+from loads.results import ZMQTestResult, TestResult
 from loads.output import create_output
 
 
@@ -83,7 +82,7 @@ class LocalRunner(object):
 
         # If we are in slave mode, set the test_result to a 0mq relay
         if self.slave:
-            self._test_result = ZMQRelay(self.args)
+            self._test_result = ZMQTestResult(self.args)
 
         # The normal behavior is to collect the results locally.
         else:

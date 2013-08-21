@@ -7,7 +7,7 @@ import zmq.green as zmq
 from loads.util import DateTimeJSONEncoder
 
 
-class ZMQRelay(object):
+class ZMQTestResult(object):
     """Relays all the method calls to a zmq endpoint"""
 
     def __init__(self, args):
