@@ -44,6 +44,9 @@ class BaseDB(object):
     def get_data(self, run_id):
         raise NotImplementedError()
 
+    def get_urls(self, run_id):
+        raise NotImplementedError()
+
 
 def get_database(name='python', loop=None, **options):
     if name == 'python':

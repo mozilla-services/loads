@@ -6,7 +6,7 @@ from zmq.green.eventloop import ioloop, zmqstream
 from loads.runners.local import LocalRunner
 from loads.transport.util import DEFAULT_PUBLISHER
 from loads.util import logger, split_endpoint
-from loads.results import TestResult, LazyTestResult
+from loads.results import TestResult, RemoteTestResult
 from loads.transport.client import Client
 
 
@@ -60,7 +60,7 @@ class DistributedRunner(LocalRunner):
     def test_result(self):
         if self._test_result is None:
             if self.args.get('attach', False):
-                self._test_result = LazyTestResult(args=self.args)
+                self._test_result = RemoteTestResult(args=self.args)
                 self.refresh_rate = 500
             else:
                 self._test_result = TestResult(args=self.args)

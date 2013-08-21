@@ -9,7 +9,7 @@ import datetime
 from loads.db import get_database
 from loads.transport.client import DEFAULT_TIMEOUT_MOVF
 from loads.util import logger, resolve_name
-from loads.results import LazyTestResult
+from loads.results import RemoteTestResult
 
 
 class NotEnoughWorkersError(Exception):
@@ -178,6 +178,9 @@ class BrokerController(object):
             break
         self._db.add(data)
 
+    def get_urls(self, run_id, **kw):
+        return self._db.get_urls(run_id, **kw)
+
     def get_data(self, run_id, **kw):
         return list(self._db.get_data(run_id, **kw))
 
@@ -246,7 +249,7 @@ class BrokerController(object):
             return
 
         # rebuild the test result instance
-        test_result = LazyTestResult(args=args)
+        test_result = RemoteTestResult(args=args)
         test_result.args = args
 
         data = self.get_data(run_id)
