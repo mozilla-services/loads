@@ -80,6 +80,10 @@ class ZMQRelay(object):
     def socket_message(self, size):
         self.push('socket_message', size=size)
 
+    def incr_counter(self, test, loads_status, name, agent_id=None):
+        self.push('incr_counter', test=str(test), loads_status=loads_status,
+                  name=name, agent_id=str(agent_id))
+
     def push(self, data_type, **data):
         data.update({'data_type': data_type,
                      'agent_id': self.agent_id,
