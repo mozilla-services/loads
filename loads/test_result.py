@@ -246,6 +246,13 @@ class TestResult(object):
     def get_counter(self, name, test=None):
         return sum([t.get_counter(name) for t in self._get_tests(name=test)])
 
+    def get_counters(self, test=None):
+        counters = defaultdict(int)
+        for test in self._get_tests(name=test):
+            for name, value in test.get_counters().items():
+                counters[name] += value
+        return counters
+
     def add_hit(self, **data):
         self.hits.append(Hit(**data))
 
@@ -434,3 +441,6 @@ class Test(object):
 
     def get_counter(self, name):
         return self._counters[name]
+
+    def get_counters(self):
+        return self._counters

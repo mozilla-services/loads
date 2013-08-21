@@ -14,6 +14,7 @@ class TestWebSite(TestCase):
         self.session.get('http://google.com')
 
     def test_es(self):
+        self.incr_counter('es')
         self.session.get('http://localhost:9200')
 
     def test_something(self):

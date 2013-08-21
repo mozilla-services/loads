@@ -61,6 +61,27 @@ class StdOutput(object):
             self._print_tb(self.results.failures)
             write('\n')
 
+        write("\nStats by URLs:")
+        metrics = [(url, metric)
+                   for url, metric in self.results.get_url_metrics().items()]
+        metrics.sort()
+        for url, metric in metrics:
+            write("\n- %s : " % url)
+            res = []
+            for name, value in metric.items():
+                res.append("%s: %s" % (name.replace('_', ' ').capitalize(),
+                           value))
+            write('%s\n' % ', '.join(res))
+
+        write('\n')
+        counters = self.results.get_counters()
+        if len(counters) > 0:
+            write("\nCustom metrics:")
+            for name, value in counters.items():
+                write("\n- %s : %s" % (name, value))
+
+            write('\n')
+
         sys.stdout.flush()
         sys.stderr.flush()
 

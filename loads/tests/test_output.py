@@ -39,6 +39,15 @@ class FakeTestResult(object):
         self.hits = []
         self.tests = {}
 
+    def get_url_metrics(self):
+        return {'http://foo': {'average_request_time': 1.234,
+                               'hits_success_rate': 23.},
+                'http://baz': {'average_request_time': 12.34,
+                               'hits_success_rate': 2.}}
+
+    def get_counters(self):
+        return {'boo': 123}
+
 
 class FakeOutput(object):
     name = 'fake'
@@ -51,22 +60,27 @@ class FakeOutput(object):
 
 class TestStdOutput(TestCase):
 
+    def setUp(self):
+        super(TestStdOutput, self).setUp()
+        self.oldstdout = sys.stdout
+        self.oldstderr = sys.stdout
+
+    def tearDown(self):
+        sys.stdout = self.oldstdout
+        sys.stderr = self.oldstderr
+        super(TestStdOutput, self).tearDown()
+
     def test_std(self):
-        old = sys.stdout
         sys.stdout = StringIO.StringIO()
 
         test_result = FakeTestResult()
-        try:
-            std = StdOutput(test_result, {'total': 10})
-            for i in range(11):
-                test_result.nb_finished_tests += 1
-                std.push('stopTest')
-            std.flush()
-        finally:
-            sys.stdout.seek(0)
-            out = sys.stdout.read()
-            sys.stdout = old
-
+        std = StdOutput(test_result, {'total': 10})
+        for i in range(11):
+            test_result.nb_finished_tests += 1
+            std.push('stopTest')
+        std.flush()
+        sys.stdout.seek(0)
+        out = sys.stdout.read()
         self.assertTrue('Hits: 10' in out)
         self.assertTrue('100%' in out, out)
 
@@ -79,16 +93,12 @@ class TestStdOutput(TestCase):
         self.assertEquals(2, std._print_tb.call_count)
 
     def test_tb_is_rendered(self):
-        old = sys.stderr
         sys.stderr = StringIO.StringIO()
-
         errors = iter([[get_tb(), ]])
         std = StdOutput(mock.sentinel.test_result, mock.sentinel.args)
         std._print_tb(errors)
         sys.stderr.seek(0)
         out = sys.stderr.read()
-        sys.stderr = old
-
         self.assertTrue('Exception' in out)
 
     def test_empty_tb_is_not_processed(self):
@@ -96,17 +106,46 @@ class TestStdOutput(TestCase):
         std._print_tb(iter(([], [])))
 
     def test_classnames_strings_are_used_when_available(self):
-        old = sys.stderr
         sys.stderr = StringIO.StringIO()
         std = StdOutput(mock.sentinel.test_result, mock.sentinel.args)
         std._print_tb(iter([[['foo', 'foobar', None]]]))
         sys.stderr.seek(0)
         out = sys.stderr.read()
-        sys.stderr = old
         self.assertTrue('foo: foobar' in out)
 
     def test_relative_value(self):
         self.assertEquals(output.std.get_screen_relative_value(23, 80), 10)
+
+    def test_url_output(self):
+        sys.stdout = StringIO.StringIO()
+        test_result = FakeTestResult()
+        std = StdOutput(test_result, {'total': 10})
+        for i in range(11):
+            test_result.nb_finished_tests += 1
+            std.push('stopTest')
+        std.flush()
+        sys.stdout.seek(0)
+        out = sys.stdout.read()
+        wanted = ['http://baz', 'Average request time: 12.34',
+                  'Hits success rate: 2.0', 'http://foo',
+                  'Average request time: 1.234',
+                  'Hits success rate: 23.0']
+        for item in wanted:
+            self.assertTrue(item in out)
+
+    def test_counter(self):
+        sys.stdout = StringIO.StringIO()
+        test_result = FakeTestResult()
+        std = StdOutput(test_result, {'total': 10})
+        for i in range(11):
+            test_result.nb_finished_tests += 1
+            std.push('stopTest')
+        std.flush()
+        sys.stdout.seek(0)
+        out = sys.stdout.read()
+        wanted = ['boo', '123']
+        for item in wanted:
+            self.assertTrue(item in out)
 
 
 class TestNullOutput(TestCase):
