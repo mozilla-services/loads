@@ -110,3 +110,20 @@ class TestBrokerDB(unittest2.TestCase):
         meta = self.db.get_metadata('1').items()
         meta.sort()
         self.assertEqual(meta, [('hey', 'ho'), ('one', 2)])
+
+    def test_get_urls(self):
+        def add_data():
+            for line in ONE_RUN:
+                data = dict(line)
+                data['run_id'] = '1'
+                self.db.add(data)
+                data['run_id'] = '2'
+                self.db.add(data)
+
+        self.loop.add_callback(add_data)
+        self.loop.add_callback(add_data)
+        self.loop.add_timeout(time.time() + .5, self.loop.stop)
+        self.loop.start()
+
+        urls = self.db.get_urls('1')
+        self.assertEqual(urls, {'http://127.0.0.1:9200/': 2})

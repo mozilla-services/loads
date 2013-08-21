@@ -54,14 +54,25 @@ class RedisDB(BaseDB):
 
         pipeline = self._redis.pipeline()
         pipeline.sadd('runs', run_id)
+
+        # adding counts
         counter = 'count:%s:%s' % (run_id, data_type)
         counters = 'counters:%s' % run_id
         if not self._redis.sismember(counters, counter):
             pipeline.sadd(counters, counter)
 
-        dumped = dumps(data, sort_keys=True)
-
         pipeline.incrby('count:%s:%s' % (run_id, data_type), size)
+
+        # adding urls
+        if 'url' in data:
+            url = data['url']
+            urls = 'urls:%s' % run_id
+            if not self._redis.sismember(urls, url):
+                pipeline.sadd(urls, url)
+            pipeline.incrby('url:%s:%s' % (run_id, url), 1)
+
+        # adding data
+        dumped = dumps(data, sort_keys=True)
         pipeline.lpush('data:%s' % run_id, dumped)
 
         # adding group by
@@ -79,6 +90,13 @@ class RedisDB(BaseDB):
 
     def close(self):
         pass
+
+    def get_urls(self, run_id):
+        urls = {}
+        for url in self._redis.smembers('urls:%s' % run_id):
+            urls[url] = int(self._redis.get('url:%s:%s' % (run_id, url)))
+
+        return urls
 
     def get_counts(self, run_id):
         counts = {}

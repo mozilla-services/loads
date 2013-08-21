@@ -31,6 +31,7 @@ class BrokerDB(BaseDB):
         self._counts = defaultdict(lambda: defaultdict(int))
         self._dirty = False
         self._metadata = defaultdict(dict)
+        self._urls = defaultdict(lambda: defaultdict(int))
 
     def update_metadata(self, run_id, **metadata):
         existing = self._metadata.get(run_id, {})
@@ -57,6 +58,9 @@ class BrokerDB(BaseDB):
         size = data.get('size', 1)
         self._counts[run_id][data_type] += size
         self._buffer[run_id].put(data)
+        if 'url' in data:
+            self._urls[run_id][data['url']] += 1
+
         self._dirty = True
 
     def flush(self):
@@ -96,10 +100,25 @@ class BrokerDB(BaseDB):
             with open(filename, 'w') as f:
                 json.dump(counts, f)
 
+            # urls
+            filename = os.path.join(self.directory, run_id + '-urls.json')
+            with open(filename, 'w') as f:
+                json.dump(self._urls[run_id], f)
+
         self._dirty = False
 
     def close(self):
         self._callback.stop()
+
+    def get_urls(self, run_id):
+        self.flush()
+        filename = os.path.join(self.directory, run_id + '-urls.json')
+
+        if not os.path.exists(filename):
+            return {}
+
+        with open(filename) as f:
+            return json.load(f)
 
     def get_counts(self, run_id):
         self.flush()

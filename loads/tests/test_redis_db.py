@@ -15,7 +15,8 @@ from loads.tests.test_python_db import ONE_RUN
 
 
 _KEYS = ['data:1', 'data:2', 'counters:1', 'counters:2', 'bcounters:1',
-         'bcounters:2', 'metadata:1', 'metadata:2']
+         'bcounters:2', 'metadata:1', 'metadata:2',
+         'urls:1', 'urls:2']
 
 
 for type_ in ('addSuccess', 'stopTestRun', 'stopTest',
@@ -39,6 +40,12 @@ class TestRedisDB(unittest2.TestCase):
 
         for md5 in self._redis.smembers('bcounters:2'):
             self._redis.delete('bcount:1:%s' % md5)
+
+        for url in self._redis.smembers('urls:2'):
+            self._redis.delete('url:2:%s' % url)
+
+        for url in self._redis.smembers('urls:1'):
+            self._redis.delete('url:1:%s' % url)
 
         for key in _KEYS:
             self._redis.delete(key)
@@ -104,3 +111,20 @@ class TestRedisDB(unittest2.TestCase):
         meta = self.db.get_metadata('1').items()
         meta.sort()
         self.assertEqual(meta, [('hey', 'ho'), ('one', 2)])
+
+    def test_get_urls(self):
+        def add_data():
+            for line in ONE_RUN:
+                data = dict(line)
+                data['run_id'] = '1'
+                self.db.add(data)
+                data['run_id'] = '2'
+                self.db.add(data)
+
+        self.loop.add_callback(add_data)
+        self.loop.add_callback(add_data)
+        self.loop.add_timeout(time.time() + .5, self.loop.stop)
+        self.loop.start()
+
+        urls = self.db.get_urls('1')
+        self.assertEqual(urls, {'http://127.0.0.1:9200/': 2})

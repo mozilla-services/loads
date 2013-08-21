@@ -195,6 +195,9 @@ class Client(object):
     def list_runs(self):
         return self.execute({'command': 'LISTRUNS'})
 
+    def get_urls(self, run_id):
+        return self.execute({'command': 'GET_URLS', 'run_id': run_id})
+
 
 class Pool(object):
     """The pool class manage several :class:`Client` instances
@@ -284,3 +287,7 @@ class Pool(object):
     def get_data(self, run_id):
         with self._connector(self.timeout) as connector:
             return connector.get_data(run_id)
+
+    def get_urls(self, run_id):
+        with self._connector(self.timeout) as connector:
+            return connector.get_urls(run_id)

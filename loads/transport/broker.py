@@ -183,6 +183,10 @@ class Broker(object):
             metadata = self.ctrl.get_metadata(data['run_id'])
             self._send_json(target, {'result': metadata})
             return
+        elif cmd == 'GET_URLS':
+            urls = self.ctrl.get_urls(data['run_id'])
+            self._send_json(target, {'result': urls})
+            return
 
         # other commands below this point are for agents
         if tentative == 3:

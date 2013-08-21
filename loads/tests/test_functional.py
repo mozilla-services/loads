@@ -159,8 +159,11 @@ class FunctionalTest(TestCase):
 
         client = Pool()
         runs = client.list_runs()
-        data = client.get_data(runs.keys()[0])
+        run_id = runs.keys()[0]
+        data = client.get_data(run_id)
         self.assertTrue(len(data) > 25, len(data))
+        self.assertEqual(client.get_urls(run_id),
+                         {u'http://127.0.0.1:9000/': 10})
 
     def test_distributed_run_duration(self):
         args = get_runner_args(
