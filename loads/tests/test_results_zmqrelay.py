@@ -2,7 +2,7 @@ from unittest2 import TestCase
 import traceback
 from StringIO import StringIO
 
-from loads.relay import ZMQRelay
+from loads.results import ZMQTestResult
 from loads.tests.support import get_tb, hush
 
 import mock
@@ -11,13 +11,13 @@ import mock
 class TestZmqRelay(TestCase):
 
     def setUp(self):
-        self._old_init_socket = ZMQRelay._init_socket
-        ZMQRelay._init_socket = mock.Mock()
-        self.relay = ZMQRelay(args={})
+        self._old_init_socket = ZMQTestResult._init_socket
+        ZMQTestResult._init_socket = mock.Mock()
+        self.relay = ZMQTestResult(args={})
         self.relay.push = mock.Mock()
 
     def tearDown(self):
-        ZMQRelay._init_socket = self._old_init_socket
+        ZMQTestResult._init_socket = self._old_init_socket
 
     def test_add_success(self):
         self.relay.addSuccess(mock.sentinel.test, mock.sentinel.loads_status)
@@ -95,6 +95,13 @@ class TestZmqRelay(TestCase):
         args = {'foo': 'bar', 'baz': 'foobar'}
         self.relay.add_hit(**args)
         self.relay.push.assert_called_with('add_hit', **args)
+
+    def test_incr_counter(self):
+        args = 'test', (1, 1, 1, 1), 'metric'
+        self.relay.incr_counter(*args)
+        wanted = {'test': 'test', 'loads_status': (1, 1, 1, 1),
+                  'agent_id': 'None', 'name': 'metric'}
+        self.relay.push.assert_called_with('incr_counter', **wanted)
 
     def test_add_observer(self):
         # The observer API should silently accept the observers we pass to it,

@@ -9,7 +9,7 @@ import datetime
 from loads.db import get_database
 from loads.transport.client import DEFAULT_TIMEOUT_MOVF
 from loads.util import logger, resolve_name
-from loads.test_result import LazyTestResult
+from loads.results import LazyTestResult
 
 
 class NotEnoughWorkersError(Exception):

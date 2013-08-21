@@ -1,8 +1,9 @@
-from loads.test_result import TestResult, Hit, Test
 from unittest2 import TestCase
 from datetime import datetime, timedelta
 
 from mock import Mock
+
+from loads.results.base import TestResult, Hit, Test
 
 
 TIME1 = datetime(2013, 5, 14, 0, 51, 8)

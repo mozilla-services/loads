@@ -3,7 +3,7 @@ import sys
 import traceback
 from collections import defaultdict
 
-from loads.relay import ZMQRelay
+from loads.results import ZMQTestResult
 
 
 def get_terminal_width(fd=1):
@@ -117,7 +117,7 @@ class StdOutput(object):
                 sys.stderr.write("    %s: %s" % (name, exc))
 
     def refresh(self, run_id=None):
-        if isinstance(self.results, ZMQRelay):
+        if isinstance(self.results, ZMQTestResult):
             return
         self._duration_progress(run_id)
 
