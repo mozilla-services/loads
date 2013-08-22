@@ -180,3 +180,26 @@ tests. To do so, change the `server_url` attribute of the app object::
     self.app.server_url = 'http://new-server'
 
 
+
+Adding custom metrics
+=====================
+
+You can use the **incr_counter** method in your test case to increment a counter.
+This is useful if you want to count the number of occurrences a particular event
+happens.
+
+In this example, the **tarek-was-there** counter will be incremented everytime
+the test is successful::
+
+    from loads.case import TestCase
+
+    class TestWebSite(TestCase):
+
+        def test_something(self):
+            self.assertTrue('tarek' in self.app.get('/'))
+            self.incr_counter('tarek-was-there')
+
+
+At the end of the test, you will be able to know how many times the counter
+was incremented.
+
