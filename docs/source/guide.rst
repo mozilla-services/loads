@@ -185,7 +185,7 @@ Adding custom metrics
 ---------------------
 
 You can use the **incr_counter** method in your test case to increment a counter.
-This is useful if you want to count the number of occurrences a particular event
+This is useful if you want to count the number of times a particular event
 happens.
 
 In this example, the **tarek-was-there** counter will be incremented everytime
