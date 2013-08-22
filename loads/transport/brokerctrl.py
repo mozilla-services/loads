@@ -9,7 +9,7 @@ import datetime
 from loads.db import get_database
 from loads.transport.client import DEFAULT_TIMEOUT_MOVF
 from loads.util import logger, resolve_name
-from loads.results import DynamicTestResult
+from loads.results import RemoteTestResult
 
 
 class NotEnoughWorkersError(Exception):
@@ -249,7 +249,7 @@ class BrokerController(object):
             return
 
         # rebuild the test result instance
-        test_result = DynamicTestResult(args=args)
+        test_result = RemoteTestResult(args=args)
         test_result.args = args
 
         data = self.get_data(run_id)

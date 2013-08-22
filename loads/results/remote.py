@@ -4,14 +4,14 @@ from loads.results import TestResult
 from loads.transport.client import Client
 
 
-class DynamicTestResult(TestResult):
+class RemoteTestResult(TestResult):
     """ This version does not store all data
 
-    DynamicTestResult interacts with the broker to fetch the data when its APIs
+    RemoteTestResult interacts with the broker to fetch the data when its APIs
     are called.
     """
     def __init__(self, config=None, args=None):
-        super(DynamicTestResult, self).__init__(config, args)
+        super(RemoteTestResult, self).__init__(config, args)
         self.counts = defaultdict(int)
         self.run_id = None
 
