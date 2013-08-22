@@ -182,7 +182,7 @@ tests. To do so, change the `server_url` attribute of the app object::
 
 
 Adding custom metrics
-=====================
+---------------------
 
 You can use the **incr_counter** method in your test case to increment a counter.
 This is useful if you want to count the number of occurrences a particular event
@@ -198,7 +198,6 @@ the test is successful::
         def test_something(self):
             self.assertTrue('tarek' in self.app.get('/'))
             self.incr_counter('tarek-was-there')
-
 
 At the end of the test, you will be able to know how many times the counter
 was incremented.
