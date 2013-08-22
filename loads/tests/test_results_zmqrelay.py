@@ -100,8 +100,8 @@ class TestZmqRelay(TestCase):
         args = 'test', (1, 1, 1, 1), 'metric'
         self.relay.incr_counter(*args)
         wanted = {'test': 'test', 'loads_status': (1, 1, 1, 1),
-                  'agent_id': 'None', 'name': 'metric'}
-        self.relay.push.assert_called_with('incr_counter', **wanted)
+                  'agent_id': 'None'}
+        self.relay.push.assert_called_with('metric', **wanted)
 
     def test_add_observer(self):
         # The observer API should silently accept the observers we pass to it,

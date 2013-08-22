@@ -23,9 +23,10 @@ class TestWebSite(TestCase):
         results = []
 
         def callback(m):
-            self.incr_counter('socket')
+            self.incr_counter('socket-callback')
             results.append(m.data)
 
+        self.incr_counter('socket-created')
         ws = self.create_ws('ws://localhost:9000/ws',
                             protocols=['chat', 'http-only'],
                             callback=callback)
@@ -37,6 +38,7 @@ class TestWebSite(TestCase):
         ws.receive()
         ws.send(two)
         ws.receive()
+        self.incr_counter('socket-sent')
 
         start = time.time()
         while one not in results and two not in results:

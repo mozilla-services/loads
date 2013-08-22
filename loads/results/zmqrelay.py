@@ -81,8 +81,8 @@ class ZMQTestResult(object):
         self.push('socket_message', size=size)
 
     def incr_counter(self, test, loads_status, name, agent_id=None):
-        self.push('incr_counter', test=str(test), loads_status=loads_status,
-                  name=name, agent_id=str(agent_id))
+        self.push(name, test=str(test), loads_status=loads_status,
+                  agent_id=str(agent_id))
 
     def push(self, data_type, **data):
         data.update({'data_type': data_type,
