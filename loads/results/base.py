@@ -22,7 +22,7 @@ class TestResult(object):
         self.config = config
         self.hits = []
         self.tests = {}
-        self.sockets = 0
+        self.opened_sockets = self.closed_sockets = 0
         self.socket_data_received = 0
         self.start_time = None
         self.stop_time = None
@@ -85,6 +85,10 @@ class TestResult(object):
     @property
     def nb_tests(self):
         return len(self.tests)
+
+    @property
+    def sockets(self):
+        return self.opened_sockets - self.closed_sockets
 
     def _get_hits(self, url=None, series=None):
         """Filters the hits with the given parameters.
@@ -256,10 +260,10 @@ class TestResult(object):
         self.hits.append(Hit(**data))
 
     def socket_open(self, agent_id=None):
-        self.sockets += 1
+        self.opened_sockets += 1
 
     def socket_close(self, agent_id=None):
-        self.sockets -= 1
+        self.closed_sockets += 1
 
     def socket_message(self, size, agent_id=None):
         self.socket_data_received += size
