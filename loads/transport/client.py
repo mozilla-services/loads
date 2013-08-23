@@ -284,6 +284,10 @@ class Pool(object):
         with self._connector(self.timeout) as connector:
             return connector.stop(agent_id)
 
+    def stop_run(self, run_id):
+        with self._connector(self.timeout) as connector:
+            return connector.stop_run(run_id)
+
     def get_data(self, run_id):
         with self._connector(self.timeout) as connector:
             return connector.get_data(run_id)
