@@ -271,7 +271,11 @@ class FunctionalTest(TestCase):
             if len(runs) == 0:
                 time.sleep(.1)
                 continue
-            data = self.client.get_data(runs.keys()[0])
+            try:
+                data = self.client.get_data(runs.keys()[0])
+            except Exception, e:
+                raise AssertionError(str(runs))
+
             if len(data) > 0:
                 break
             time.sleep(.1)
