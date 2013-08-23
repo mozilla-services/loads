@@ -81,13 +81,13 @@ class BrokerController(object):
             self._runs[agent_id] = run_id, when
 
     def reserve_agents(self, num, run_id):
-        if num > len(self._agents):
-            raise NotEnoughWorkersError('Not Enough agents')
-
         # we want to run the same command on several agents
         # provisionning them
         agents = []
         available = [wid for wid in self._agents if wid not in self._runs]
+
+        if num > len(available):
+            raise NotEnoughWorkersError('Not Enough agents')
 
         while len(agents) < num:
             agent_id = random.choice(available)
