@@ -127,43 +127,31 @@ class FunctionalTest(TestCase):
         nb_success = runner.test_result.nb_success
         assert nb_success > 2, nb_success
 
-    def _test_observer(self):
-        runner = LocalRunner(get_runner_args(
-            fqn='loads.examples.test_blog.TestWebSite.test_something',
-            #output=['null'],
-            users=1,
-            hits=5,
-            agents=1,
-            observer=['loads.tests.test_functional.observer',
-                      'loads.tests.test_functional.observer_fail']))
-
-        runner.execute()
-
-        # waiting for around 3 s max
-        wait = 0
-        while not os.path.exists(_RESULTS) and wait < 30:
-            time.sleep(.1)
-            wait += 1
-
-        with open(_RESULTS) as f:
-            data = f.readlines()
-
-        assert len(data) > 2000, data
-
     def test_distributed_run(self):
         start_runner(get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_something',
             agents=2,
             output=['null'],
+            observer=['loads.tests.test_functional.observer',
+                      'loads.tests.test_functional.observer_fail'],
             users=1, hits=5))
 
         client = Pool()
         runs = client.list_runs()
         run_id = runs.keys()[0]
+        client.stop_run(run_id)
+
+        # checking the data
         data = client.get_data(run_id)
         self.assertTrue(len(data) > 25, len(data))
         self.assertEqual(client.get_urls(run_id),
                          {u'http://127.0.0.1:9000/': 10})
+
+        # making sure the observer was called
+        with open(_RESULTS) as f:
+            data = f.readlines()
+
+        assert len(data) > 0, data
 
     def test_distributed_run_duration(self):
         args = get_runner_args(
@@ -273,7 +261,7 @@ class FunctionalTest(TestCase):
                 continue
             try:
                 data = self.client.get_data(runs.keys()[0])
-            except Exception, e:
+            except Exception:
                 raise AssertionError(str(runs))
 
             if len(data) > 0:

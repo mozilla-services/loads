@@ -37,8 +37,7 @@ class RemoteTestResult(TestResult):
         return TestResult.__getattribute__(self, name)
 
     def set_counts(self, counts):
-        for key, value in counts:
-            self.counts[key] = value
+        self.counts.update(counts)
 
     def _get_values(self, name):
         if name in 'failures':
