@@ -5,6 +5,7 @@ import traceback
 import json
 from collections import defaultdict
 import datetime
+from uuid import uuid4
 
 from loads.db import get_database
 from loads.transport.client import DEFAULT_TIMEOUT_MOVF
@@ -164,8 +165,8 @@ class BrokerController(object):
     def update_metadata(self, run_id, **metadata):
         self._db.update_metadata(run_id, **metadata)
 
-    def get_metadata(self, run_id):
-        return self._db.get_metadata(run_id)
+    def get_metadata(self, msg, data):
+        return self._db.get_metadata(data['run_id'])
 
     def save_data(self, agent_id, data):
         # we are saving data by agent ids.
@@ -178,13 +179,20 @@ class BrokerController(object):
             break
         self._db.add(data)
 
-    def get_urls(self, run_id, **kw):
-        return self._db.get_urls(run_id, **kw)
+    def get_urls(self, msg, data):
+        run_id = data['run_id']
+        return self._db.get_urls(run_id)
 
-    def get_data(self, run_id, **kw):
-        return list(self._db.get_data(run_id, **kw))
+    def get_data(self, msg, data):
+        # XXX stream ?
+        run_id = data['run_id']
+        options = {'data_type': data.get('data_type'),
+                   'groupby': data.get('groupby', False)}
 
-    def get_counts(self, run_id):
+        return list(self._db.get_data(run_id, **options))
+
+    def get_counts(self, msg, data):
+        run_id = data['run_id']
         return self._db.get_counts(run_id)
 
     def flush_db(self):
@@ -209,13 +217,44 @@ class BrokerController(object):
                     return False
         return True
 
-    def list_runs(self):
+    def run_command(self, cmd, msg, data):
+        cmd = cmd.lower()
+        target = msg[:-1]
+
+        # command for agents
+        if cmd.startswith('agent_'):
+            data['command'] = cmd[len('agent_'):].upper()
+            msg = msg[:2] + [json.dumps(data)] + msg[2:]
+            self.send_to_agent(str(data['agent_id']), msg)
+            return    # returning None because it's async
+
+        if not hasattr(self, cmd):
+            raise AttributeError(cmd)
+
+        # calling the command asynchronously
+        def _call():
+            try:
+                res = getattr(self, cmd)(msg, data)
+                res = {'result': res}
+                self.broker.send_json(target, res)
+            except Exception, e:
+                logger.debug('Failed')
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                exc = traceback.format_tb(exc_traceback)
+                exc.insert(0, str(e))
+                self.broker.send_json(target, {'error': exc})
+
+        self.loop.add_callback(_call)
+        return
+
+    def list_runs(self, msg, data):
         runs = defaultdict(list)
         for agent_id, (run_id, when) in self._runs.items():
             runs[run_id].append((agent_id, when))
         return runs
 
-    def stop_run(self, run_id, msg):
+    def stop_run(self, msg, data):
+        run_id = data['run_id']
         agents = []
 
         for agent_id, (_run_id, when) in self._runs.items():
@@ -242,7 +281,7 @@ class BrokerController(object):
         # we want to ping all observers that things are done
         # for a given test.
         # get the list of observers
-        args = self.get_metadata(run_id)
+        args = self._db.get_metadata(run_id)
         observers = _compute_observers(args.get('observer'))
 
         if observers == []:
@@ -252,12 +291,12 @@ class BrokerController(object):
         test_result = RemoteTestResult(args=args)
         test_result.args = args
 
-        data = self.get_data(run_id)
+        data = list(self._db.get_data(run_id))
         if len(data) > 0:
             started = datetime.datetime.utcfromtimestamp(data[0]['started'])
             test_result.startTestRun(when=started)
 
-        test_result.set_counts(self.get_counts(run_id))
+        test_result.set_counts(self._db.get_counts(run_id))
 
         # for each observer we call it with the test results
         for observer in observers:
@@ -266,3 +305,44 @@ class BrokerController(object):
             except Exception:
                 # the observer code failed. We want to log it
                 logger.error('%r failed' % observer)
+
+    #
+    # The run apis
+    #
+    def run(self, msg, data):
+        target = msg[:-1]
+
+        # create a unique id for this run
+        run_id = str(uuid4())
+
+        # get some agents
+        try:
+            agents = self.reserve_agents(data['agents'], run_id)
+        except NotEnoughWorkersError:
+            self.broker.send_json(target, {'error': 'Not enough agents'})
+            return
+
+        # send to every agent with the run_id and the receiver endpoint
+        data['run_id'] = run_id
+        data['args']['zmq_receiver'] = self.broker.endpoints['receiver']
+
+        # replace CTRL_RUN by RUN
+        data['command'] = 'RUN'
+
+        # rebuild the ZMQ message to pass to agents
+        msg[2] = json.dumps(data)
+
+        # notice when the test was started
+        data['args']['started'] = time.time()
+        data['args']['active'] = True
+
+        # save the tests metadata in the db
+        self.save_metadata(run_id, data['args'])
+        self.flush_db()
+
+        for agent_id in agents:
+            self.send_to_agent(agent_id, msg)
+
+        # tell the client which agents where selected.
+        res = {'result': {'agents': agents, 'run_id': run_id}}
+        self.broker.send_json(target, res)

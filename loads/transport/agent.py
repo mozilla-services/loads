@@ -164,11 +164,9 @@ class Agent(object):
         # we get the messages from the broker here
         data = message.data
         command = data['command']
+        logger.debug('Received command %s' % command)
 
         if command == 'RUN':
-            logger.debug('Received run.')
-            logger.debug(message.data)
-
             # XXX should be done in _run or at least asynchronously
             if 'files' in data:
                 self._copy_files(data)
@@ -207,7 +205,7 @@ class Agent(object):
             finally:
                 sys.exit(0)
 
-        raise NotImplementedError()
+        raise NotImplementedError(command)
 
     def _stop_runs(self, command):
         status = {}
@@ -252,6 +250,7 @@ class Agent(object):
             res = {'error': {'agent_id': self.pid, 'error': '\n'.join(exc)}}
             logger.error(res)
 
+        logger.debug('Sending back to broker %s' % res)
         try:
             self._backstream.send(res)
         except Exception:

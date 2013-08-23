@@ -6,8 +6,6 @@ import traceback
 import argparse
 import os
 import json
-from uuid import uuid4
-import time
 
 import zmq.green as zmq
 from zmq.green.eventloop import ioloop, zmqstream
@@ -23,7 +21,7 @@ from loads.transport.heartbeat import Heartbeat
 from loads.transport.exc import DuplicateBrokerError
 from loads.transport.client import DEFAULT_TIMEOUT_MOVF
 from loads.db import get_backends
-from loads.transport.brokerctrl import BrokerController, NotEnoughWorkersError
+from loads.transport.brokerctrl import BrokerController
 
 
 DEFAULT_IOTHREADS = 1
@@ -132,7 +130,7 @@ class Broker(object):
         elif msg[0] == 'UNREGISTER':
             self.ctrl.unregister_agent(msg[1])
 
-    def _send_json(self, target, data):
+    def send_json(self, target, data):
         try:
             self._frontstream.send_multipart(target + [json.dumps(data)])
         except ValueError:
@@ -140,112 +138,51 @@ class Broker(object):
             raise
 
     def _handle_recv_front(self, msg, tentative=0):
-        # front => back
-        # if the last part of the message is 'PING', we just PONG back
-        # this is used as a health check
+        """front => back
+
+        All commands starting with CTRL_ are sent to the controller.
+        """
         data = json.loads(msg[2])
         target = msg[:-1]
 
         cmd = data['command']
-        if cmd == 'PING':
+
+        # a command handled by the controller
+        if cmd.startswith('CTRL_'):
+            cmd = cmd[len('CTRL_'):]
+            logger.debug('calling %s' % cmd)
+            try:
+                res = self.ctrl.run_command(cmd, msg, data)
+            except Exception, e:
+                logger.debug('Failed')
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                exc = traceback.format_tb(exc_traceback)
+                exc.insert(0, str(e))
+                self.send_json(target, {'error': exc})
+            else:
+                # sending back a synchronous result if needed.
+                if res is not None:
+                    logger.debug('sync success %s' % str(res))
+                    self.send_json(target, res)
+                else:
+                    logger.debug('async success')
+
+        # misc commands
+        elif cmd == 'PING':
             res = {'result': {'pid': os.getpid(),
                               'endpoints': self.endpoints,
                               'agents': self.ctrl.agents}}
-            self._send_json(target, res)
-            return
-        elif cmd == 'LISTRUNS':
-            logger.debug('Asked for LISTRUNS')
-            res = {'result': self.ctrl.list_runs()}
-            logger.debug('Got %s' % str(res))
-            self._send_json(target, res)
-            return
-        elif cmd == 'STOPRUN':
-            run_id = data['run_id']
-            stopped_agents = self.ctrl.stop_run(run_id, msg)
-
-            # we give back the list of agents we stopped
-            res = {'result': stopped_agents}
-            self._send_json(target, res)
-            return
-        elif cmd == 'GET_DATA':
-            # we send back the data we have in the db
-            # XXX stream ?
-            db_data = self.ctrl.get_data(data['run_id'],
-                                         data_type=data.get('data_type'),
-                                         groupby=data.get('groupby', False))
-            self._send_json(target, {'result': db_data})
-            return
-        elif cmd == 'GET_COUNTS':
-            counts = self.ctrl.get_counts(data['run_id'])
-            self._send_json(target, {'result': counts})
-            return
-        elif cmd == 'GET_METADATA':
-            metadata = self.ctrl.get_metadata(data['run_id'])
-            self._send_json(target, {'result': metadata})
-            return
-        elif cmd == 'GET_URLS':
-            urls = self.ctrl.get_urls(data['run_id'])
-            self._send_json(target, {'result': urls})
-            return
-
-        # other commands below this point are for agents
-        if tentative == 3:
-            logger.debug('No agents')
-            self._send_json(target, {'error': 'No agent'})
-            return
-
-        # the msg tells us which agent to work with
-        data = json.loads(msg[2])   # XXX we need to unserialize here
-
-        # broker protocol
-        cmd = data['command']
-
-        if cmd == 'LIST':
+            self.send_json(target, res)
+        elif cmd == 'LIST':
             # we return a list of agent ids and their status
-            self._send_json(target, {'result': self.ctrl.agents})
+            self.send_json(target, {'result': self.ctrl.agents})
             return
-        elif cmd == 'RUN':
-            # create a unique id for this run
-            run_id = str(uuid4())
-
-            # get some agents
-            try:
-                agents = self.ctrl.reserve_agents(data['agents'], run_id)
-            except NotEnoughWorkersError:
-                self._send_json(target, {'error': 'Not enough agents'})
-                return
-
-            # send to every agent with the run_id and the receiver endpoint
-            data['run_id'] = run_id
-            data['args']['zmq_receiver'] = self.endpoints['receiver']
-
-            msg[2] = json.dumps(data)
-
-            # notice when the test was started
-            data['args']['started'] = time.time()
-            data['args']['active'] = True
-
-            # save the tests metadata in the db
-            self.ctrl.save_metadata(run_id, data['args'])
-            self.ctrl.flush_db()
-
-            for agent_id in agents:
-                self.ctrl.send_to_agent(agent_id, msg)
-
-            # tell the client which agents where selected.
-            res = {'result': {'agents': agents, 'run_id': run_id}}
-            self._send_json(target, res)
-            return
-
-        if 'agent_id' not in data:
-            raise NotImplementedError('DEAD CODE?')
         else:
-            agent_id = str(data['agent_id'])
-            self.ctrl.send_to_agent(agent_id, msg)
+            self.send_json(target, {'error': 'unknown command %s' % cmd})
 
     def _handle_recv_back(self, msg):
         # back => front
-        #logger.debug('front <- back [%s]' % msg[0])
+        logger.debug('front <- back [%s]' % msg)
         # let's remove the agent id and track the time it took
         agent_id = msg[0]
         msg = msg[1:]
@@ -268,6 +205,7 @@ class Broker(object):
 
             return
 
+        logger.error('Sending back to caller %s' % msg)
         # other things are pass-through
         try:
             self._frontstream.send_multipart(msg)

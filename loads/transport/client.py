@@ -81,6 +81,7 @@ class Client(object):
 
         if 'error' in res:
             raise ValueError(res['error'])
+
         return res['result']
 
     def close(self):
@@ -131,7 +132,7 @@ class Client(object):
         # let's copy over some files if we need
         includes = args.get('include_file', [])
 
-        cmd = {'command': 'RUN',
+        cmd = {'command': 'CTRL_RUN',
                'async': async,
                'agents': agents_needed,
                'args': args}
@@ -165,38 +166,43 @@ class Client(object):
         return self.execute({'command': 'PING'}, timeout=timeout,
                             log_exceptions=log_exceptions)
 
-    def get_data(self, run_id, **kw):
-        cmd = {'command': 'GET_DATA', 'run_id': run_id}
-        cmd.update(kw)
-        return self.execute(cmd)
+    def list(self):
+        return self.execute({'command': 'LIST'})
+
+    #
+    # commands handled by the broker controller.
+    #
+    def list_runs(self):
+        return self.execute({'command': 'CTRL_LIST_RUNS'})
+
+    def get_urls(self, run_id):
+        return self.execute({'command': 'CTRL_GET_URLS', 'run_id': run_id})
+
+    def stop_run(self, run_id):
+        return self.execute({'command': 'CTRL_STOP_RUN', 'run_id': run_id})
 
     def get_counts(self, run_id):
-        res = self.execute({'command': 'GET_COUNTS', 'run_id': run_id})
+        res = self.execute({'command': 'CTRL_GET_COUNTS', 'run_id': run_id})
         # XXX why ?
         if isinstance(res, dict):
             return res.items()
         return res
 
     def get_metadata(self, run_id):
-        return self.execute({'command': 'GET_METADATA', 'run_id': run_id})
+        return self.execute({'command': 'CTRL_GET_METADATA', 'run_id': run_id})
+
+    def get_data(self, run_id, **kw):
+        cmd = {'command': 'CTRL_GET_DATA', 'run_id': run_id}
+        cmd.update(kw)
+        return self.execute(cmd)
 
     def status(self, agent_id):
-        return self.execute({'command': 'STATUS', 'agent_id': agent_id})
+        return self.execute({'command': 'CTRL_AGENT_STATUS',
+                             'agent_id': agent_id})
 
     def stop(self, agent_id):
-        return self.execute({'command': 'STOP', 'agent_id': agent_id})
-
-    def stop_run(self, run_id):
-        return self.execute({'command': 'STOPRUN', 'run_id': run_id})
-
-    def list(self):
-        return self.execute({'command': 'LIST'})
-
-    def list_runs(self):
-        return self.execute({'command': 'LISTRUNS'})
-
-    def get_urls(self, run_id):
-        return self.execute({'command': 'GET_URLS', 'run_id': run_id})
+        return self.execute({'command': 'CTRL_AGENT_STOP',
+                             'agent_id': agent_id})
 
 
 class Pool(object):

@@ -64,12 +64,15 @@ class TestBrokerController(unittest2.TestCase):
         self.ctrl.reserve_agents(1, 'run')
         self.ctrl.reserve_agents(2, 'run2')
 
-        runs = self.ctrl.list_runs().keys()
+        runs = self.ctrl.list_runs(None, None).keys()
         runs.sort()
         self.assertEqual(['run', 'run2'], runs)
-        self.ctrl.stop_run('run2', ['somemsg'])
+        self.ctrl.stop_run(['somemsg'], {'run_id': 'run'})
 
-        self.assertEqual(len(Stream.msgs), 5)
+        # make sure the STOP cmd made it through
+        msgs = [msg for msg in Stream.msgs if '_STATUS' not in msg[-1]]
+        self.assertEqual(msgs[0][-1], '{"command": "STOP"}')
+        self.assertEqual(len(msgs), 1)
 
     def test_db_access(self):
         self.ctrl.register_agent('1')
@@ -78,7 +81,8 @@ class TestBrokerController(unittest2.TestCase):
         # metadata
         data = {'some': 'data'}
         self.ctrl.save_metadata('run', data)
-        self.assertEqual(self.ctrl.get_metadata('run'), data)
+        self.assertEqual(self.ctrl.get_metadata(None, {'run_id': 'run'}),
+                         data)
 
         # save data by agent
         self.ctrl.save_data('1', data)
@@ -87,8 +91,8 @@ class TestBrokerController(unittest2.TestCase):
         # we get extra run_id key, set for us
         self.assertEqual(data['run_id'], 'run')
 
-        back = self.ctrl.get_data('run')
+        back = self.ctrl.get_data(None, {'run_id': 'run'})
         self.assertTrue(back[0]['some'], 'data')
 
-        back2 = self.ctrl.get_data('run')
+        back2 = self.ctrl.get_data(None, {'run_id': 'run'})
         self.assertEqual(back, back2)
