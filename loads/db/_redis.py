@@ -109,17 +109,31 @@ class RedisDB(BaseDB):
     def get_runs(self):
         return self._redis.smembers('runs')
 
-    def get_data(self, run_id, data_type=None, groupby=False):
+    def get_data(self, run_id, data_type=None, groupby=False, start=None,
+                 size=None):
         key = 'data:%s' % run_id
         len = self._redis.llen(key)
         if len == 0:
             raise StopIteration()
+
         if not groupby:
-            for index in range(len):
+            if start is None:
+                start = 0
+
+            if size is None:
+                end = len
+            else:
+                end = start + size
+
+            for index in range(start, end):
                 data = loads(self._redis.lindex(key, index))
                 if data_type is None or data_type == data.get('data_type'):
                     yield data
         else:
+            # XXX not sure how to batch this yet
+            if start is not None or size is not None:
+                raise NotImplementedError()
+
             bcounters = 'bcounters:%s' % run_id
             for hash in self._redis.smembers(bcounters):
                 data = loads(self._redis.get('bvalue:%s:%s' % (run_id, hash)))

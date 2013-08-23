@@ -82,6 +82,16 @@ class TestBrokerDB(unittest2.TestCase):
                       'startTest', 'startTestRun', 'add_hit'):
             self.assertEqual(dict(counts)[type_], 2)
 
+        # we got 12 lines, let's try batching
+        batch = list(self.db.get_data('1', size=2))
+        self.assertEqual(len(batch), 2)
+
+        batch = list(self.db.get_data('1', start=2))
+        self.assertEqual(len(batch), 10)
+
+        batch = list(self.db.get_data('1', start=2, size=5))
+        self.assertEqual(len(batch), 5)
+
         data3 = list(self.db.get_data('1'))
         data3.sort()
         self.assertEqual(data3, data)

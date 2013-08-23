@@ -135,35 +135,54 @@ class BrokerDB(BaseDB):
                     for path in os.listdir(self.directory)
                     if path.endswith('-db.json')])
 
-    def get_data(self, run_id, data_type=None, groupby=False):
+    def get_data(self, run_id, data_type=None, groupby=False, start=None,
+                 size=None):
+        if size is not None and start is None:
+            start = 0
+
         self.flush()
         filename = os.path.join(self.directory, run_id + '-db.json')
 
         if not os.path.exists(filename):
             raise StopIteration()
 
+        def _filtered(data):
+            return (data_type is not None and
+                    data_type != data.get('data_type'))
+
+        def _batch():
+            if start is not None and size is not None:
+                end = start + size
+            else:
+                end = None
+
+            # XXX suboptimal iterates until start is reached.
+            sent = 0
+
+            with open(filename) as f:
+                for current, line in enumerate(iter(f.readline, '')):
+                    data = json.loads(line)
+                    if _filtered(data):
+                        continue
+                    if start is not None and current < start:
+                        continue
+                    elif end is not None and current > end or sent == size:
+                        raise StopIteration()
+                    yield data, line
+                    sent += 1
+
         if not groupby:
-            with open(filename) as f:
-                for line in f:
-                    data = json.loads(line)
-                    filtered = (data_type is not None and
-                                data_type != data.get('data_type'))
-                    if filtered:
-                        continue
-                    yield data
+            for data, line in _batch():
+                yield data
         else:
-            grouped = defaultdict(int)
-            with open(filename) as f:
-                for line in f:
-                    data = json.loads(line)
-                    filtered = (data_type is not None and
-                                data_type != data.get('data_type'))
-                    if filtered:
-                        continue
+            grouped = dict()
 
-                    grouped[line] += 1
+            for data, line in _batch():
+                if line in grouped:
+                    grouped[line] = grouped[line][0] + 1, data
+                else:
+                    grouped[line] = 1, data
 
-            for data, count in grouped.items():
-                data = json.loads(data)
+            for count, data in grouped.values():
                 data['count'] = count
                 yield data
