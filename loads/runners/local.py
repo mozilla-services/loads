@@ -160,6 +160,8 @@ class LocalRunner(object):
 
         if self.duration is None:
             for hit in self.hits:
+                gevent.sleep(0)
+
                 for current_hit in range(hit):
                     loads_status = self.args.get('loads_status',
                                                  (hit, user, current_hit + 1,
@@ -242,8 +244,11 @@ class LocalRunner(object):
                 if self.stop:
                     break
 
-                group = [gevent.spawn(self._run, i, user)
-                         for i in range(user)]
+                group = []
+                for i in range(user):
+                    group.append(gevent.spawn(self._run, i, user))
+                    gevent.sleep(0)
+
                 gevent.joinall(group)
 
             gevent.sleep(0)
