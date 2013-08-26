@@ -61,17 +61,36 @@ class StdOutput(object):
             self._print_tb(self.results.failures)
             write('\n')
 
-        write("\nStats by URLs:")
+        avt = 'average_request_time'
+
+        def _metric(item1, item2):
+            return - cmp(item1[-1][avt], item2[-1][avt])
+
         metrics = [(url, metric)
                    for url, metric in self.results.get_url_metrics().items()]
-        metrics.sort()
-        for url, metric in metrics:
-            write("\n- %s : " % url)
-            res = []
-            for name, value in metric.items():
-                res.append("%s: %s" % (name.replace('_', ' ').capitalize(),
-                           value))
-            write('%s\n' % ', '.join(res))
+        metrics.sort(_metric)
+
+        if len(metrics) > 0:
+            slowest = metrics[0]
+            write("\nSlowest URL: %s \tAverage Request Time: %s" %
+                  (slowest[0], slowest[1][avt]))
+
+            if len(metrics) > 10:
+                write("\n\nStats by URLs (10 slowests):")
+                metrics = metrics[:10]
+            else:
+                write("\n\nStats by URLs:")
+
+            longer_url = max([len(url) for url, metric in metrics])
+
+            for url, metric in metrics:
+                spacing = (longer_url - len(url)) * ' '
+                write("\n- %s%s\t" % (url, spacing))
+                res = []
+                for name, value in metric.items():
+                    res.append("%s: %s" % (name.replace('_', ' ').capitalize(),
+                                           value))
+                write('%s' % '\t'.join(res))
 
         write('\n')
         counters = self.results.get_counters()
