@@ -186,8 +186,19 @@ class BrokerController(object):
     def get_data(self, msg, data):
         # XXX stream ?
         run_id = data['run_id']
+
+        start = data.get('start')
+        if start is not None:
+            start = int(start)
+
+        size = data.get('size')
+        if size is not size:
+            size = int(size)
+
         options = {'data_type': data.get('data_type'),
-                   'groupby': data.get('groupby', False)}
+                   'groupby': data.get('groupby', False),
+                   'start': start,
+                   'size': size}
 
         return list(self._db.get_data(run_id, **options))
 
