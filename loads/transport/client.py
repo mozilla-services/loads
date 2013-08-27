@@ -291,3 +291,7 @@ class Pool(object):
     def get_urls(self, run_id):
         with self._connector(self.timeout) as connector:
             return connector.get_urls(run_id)
+
+    def get_counts(self, run_id):
+        with self._connector(self.timeout) as connector:
+            return connector.get_counts(run_id)

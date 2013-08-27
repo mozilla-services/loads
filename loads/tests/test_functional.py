@@ -164,6 +164,9 @@ class FunctionalTest(TestCase):
         self.assertTrue(len(data) > 25, len(data))
         self.assertEqual(client.get_urls(run_id),
                          {u'http://127.0.0.1:9000/': 10})
+        counts = dict(client.get_counts(run_id))
+        self.assertEquals(counts['socket_open'], 10)
+        self.assertEquals(counts['socket_close'], 10)
 
     def test_distributed_run_duration(self):
         args = get_runner_args(
