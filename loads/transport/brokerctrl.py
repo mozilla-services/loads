@@ -287,7 +287,8 @@ class BrokerController(object):
     #
     def test_ended(self, run_id):
         # first of all, we want to mark it done in the DB
-        self.update_metadata(run_id, stopped=True, active=False)
+        self.update_metadata(run_id, stopped=True, active=False,
+                             ended=time.time())
 
         # we want to ping all observers that things are done
         # for a given test.
