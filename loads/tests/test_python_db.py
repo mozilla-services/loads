@@ -135,5 +135,6 @@ class TestBrokerDB(unittest2.TestCase):
         self.loop.add_timeout(time.time() + .5, self.loop.stop)
         self.loop.start()
 
+        self.assertTrue(self.db.ping())
         urls = self.db.get_urls('1')
         self.assertEqual(urls, {'http://127.0.0.1:9200/': 2})

@@ -52,6 +52,7 @@ class TestRedisDB(unittest2.TestCase):
 
     def test_brokerdb(self):
         self.assertEqual(list(self.db.get_data('swwqqsw')), [])
+        self.assertTrue(self.db.ping())
 
         def add_data():
             for line in ONE_RUN:
