@@ -213,6 +213,24 @@ class TestTestResult(TestCase):
         self.assertEqual(test_result.get_counter('bacon', 'xxxx'), 0)
         self.assertEqual(test_result.get_counter('xxx', 'xxxx'), 0)
 
+    def test_socket_count(self):
+        test_result = TestResult()
+
+        # Open 5 sockets
+        for _ in range(5):
+            test_result.socket_open()
+
+        self.assertEquals(test_result.sockets, 5)
+        self.assertEquals(test_result.opened_sockets, 5)
+        self.assertEquals(test_result.closed_sockets, 0)
+
+        for _ in range(4):
+            test_result.socket_close()
+
+        self.assertEquals(test_result.sockets, 1)
+        self.assertEquals(test_result.opened_sockets, 5)
+        self.assertEquals(test_result.closed_sockets, 4)
+
 
 class TestHits(TestCase):
 
