@@ -52,7 +52,7 @@ Or build **Loads** from the Git repo::
 This will compile Gevent 1.0rc2 using Cython, and all the dependencies
 required by Loads - into a local virtualenv.
 
-That's it. You should then find the **load-runner** command
+That's it. You should then find the **loads-runner** command
 in your bin directory.
 
 Distributed
