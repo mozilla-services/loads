@@ -33,6 +33,9 @@ class BrokerDB(BaseDB):
         self._metadata = defaultdict(dict)
         self._urls = defaultdict(lambda: defaultdict(int))
 
+    def ping(self):
+        return True
+
     def update_metadata(self, run_id, **metadata):
         existing = self._metadata.get(run_id, {})
         existing.update(metadata)

@@ -20,6 +20,13 @@ class RedisDB(BaseDB):
         self._redis = redis.StrictRedis(host=self.host, port=self.port,
                                         db=0)
 
+    def ping(self):
+        try:
+            self._redis.ping()
+            return True
+        except redis.ConnectionError:
+            return False
+
     #
     # APIs
     #
