@@ -100,6 +100,7 @@ class TestStdOutput(TestCase):
         sys.stderr.seek(0)
         out = sys.stderr.read()
         self.assertTrue('Exception' in out)
+        self.assertTrue('Error Message' in out)
 
     def test_empty_tb_is_not_processed(self):
         std = StdOutput(mock.sentinel.test_result, mock.sentinel.args)
