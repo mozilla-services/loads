@@ -63,18 +63,6 @@ class ExternalRunner(LocalRunner):
         self._receiver_socket = (self.args.get('zmq_receiver')
                                  or DEFAULT_EXTERNAL_RUNNER_RECEIVER)
 
-        if not self.slave:
-            # Set-up a receiver in case we are not in slave mode (because we
-            # then need to build a TestResult object from the data we receive)
-            # We need to create a receiver socket for the needs of the tests
-            self.context = zmq.Context()
-
-            self._receiver = self.context.socket(zmq.PULL)
-            self._receiver.bind(self._receiver_socket)
-
-            self._rcvstream = zmqstream.ZMQStream(self._receiver, self._loop)
-            self._rcvstream.on_recv(self._recv_result)
-
     def _initialize(self):
         self._current_run = 0
         self._run_started_at = None
@@ -176,6 +164,16 @@ class ExternalRunner(LocalRunner):
     def _execute(self):
         """Spawn all the tests needed and wait for them to finish.
         """
+        # If we're not in slave mode, we need to receive the data ourself
+        # and build up a TestResult object.  In slave mode the spawned procs
+        # will report directly to the broker.
+        if not self.slave:
+            self.context = zmq.Context()
+            self._receiver = self.context.socket(zmq.PULL)
+            self._receiver.bind(self._receiver_socket)
+            self._rcvstream = zmqstream.ZMQStream(self._receiver, self._loop)
+            self._rcvstream.on_recv(self._recv_result)
+
         self._prepare_filesystem()
 
         self._run_started_at = datetime.datetime.now()
@@ -186,6 +184,10 @@ class ExternalRunner(LocalRunner):
             self.spawn_external_runner()
 
         self._loop.start()
+
+        if not self.slave:
+            self._receiver.close()
+            self.context.destroy()
 
     def spawn_external_runner(self):
         """Spawns an external runner with the given arguments.
