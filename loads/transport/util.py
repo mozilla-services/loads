@@ -108,7 +108,7 @@ def decode_params(params):
     """
     output_dict = {}
     for items in params.split('|'):
-        key, value = items.split(':')
+        key, value = items.split(':', 1)
         output_dict[key] = value
     return output_dict
 
