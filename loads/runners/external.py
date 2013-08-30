@@ -32,7 +32,6 @@ class ExternalRunner(LocalRunner):
         # to distinguish from the others when sending the loads_status
         # information.
         self._initialize()
-        self._terminated_processes = []
         self._current_step = 0
 
         timeout = args.get('process_timeout', 2)  # Default timeout: 2s
@@ -68,6 +67,7 @@ class ExternalRunner(LocalRunner):
         self._run_started_at = None
         self._terminated = None
         self._processes = []
+        self._processes_pending_cleanup = []
 
     @property
     def step_hits(self):
@@ -91,8 +91,22 @@ class ExternalRunner(LocalRunner):
         """When all the processes are finished or the duration of the test is
         more than the wanted duration, stop the loop and exit.
         """
-        # Get the list of processes that have finished
-        terminated = [p for p in self._processes if p.poll() is not None]
+        # Poll procs that are pending cleanup, so we don't leave zombies.
+        pending = []
+        for proc in self._processes_pending_cleanup:
+            if proc.poll() is None:
+                pending.append(proc)
+        self._processes_pending_cleanup = pending
+
+        # Find which processes have terminated, which are still active.
+        active = []
+        terminated = []
+        for proc in self._processes:
+            if proc.poll() is None:
+                active.append(proc)
+            else:
+                terminated.append(proc)
+        self._processes = active
 
         now = datetime.datetime.now()
         if self._duration is not None:
@@ -106,11 +120,11 @@ class ExternalRunner(LocalRunner):
                 if self._terminated is None:
                     self._terminated = now
 
-                if (len(terminated) == len(self._processes)
+                if (len(self._processes) == 0
                         or now > self._terminated + self._timeout):
                     self._start_next_step()
 
-        elif (len(terminated) == len(self._processes)
+        elif (len(self._processes) == 0
               or now > self._run_started_at + self._timeout):
             # All the tests are finished, let's exit.
             self._start_next_step()
@@ -122,10 +136,12 @@ class ExternalRunner(LocalRunner):
 
     def _start_next_step(self):
         # Reap any outstanding procs from the previous step.
+        # We will poll them for successful termination at next proc check.
         for proc in self._processes:
             if proc.poll() is None:
                 proc.terminate()
-        self._terminated_processes.extend(self._processes)
+                self._processes_pending_cleanup.append(proc)
+        self._processes = []
         # Reinitialize some variables and start a new run, or exit.
         if self._current_step + 1 >= self._nb_steps:
             self.stop_run()
