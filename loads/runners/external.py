@@ -134,11 +134,15 @@ class ExternalRunner(LocalRunner):
             self.refresh()
 
     def _start_next_step(self):
+        # Reap any outstanding procs from the previous step.
+        for proc in self._processes:
+            if proc.poll() is None:
+                proc.terminate()
+        self._terminated_processes.extend(self._processes)
         # Reinitialize some variables and start a new run, or exit.
         if self._current_step + 1 >= self._nb_steps:
             self.stop_run()
         else:
-            self._terminated_processes.extend(self._processes)
             self._initialize()
             self._run_started_at = datetime.datetime.now()
             self._current_step += 1
