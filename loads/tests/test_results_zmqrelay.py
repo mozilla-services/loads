@@ -40,7 +40,9 @@ class TestZmqRelay(TestCase):
         self.relay.push.assert_called_with(
             'addFailure',
             test='sentinel.test',
-            exc_info=("<type 'exceptions.Exception'>", '', string_tb.read()),
+            exc_info=(
+                "<type 'exceptions.Exception'>",
+                'Error message', string_tb.read()),
             loads_status=mock.sentinel.loads_status)
 
     @hush
@@ -56,7 +58,9 @@ class TestZmqRelay(TestCase):
         self.relay.push.assert_called_with(
             'addError',
             test='sentinel.test',
-            exc_info=("<type 'exceptions.Exception'>", '', string_tb.read()),
+            exc_info=(
+                "<type 'exceptions.Exception'>",
+                'Error message', string_tb.read()),
             loads_status=mock.sentinel.loads_status)
 
     def test_start_test(self):
