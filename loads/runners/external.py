@@ -103,12 +103,11 @@ class ExternalRunner(LocalRunner):
                 return
             else:
                 # Wait for all the tests to finish and exit
-                if self._terminated is not None:
+                if self._terminated is None:
                     self._terminated = now
 
                 if (len(terminated) == len(self._processes)
-                        or self._terminated is not None
-                        and self._terminated + self._timeout > now):
+                        or now > self._terminated + self._timeout):
                     self._start_next_step()
 
         elif (len(terminated) == len(self._processes)
