@@ -102,6 +102,16 @@ class FunctionalTest(TestCase):
             fqn='loads.examples.test_blog.TestWebSite.test_something',
             output=['null']))
 
+    def test_file_output(self):
+        fqn = 'loads.examples.test_blog.TestWebSite.test_something'
+        args = get_runner_args(fqn=fqn, output=['file'])
+        fd, args['output_file_filename'] = tempfile.mkstemp()
+        os.close(fd)
+        try:
+            start_runner(args)
+        finally:
+            os.remove(args['output_file_filename'])
+
     def test_normal_run_with_users_and_hits(self):
         start_runner(get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_something',
