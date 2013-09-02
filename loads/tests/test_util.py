@@ -96,6 +96,12 @@ class TestUtil(unittest2.TestCase):
         items.sort()
         self.assertEqual(items, [('one', '1'), ('two', '2')])
 
+    def test_decode_multiple_colons(self):
+        params = decode_params('one:tcp://foo|two:tcp://blah')
+        items = params.items()
+        items.sort()
+        self.assertEqual(items, [('one', 'tcp://foo'), ('two', 'tcp://blah')])
+
     def test_dump(self):
         dump = dump_stacks()
         num = len([l for l in dump if l.strip() == 'Greenlet'])
