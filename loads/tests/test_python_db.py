@@ -111,6 +111,10 @@ class TestBrokerDB(unittest2.TestCase):
         self.assertTrue('1' in self.db.get_runs())
         self.assertTrue('2' in self.db.get_runs())
 
+        # len(data) < asked ize
+        batch = list(self.db.get_data('1', start=2, size=5000))
+        self.assertEqual(len(batch), 10)
+
     def test_metadata(self):
         self.assertEqual(self.db.get_metadata('1'), {})
         self.db.save_metadata('1', {'hey': 'ho'})

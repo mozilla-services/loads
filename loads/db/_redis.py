@@ -131,6 +131,8 @@ class RedisDB(BaseDB):
                 end = len
             else:
                 end = start + size
+                if end > len:
+                    end = len
 
             for index in range(start, end):
                 data = loads(self._redis.lindex(key, index))
