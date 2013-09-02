@@ -25,7 +25,10 @@ class ExternalRunner(LocalRunner):
     the runs are finished or not. Once all the runs are done, it exits.
     """
 
-    def __init__(self, args, loop=None):
+    def __init__(self, args=None, loop=None):
+        if args is None:
+            args = {}
+
         super(ExternalRunner, self).__init__(args)
 
         # there is a need to count the number of runs so each of them is able
