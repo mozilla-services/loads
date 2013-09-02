@@ -25,7 +25,10 @@ class ExternalRunner(LocalRunner):
     the runs are finished or not. Once all the runs are done, it exits.
     """
 
-    def __init__(self, args, loop=None):
+    def __init__(self, args=None, loop=None):
+        if args is None:
+            args = {}
+
         super(ExternalRunner, self).__init__(args)
 
         # there is a need to count the number of runs so each of them is able
@@ -160,21 +163,21 @@ class ExternalRunner(LocalRunner):
         messages are sent directly to the broker).
         """
 
-        def _process_result(msg):
-            data = json.loads(msg[0])
-            data_type = data.pop('data_type')
-
-            # run_id is only used when in distributed mode, which isn't the
-            # case here, so we get rid of it.
-            data.pop('run_id')
-
-            if hasattr(self.test_result, data_type):
-                method = getattr(self.test_result, data_type)
-                method(**data)
-
         # Actually add a callback to process the results to avoid blocking the
         # receival of messages.
-        self._loop.add_callback(_process_result, msg)
+        self._loop.add_callback(self._process_result, msg)
+
+    def _process_result(self, msg):
+        data = json.loads(msg[0])
+        data_type = data.pop('data_type')
+
+        # run_id is only used when in distributed mode, which isn't the
+        # case here, so we get rid of it.
+        data.pop('run_id')
+
+        if hasattr(self.test_result, data_type):
+            method = getattr(self.test_result, data_type)
+            method(**data)
 
     def _execute(self):
         """Spawn all the tests needed and wait for them to finish.
