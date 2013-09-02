@@ -3,7 +3,15 @@ import datetime
 
 import mock
 
-from loads.runners import ExternalRunner
+from loads.runners import ExternalRunner as ExternalRunner_
+
+
+class ExternalRunner(ExternalRunner_):
+    """Subclass the ExternalRunner to be sure we don't use the std output in
+    the tests unless asked especially to do so."""
+
+    def register_output(self, output_name):
+        pass
 
 
 class FakeProcess(object):
