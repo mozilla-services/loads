@@ -93,7 +93,7 @@ def get_runner_args(fqn, users=1, hits=1, duration=None,
 def get_tb():
     """runs an exception and return the traceback information"""
     try:
-        raise Exception
+        raise Exception('Error message')
     except Exception:
         return sys.exc_info()
 

@@ -125,6 +125,7 @@ class StdOutput(object):
 
         for count, name, exc, tb in errors[:3]:
             sys.stderr.write("%d occurrences of: \n" % count)
+            sys.stderr.write("    %s: %s" % (name, exc))
 
             if tb not in (None, ''):   # XXX fix this
                 if isinstance(tb, basestring):
@@ -132,8 +133,6 @@ class StdOutput(object):
                 else:
                     sys.stderr.write("    Traceback: \n")
                     traceback.print_tb(tb, file=sys.stderr)
-            else:
-                sys.stderr.write("    %s: %s" % (name, exc))
 
     def refresh(self, run_id=None):
         if isinstance(self.results, ZMQTestResult):
