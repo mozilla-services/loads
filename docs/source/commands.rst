@@ -125,6 +125,10 @@ are other options that may be useful to run your test.
 - **--purge-broker**: use this flag to stop all
   active runs.
 
+- **--health-check**: use this flag to run an
+  empty test on every agent. This option is useful
+  to verify that every agent is up and responsive.
+
 - **--observer**: you can point a fully qualified name
   that will be called from the broker when the test
   is over. *Loads* provides built-in observers: *irc*

@@ -10,6 +10,9 @@ class TestWebSite(TestCase):
 
     server_url = 'http://blog.ziade.org'
 
+    def test_health(self):
+        self.incr_counter('health-check')
+
     def test_public(self):
         self.session.get('http://google.com')
 

@@ -158,6 +158,9 @@ def main(sysargs=None):
                         help='Pings the broker to get info, display it and '
                              'exits.')
 
+    parser.add_argument('--check-cluster', action='store_true', default=False,
+                        help='Runs a test on all agents then exits.')
+
     parser.add_argument('--purge-broker', action='store_true', default=False,
                         help='Stops all runs on the broker and exits.')
 
@@ -251,6 +254,14 @@ def main(sysargs=None):
             print('Purged.')
 
         sys.exit(0)
+
+    if args.check_cluster:
+        args.fqn = 'loads.examples.test_blog.TestWebSite.test_health'
+        client = Client(args.broker)
+        res = client.ping()
+        args.agents = len(res['agents'])
+        args.hits = '1'
+        print('Running a healt check on all %d agents' % args.agents)
 
     if args.fqn is None and not args.attach:
         parser.print_usage()
