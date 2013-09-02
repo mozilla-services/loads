@@ -13,7 +13,7 @@ class FileOutput(object):
         self.encoder = DateTimeJSONEncoder()
         self.fd = open(self.filename, 'a+')
 
-    def push(self, method, **data):
+    def push(self, method, *args, **data):
         self.fd.write(' - '.join((method, self.encoder.encode(data))))
 
     def flush(self):
