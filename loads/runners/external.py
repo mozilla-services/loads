@@ -32,7 +32,6 @@ class ExternalRunner(LocalRunner):
         # to distinguish from the others when sending the loads_status
         # information.
         self._initialize()
-        self._terminated_processes = []
         self._current_step = 0
 
         timeout = args.get('process_timeout', 2)  # Default timeout: 2s
@@ -63,23 +62,12 @@ class ExternalRunner(LocalRunner):
         self._receiver_socket = (self.args.get('zmq_receiver')
                                  or DEFAULT_EXTERNAL_RUNNER_RECEIVER)
 
-        if not self.slave:
-            # Set-up a receiver in case we are not in slave mode (because we
-            # then need to build a TestResult object from the data we receive)
-            # We need to create a receiver socket for the needs of the tests
-            self.context = zmq.Context()
-
-            self._receiver = self.context.socket(zmq.PULL)
-            self._receiver.bind(self._receiver_socket)
-
-            self._rcvstream = zmqstream.ZMQStream(self._receiver, self._loop)
-            self._rcvstream.on_recv(self._recv_result)
-
     def _initialize(self):
         self._current_run = 0
         self._run_started_at = None
         self._terminated = None
         self._processes = []
+        self._processes_pending_cleanup = []
 
     @property
     def step_hits(self):
@@ -103,8 +91,22 @@ class ExternalRunner(LocalRunner):
         """When all the processes are finished or the duration of the test is
         more than the wanted duration, stop the loop and exit.
         """
-        # Get the list of processes that have finished
-        terminated = [p for p in self._processes if p.poll() is not None]
+        # Poll procs that are pending cleanup, so we don't leave zombies.
+        pending = []
+        for proc in self._processes_pending_cleanup:
+            if proc.poll() is None:
+                pending.append(proc)
+        self._processes_pending_cleanup = pending
+
+        # Find which processes have terminated, which are still active.
+        active = []
+        terminated = []
+        for proc in self._processes:
+            if proc.poll() is None:
+                active.append(proc)
+            else:
+                terminated.append(proc)
+        self._processes = active
 
         now = datetime.datetime.now()
         if self._duration is not None:
@@ -115,15 +117,14 @@ class ExternalRunner(LocalRunner):
                 return
             else:
                 # Wait for all the tests to finish and exit
-                if self._terminated is not None:
+                if self._terminated is None:
                     self._terminated = now
 
-                if (len(terminated) == len(self._processes)
-                        or self._terminated is not None
-                        and self._terminated + self._timeout > now):
+                if (len(self._processes) == 0
+                        or now > self._terminated + self._timeout):
                     self._start_next_step()
 
-        elif (len(terminated) == len(self._processes)
+        elif (len(self._processes) == 0
               or now > self._run_started_at + self._timeout):
             # All the tests are finished, let's exit.
             self._start_next_step()
@@ -134,11 +135,17 @@ class ExternalRunner(LocalRunner):
             self.refresh()
 
     def _start_next_step(self):
+        # Reap any outstanding procs from the previous step.
+        # We will poll them for successful termination at next proc check.
+        for proc in self._processes:
+            if proc.poll() is None:
+                proc.terminate()
+                self._processes_pending_cleanup.append(proc)
+        self._processes = []
         # Reinitialize some variables and start a new run, or exit.
         if self._current_step + 1 >= self._nb_steps:
             self.stop_run()
         else:
-            self._terminated_processes.extend(self._processes)
             self._initialize()
             self._run_started_at = datetime.datetime.now()
             self._current_step += 1
@@ -172,6 +179,16 @@ class ExternalRunner(LocalRunner):
     def _execute(self):
         """Spawn all the tests needed and wait for them to finish.
         """
+        # If we're not in slave mode, we need to receive the data ourself
+        # and build up a TestResult object.  In slave mode the spawned procs
+        # will report directly to the broker.
+        if not self.slave:
+            self.context = zmq.Context()
+            self._receiver = self.context.socket(zmq.PULL)
+            self._receiver.bind(self._receiver_socket)
+            self._rcvstream = zmqstream.ZMQStream(self._receiver, self._loop)
+            self._rcvstream.on_recv(self._recv_result)
+
         self._prepare_filesystem()
 
         self._run_started_at = datetime.datetime.now()
@@ -182,6 +199,10 @@ class ExternalRunner(LocalRunner):
             self.spawn_external_runner()
 
         self._loop.start()
+
+        if not self.slave:
+            self._receiver.close()
+            self.context.destroy()
 
     def spawn_external_runner(self):
         """Spawns an external runner with the given arguments.
