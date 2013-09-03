@@ -55,6 +55,10 @@ class LocalRunner(object):
     - The "slave" mode where the results are sent to a ZMQ endpoint and no
       output is called.
     """
+
+    name = 'local'
+    options = {}
+
     def __init__(self, args):
         self.args = args
         self.fqn = args.get('fqn')
