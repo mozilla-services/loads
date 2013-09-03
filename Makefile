@@ -3,7 +3,7 @@ BIN = $(HERE)/bin
 PYTHON = $(BIN)/python
 
 INSTALL = $(BIN)/pip install --no-deps
-VTENV_OPTS ?= --distribute -p python2.7
+VTENV_OPTS ?= --distribute -p `which python2.7 python2.6 | head -n 1`
 
 BUILD_DIRS = bin build include lib lib64 man share
 
