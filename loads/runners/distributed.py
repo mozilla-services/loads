@@ -18,6 +18,10 @@ class DistributedRunner(LocalRunner):
     commands trough the ZMQ pipeline and get back their results, which will be
     in turn sent to the local test_result object.
     """
+
+    name = 'distributed'
+    options = {}
+
     def __init__(self, args):
         super(DistributedRunner, self).__init__(args)
         self.run_id = None

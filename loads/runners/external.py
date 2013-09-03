@@ -25,6 +25,12 @@ class ExternalRunner(LocalRunner):
     the runs are finished or not. Once all the runs are done, it exits.
     """
 
+    name = 'external'
+    options = {
+        'process-timeout':
+        ('Time to wait until we consider the run is over', int, 2, True),
+    }
+
     def __init__(self, args=None, loop=None):
         if args is None:
             args = {}
@@ -37,7 +43,7 @@ class ExternalRunner(LocalRunner):
         self._initialize()
         self._current_step = 0
 
-        timeout = args.get('process_timeout', 2)  # Default timeout: 2s
+        timeout = args.get('external_process_timeout', 2)
         self._timeout = datetime.timedelta(seconds=timeout)
 
         self._duration = None

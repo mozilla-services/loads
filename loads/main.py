@@ -1,17 +1,18 @@
 import argparse
-import sys
 import logging
+import sys
 import traceback
 from datetime import datetime
 
 from konfig import Config
 
-from loads.util import logger, set_logger
-from loads.output import output_list
 from loads import __version__
-from loads.transport.util import DEFAULT_FRONTEND, DEFAULT_PUBLISHER
-from loads.runners import LocalRunner, DistributedRunner, ExternalRunner
+from loads.output import output_list
+from loads.runners import (LocalRunner, DistributedRunner, ExternalRunner,
+                           RUNNERS)
 from loads.transport.client import Client, TimeoutError
+from loads.transport.util import DEFAULT_FRONTEND, DEFAULT_PUBLISHER
+from loads.util import logger, set_logger
 
 
 def _detach_question(runner):
@@ -23,6 +24,36 @@ def _detach_question(runner):
             res = res[0]
     if res == 's':
         runner.cancel()
+
+
+def add_options(items, parser, fmt):
+    """Read the list of items and add options to the parser using the given
+    format.
+
+    :param items:
+        A list of class objects to iterate over. They should contain at least
+        a name and an options argument.
+
+    :param parser:
+        The parser object from argparse.
+
+    :param fmt:
+        The format to use for the option to add to the parser. It should
+        contain {name} and {option}, for instance '--output-{name}-{option}' is
+        a valid format.
+    """
+    for item in items:
+        for option, value in item.options.items():
+            help_, type_, default, cli = value
+            if not cli:
+                continue
+
+            kw = {'help': help_, 'type': type_}
+            if default is not None:
+                kw['default'] = default
+
+            parser.add_argument(fmt.format(name=item.name, option=option),
+                                **kw)
 
 
 def run(args):
@@ -183,19 +214,9 @@ def main(sysargs=None):
                                          'distributed run',
                         action='store_true', default=False)
 
-    # per-output options
-    for output in output_list():
-        for option, value in output.options.items():
-            help, type_, default, cli = value
-            if not cli:
-                continue
-
-            kw = {'help': help, 'type': type_}
-            if default is not None:
-                kw['default'] = default
-
-            parser.add_argument('--output-%s-%s' % (output.name, option),
-                                **kw)
+    # Adds the per-output and per-runner options.
+    add_options(RUNNERS, parser, fmt='--{name}-{option}')
+    add_options(output_list(), parser, fmt='--output-{name}-{option}')
 
     args = parser.parse_args(sysargs)
 
