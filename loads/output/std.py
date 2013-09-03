@@ -14,7 +14,10 @@ def get_terminal_width(fd=1):
     import termios
     import fcntl
     sizebuf = array.array('h', [0, 0])
-    fcntl.ioctl(fd, termios.TIOCGWINSZ, sizebuf, True)
+    try:
+        fcntl.ioctl(fd, termios.TIOCGWINSZ, sizebuf, True)
+    except IOError:
+        return 100
     return sizebuf[1]
 
 

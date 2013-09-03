@@ -164,11 +164,11 @@ class TestFileOutput(TestCase):
         try:
             output = FileOutput(mock.sentinel.test_result,
                                 {'output_file_filename': '%s/loads' % tmpdir})
-            output.push('something', 1, 2, foo='bar')
+            output.push('something', 1, 2, method='GET')
             output.flush()
 
             with open('%s/loads' % tmpdir) as f:
-                self.assertEquals('something - {"foo": "bar"}', f.read())
+                self.assertEquals('something - {"method": "GET"}', f.read())
 
         finally:
             shutil.rmtree(tmpdir)
