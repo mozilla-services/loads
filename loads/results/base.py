@@ -138,7 +138,7 @@ class TestResult(object):
         return filter(_filter, self.tests.values())
 
     def average_request_time(self, url=None, series=None):
-        """Computes the average time a request takes (in ms)
+        """Computes the average time a request takes (in seconds)
 
         :param url:
             The url we want to know the average request time. Could be
