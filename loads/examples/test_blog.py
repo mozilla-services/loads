@@ -16,6 +16,12 @@ class TestWebSite(TestCase):
     def test_public(self):
         self.session.get('http://google.com')
 
+    def test_gonuts(self):
+        root = 'http://ec2-54-244-173-6.us-west-2.compute.amazonaws.com:8282'
+        res = self.session.get(root + '/%s' %
+                               random.choice(['here', 'there', 'foo']))
+        self.assertTrue('nuts' in res.content.lower())
+
     def test_es(self):
         self.incr_counter('es')
         self.session.get('http://localhost:9200')
