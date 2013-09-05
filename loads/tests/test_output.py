@@ -28,7 +28,7 @@ class FakeTestResult(object):
         self.duration = 0
         self.average_request_time = lambda: 0
         self.requests_per_second = lambda: 0
-        self.sockets = 0
+        self.opened_sockets = 0
         self.socket_data_received = 0
         self.nb_success = 0
         self.nb_errors = nb_errors
