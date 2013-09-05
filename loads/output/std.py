@@ -48,7 +48,7 @@ class StdOutput(object):
               self.results.requests_per_second())
         write("\nAverage request time: %.2fs" %
               self.results.average_request_time())
-        write("\nOpened web sockets: %d" % self.results.sockets)
+        write("\nOpened web sockets: %d" % self.results.opened_sockets)
         write("\nBytes received via web sockets : %d\n" %
               self.results.socket_data_received)
         write("\nSuccess: %d" % self.results.nb_success)
