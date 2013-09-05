@@ -27,10 +27,12 @@ class WebSocketClient(_WS):
             self._test_result.socket_open()
         super(WebSocketClient, self).opened()
 
-    def closed(self, code, reason):
+    def close(self, code=1000, reason=''):
+        if self.client_terminated:
+            return
         if self._test_result is not None:
             self._test_result.socket_close()
-        super(WebSocketClient, self).closed(code, reason)
+        super(WebSocketClient, self).close(code, reason)
 
 
 def cleanup(greenlet):
@@ -40,6 +42,7 @@ def cleanup(greenlet):
 
 def create_ws(url, test_result, callback=None, protocols=None,
               extensions=None, klass=None, test_case=None):
+
     custom_klass = klass is not None
     if klass is None:
         klass = WebSocketClient

@@ -158,7 +158,7 @@ class FunctionalTest(TestCase):
                          {u'http://127.0.0.1:9000/': 10})
         counts = dict(client.get_counts(run_id))
         self.assertEquals(counts['socket_open'], 10)
-        #self.assertEquals(counts['socket_close'], 10)  XXX TO BE FIXED
+        self.assertEquals(counts['socket_close'], 10)
 
         # making sure the observer was called
         with open(_RESULTS) as f:
