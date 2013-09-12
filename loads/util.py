@@ -9,8 +9,9 @@ import tempfile
 import urlparse
 import math
 import fnmatch
+import random
 
-from gevent.socket import gethostbyname
+from gevent.socket import gethostbyname_ex
 
 
 logger = logging.getLogger('loads')
@@ -58,9 +59,6 @@ class DateTimeJSONEncoder(json.JSONEncoder):
             return super(DateTimeJSONEncoder, self).default(obj)
 
 
-_CACHE = {}
-
-
 def split_endpoint(endpoint):
     """Returns the scheme, the location, and maybe the port.
     """
@@ -82,20 +80,35 @@ def split_endpoint(endpoint):
     return res
 
 
-def dns_resolve(url):
-    if url in _CACHE:
-        return _CACHE[url]
+_DNS_CACHE = {}
 
+
+def dns_resolve(url):
+    """Resolve hostname in the given url, using cached results where possible.
+
+    Given a url, this function does DNS resolution on the contained hostname
+    and returns a 3-tuple giving:  the URL with hostname replace by IP addr,
+    the original hostname string, and the resolved IP addr string.
+
+    The results of DNS resolution are cached to make sure this doesn't become
+    a bottleneck for the loadtest.  If the hostname resolves to multiple
+    addresses then a random address is chosen.
+    """
     parts = urlparse.urlparse(url)
     netloc = parts.netloc.rsplit(':')
     if len(netloc) == 1:
         netloc.append('80')
+
     original = netloc[0]
-    resolved = gethostbyname(original)
+    addrs = _DNS_CACHE.get(original)
+    if addrs is None:
+        addrs = gethostbyname_ex(original)[2]
+        _DNS_CACHE[original] = addrs
+
+    resolved = random.choice(addrs)
     netloc = resolved + ':' + netloc[1]
     parts = (parts.scheme, netloc) + parts[2:]
-    _CACHE[url] = urlparse.urlunparse(parts), original, resolved
-    return _CACHE[url]
+    return urlparse.urlunparse(parts), original, resolved
 
 
 # taken from distutils2
