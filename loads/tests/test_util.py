@@ -118,21 +118,33 @@ class TestUtil(unittest2.TestCase):
         self.assertTrue(new_num - num in (2, 3))
 
     def test_dns_resolve(self):
-        old = util.gethostbyname
+        old = util.gethostbyname_ex
 
-        def _gethost(*args):
-            return '0.0.0.0'
+        num_times_called = []
 
-        util.gethostbyname = _gethost
+        def _gethostbyname_ex(hostname):
+            num_times_called.append(True)
+            return hostname, [hostname], ['0.0.0.0', '1.1.1.1']
+
+        util.gethostbyname_ex = _gethostbyname_ex
 
         try:
-            res = dns_resolve('http://example.com')
-            res2 = dns_resolve('http://example.com')   # cache
+            # Initial query should populate the cache and return
+            # randomly-selected resolved address.
+            url, original, resolved = dns_resolve('http://example.com')
+            self.assertEqual(original, 'example.com')
+            self.assertEqual(url, 'http://' + resolved + ':80')
+            self.assertTrue(resolved in ("0.0.0.0", "1.1.1.1"))
+            self.assertEqual(len(num_times_called), 1)
+            # Subsequent queries should be fulfilled from the cache
+            # and should balance between all resolved addresses.
+            addrs = set()
+            for _ in xrange(10):
+                addrs.add(dns_resolve('http://example.com')[2])
+            self.assertEqual(addrs, set(('0.0.0.0', '1.1.1.1')))
+            self.assertEqual(len(num_times_called), 1)
         finally:
-            util.gethostbyname = old
-
-        self.assertEqual(res, ('http://0.0.0.0:80', 'example.com', '0.0.0.0'))
-        self.assertEqual(res, res2)
+            util.gethostbyname_ex = old
 
     def test_split_endpoint(self):
         res = split_endpoint('tcp://12.22.33.45:12334')
