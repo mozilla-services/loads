@@ -110,3 +110,4 @@ More documentation
    glossary
    contributing
    outputs
+   debug    
