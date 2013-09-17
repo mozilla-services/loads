@@ -204,7 +204,7 @@ class Broker(object):
                                                  'run_id': run_id}))
 
             else:
-                logger.error("agent %d sent back a weird status" % agent_id)
+                logger.error("agent sent back a weird status")
                 logger.error(str(result))
 
             return
