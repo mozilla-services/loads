@@ -198,14 +198,12 @@ class Broker(object):
         if result.get('command') == '_STATUS':
             statuses = result['status'].values()
             run_id = self.ctrl.update_status(agent_id, statuses)
+
             if run_id is not None:
                 # if the tests are finished, publish this on the pubsub.
                 self._publisher.send(json.dumps({'data_type': 'run-finished',
                                                  'run_id': run_id}))
 
-            else:
-                logger.error("agent sent back a weird status")
-                logger.error(str(result))
 
             return
 
