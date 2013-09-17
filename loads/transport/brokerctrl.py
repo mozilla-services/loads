@@ -156,6 +156,11 @@ class BrokerController(object):
             else:
                 self._agent_times[agent_id] = now, now
 
+            if agent_id in self._runs:
+                return self._runs[agent_id][0]
+            else:
+                logger.debug('run not found ' + str(run_id))
+
     #
     # DB APIs
     #
