@@ -34,6 +34,8 @@ class _BadSocket(object):
 
 
 class TestUtil(unittest2.TestCase):
+    def setUp(self):
+        util._DNS_CACHE = {}
 
     def test_resolve(self):
         ob = resolve_name('loads.tests.test_util.TestUtil')
@@ -118,33 +120,37 @@ class TestUtil(unittest2.TestCase):
         self.assertTrue(new_num - num in (2, 3))
 
     def test_dns_resolve(self):
-        old = util.gethostbyname_ex
+        with mock.patch('loads.util.gevent_socket.gethostbyname_ex') as mocked:
+            mocked.return_value = ('example.com', ['example.com'],
+                                   ['0.0.0.0', '1.1.1.1'])
 
-        num_times_called = []
-
-        def _gethostbyname_ex(hostname):
-            num_times_called.append(True)
-            return hostname, [hostname], ['0.0.0.0', '1.1.1.1']
-
-        util.gethostbyname_ex = _gethostbyname_ex
-
-        try:
             # Initial query should populate the cache and return
             # randomly-selected resolved address.
             url, original, resolved = dns_resolve('http://example.com')
             self.assertEqual(original, 'example.com')
             self.assertEqual(url, 'http://' + resolved + ':80')
             self.assertTrue(resolved in ("0.0.0.0", "1.1.1.1"))
-            self.assertEqual(len(num_times_called), 1)
+            self.assertEqual(mocked.call_count, 1)
             # Subsequent queries should be fulfilled from the cache
             # and should balance between all resolved addresses.
             addrs = set()
             for _ in xrange(10):
                 addrs.add(dns_resolve('http://example.com')[2])
             self.assertEqual(addrs, set(('0.0.0.0', '1.1.1.1')))
-            self.assertEqual(len(num_times_called), 1)
-        finally:
-            util.gethostbyname_ex = old
+            self.assertEqual(mocked.call_count, 1)
+
+    @mock.patch('loads.util.gevent_socket.gethostbyname_ex')
+    @mock.patch('loads.util.gevent_socket.gethostbyname')
+    def test_dns_resolve_fallbacks_on_gethostbyname(self, hostbyname,
+                                                    hostbyname_ex):
+        # Older versions of gevent don't have the gethostbyname_ex method. Be
+        # sure we fallback on the right version if the method doesn't exist.
+        hostbyname_ex.side_effect = AttributeError()
+        hostbyname.return_value = '0.0.0.0'
+        self.assertEquals(dns_resolve(
+            'http://mozilla.org'),
+            ('http://0.0.0.0:80', 'mozilla.org', '0.0.0.0'))
+        self.assertTrue(hostbyname.called)
 
     def test_split_endpoint(self):
         res = split_endpoint('tcp://12.22.33.45:12334')
