@@ -203,9 +203,13 @@ class Broker(object):
                 self._publisher.send(json.dumps({'data_type': 'run-finished',
                                                  'run_id': run_id}))
 
+            else:
+                logger.error("agent %d sent back a weird status" % agent_id)
+                logger.error(str(result))
+
             return
 
-        logger.error('Sending back to caller %s' % msg)
+        logger.debug('Sending back to caller %s' % msg)
         # other things are pass-through
         try:
             self._frontstream.send_multipart(msg)
