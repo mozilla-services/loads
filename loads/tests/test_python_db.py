@@ -67,7 +67,7 @@ class TestBrokerDB(unittest2.TestCase):
 
         self.loop.add_callback(add_data)
         self.loop.add_callback(add_data)
-        self.loop.add_timeout(time.time() + .5, self.loop.stop)
+        self.loop.add_timeout(time.time() + 2.1, self.loop.stop)
         self.loop.start()
 
         # let's check if we got the data in the file
