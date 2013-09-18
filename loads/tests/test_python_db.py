@@ -80,7 +80,7 @@ class TestBrokerDB(unittest2.TestCase):
 
         for type_ in ('addSuccess', 'stopTestRun', 'stopTest',
                       'startTest', 'startTestRun', 'add_hit'):
-            self.assertEqual(dict(counts)[type_], 2)
+            self.assertEqual(counts[type_], 2)
 
         # we got 12 lines, let's try batching
         batch = list(self.db.get_data('1', size=2))

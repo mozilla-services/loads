@@ -98,8 +98,7 @@ class BrokerDB(BaseDB):
 
             # counts
             filename = os.path.join(self.directory, run_id + '-counts.json')
-            counts = dict(self._counts[run_id]).items()
-            counts.sort()
+            counts = dict(self._counts[run_id])
             with open(filename, 'w') as f:
                 json.dump(counts, f)
 
