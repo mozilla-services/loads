@@ -82,6 +82,10 @@ class RedisDB(BaseDB):
         dumped = dumps(data, sort_keys=True)
         pipeline.lpush('data:%s' % run_id, dumped)
 
+        # adding errors
+        if data_type == 'addError':
+            pipeline.lpush('errors:%s' % run_id, dumped)
+
         # adding group by
         md5 = hashlib.md5(dumped).hexdigest()
         pipeline.incrby('bcount:%s:%s' % (run_id, md5), size)
@@ -115,6 +119,25 @@ class RedisDB(BaseDB):
 
     def get_runs(self):
         return self._redis.smembers('runs')
+
+    def get_errors(self, run_id, start=None, size=None):
+        key = 'errors:%s' % run_id
+        len = self._redis.llen(key)
+        if len == 0:
+            raise StopIteration()
+
+        if start is None:
+            start = 0
+
+        if size is None:
+            end = len
+        else:
+            end = start + size
+            if end > len:
+                end = len
+
+        for index in range(start, end):
+            yield loads(self._redis.lindex(key, index))
 
     def get_data(self, run_id, data_type=None, groupby=False, start=None,
                  size=None):
