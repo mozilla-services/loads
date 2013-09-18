@@ -15,7 +15,7 @@ class BrokerDB(BaseDB):
     """
     name = 'python'
     options = {'directory': (DEFAULT_DBDIR, 'DB path.', str),
-               'sync_delay': (250, 'Sync delay', int)}
+               'sync_delay': (2000, 'Sync delay', int)}
 
     def _initialize(self):
         self.directory = self.params['directory']
