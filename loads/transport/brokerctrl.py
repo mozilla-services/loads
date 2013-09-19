@@ -273,6 +273,13 @@ class BrokerController(object):
                 continue
             agents.append(agent_id)
 
+        if len(agents) == 0:
+            # we don't have any agents running that test, let's
+            # force the flags in the DB
+            self.update_metadata(run_id, stopped=True, active=False,
+                                 ended=time.time())
+            return []
+
         # now we have a list of agents to stop
         stop_msg = msg[:-1] + [json.dumps({'command': 'STOP'})]
 
