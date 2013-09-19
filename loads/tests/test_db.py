@@ -18,7 +18,7 @@ class TestDB(unittest2.TestCase):
             self.assertEqual(len(backends), 2)
 
     def test_get_database(self):
-        db  = get_database('python')
+        db = get_database('python')
         self.assertTrue(db.ping())
 
         if not NO_REDIS:
@@ -28,8 +28,6 @@ class TestDB(unittest2.TestCase):
         self.assertRaises(NotImplementedError, get_database, 'cobol')
 
     def test_basedb(self):
-
-
         self.assertRaises(ValueError, BaseDB, None)
 
         class MyDB(BaseDB):
@@ -39,6 +37,7 @@ class TestDB(unittest2.TestCase):
 
         class MyDB2(BaseDB):
             name = 'my'
+
             def _initialize(self):
                 pass
 
