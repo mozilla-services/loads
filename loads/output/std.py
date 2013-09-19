@@ -130,7 +130,9 @@ class StdOutput(object):
             sys.stderr.write("%d occurrences of: \n" % count)
             sys.stderr.write("    %s: %s" % (name, exc))
 
-            if tb not in (None, ''):   # XXX fix this
+            if tb in (None, ''):   # XXX fix this
+                sys.stderr.write('\n')
+            else:
                 if isinstance(tb, basestring):
                     sys.stderr.write(tb.replace('\n', '    \n'))
                 else:
