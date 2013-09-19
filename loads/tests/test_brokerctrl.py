@@ -1,6 +1,8 @@
 import unittest2
 import tempfile
 import shutil
+from collections import defaultdict
+import json
 
 import psutil
 from zmq.green.eventloop import ioloop
@@ -18,6 +20,11 @@ class Stream(object):
 
 class FakeBroker(object):
     _backstream = Stream()
+    msgs = defaultdict(list)
+    endpoints = {'receiver': 'xxx'}
+
+    def send_json(self, target, msg):
+        self.msgs[str(target)].append(msg)
 
 
 class TestBrokerController(unittest2.TestCase):
@@ -25,9 +32,9 @@ class TestBrokerController(unittest2.TestCase):
     def setUp(self):
         self.dbdir = tempfile.mkdtemp()
         loop = ioloop.IOLoop()
-        broker = FakeBroker()
+        self.broker = FakeBroker()
         dboptions = {'directory': self.dbdir}
-        self.ctrl = BrokerController(broker, loop, dboptions=dboptions)
+        self.ctrl = BrokerController(self.broker, loop, dboptions=dboptions)
         self.old_exists = psutil.pid_exists
         psutil.pid_exists = lambda pid: True
 
@@ -104,3 +111,38 @@ class TestBrokerController(unittest2.TestCase):
         observers = _compute_observers(obs)
         self.assertEqual(len(observers), 2)
         self.assertRaises(ImportError, _compute_observers, ['blah'])
+
+    def test_run(self):
+        msg = ['somedata', '', 'target']
+        data = {'agents': 1, 'args': {}}
+
+        # not enough agents
+        self.ctrl.run(msg, data)
+        res = self.broker.msgs.values()[0]
+        self.assertEqual(res, [{'error': 'Not enough agents'}])
+
+        # one agent, we're good
+        self.ctrl._agents.append('agent1')
+        self.ctrl.run(msg, data)
+        runs = self.broker.msgs.values()[0][-1]
+        self.assertEqual(runs['result']['agents'], ['agent1'])
+
+    def test_run_command(self):
+        msg = ['somedata', '', 'target']
+        data = {'agents': 1, 'args': {}, 'agent_id': '1'}
+        self.ctrl.run_command('RUN', msg, data)
+        self.ctrl.run_command('AGENT_STATUS', msg, data)
+        runs = self.broker.msgs.values()[0][-1]
+        self.assertEqual(runs['result']['agents'], ['agent1'])
+
+        msg = {"command": "STATUS", "args": {}, "agents": 1, "agent_id": "1"}
+        msg = msg.items()
+        msg.sort()
+
+        self.assertTrue(len(self.broker._backstream.msgs), 1)
+        self.assertTrue(len(self.broker._backstream.msgs[0]), 1)
+        got = self.broker._backstream.msgs[0][3]
+        got = json.loads(got)
+        got = got.items()
+        got.sort()
+        self.assertEqual(msg, got)
