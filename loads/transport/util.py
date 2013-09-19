@@ -168,38 +168,3 @@ def verify_broker(broker_endpoint=DEFAULT_FRONTEND, timeout=1.):
         return None
     finally:
         client.close()
-
-
-def kill_ghost_brokers(broker_endpoint=DEFAULT_FRONTEND, timeout=1.):
-    """Kills ghost brokers.
-
-    Return a pid, pids tuple. The first pid is the running broker
-    and the second is a list of pids that where killed.
-    """
-    # checking if there's a working broker
-    working_broker = verify_broker(broker_endpoint, timeout)
-    if working_broker is not None:
-        working_broker = int(working_broker)
-
-    # listing running brokers and killing the ghost ones
-    killed = []
-    import psutil
-    for pid in psutil.get_pid_list():
-        if pid in (os.getpid(), os.getppid()):
-            continue
-
-        p = psutil.Process(pid)
-        try:
-            cmd = ' '.join(p.cmdline)
-        except psutil.error.AccessDenied:
-            continue
-
-        cmd = cmd.replace('-', '.')
-
-        if 'loads.broker' not in cmd or pid == working_broker:
-            continue
-
-        killed.append(pid)
-        p.terminate()
-
-    return working_broker, killed

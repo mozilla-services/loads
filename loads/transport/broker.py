@@ -14,7 +14,6 @@ from loads.util import set_logger, logger
 from loads.transport.util import (register_ipc_file, DEFAULT_FRONTEND,
                                   DEFAULT_BACKEND,
                                   DEFAULT_REG, verify_broker,
-                                  kill_ghost_brokers,
                                   DEFAULT_BROKER_RECEIVER,
                                   DEFAULT_PUBLISHER)
 from loads.transport.heartbeat import Heartbeat
@@ -319,9 +318,6 @@ def main(args=sys.argv):
                         help=("Use this option to check if there's a running "
                               " broker. Returns the PID if a broker is up."))
 
-    parser.add_argument('--purge-ghosts', action='store_true', default=False,
-                        help="Use this option to purge ghost brokers.")
-
     parser.add_argument('--logfile', dest='logfile', default='stdout',
                         help="File to log in to.")
 
@@ -344,20 +340,6 @@ def main(args=sys.argv):
 
     args = parser.parse_args()
     set_logger(args.debug, logfile=args.logfile)
-
-    if args.purge_ghosts:
-        broker_pids, ghosts = kill_ghost_brokers(args.frontend)
-        if broker_pids is None:
-            logger.info('No running broker.')
-        else:
-            logger.info('The active broker runs at PID: %s' % broker_pids)
-
-        if len(ghosts) == 0:
-            logger.info('No ghosts where killed.')
-        else:
-            logger.info('Ghost(s) killed: %s'
-                        % ', '.join([str(g) for g in ghosts]))
-        return 0
 
     if args.check:
         pid = verify_broker(args.frontend)

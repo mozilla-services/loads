@@ -20,7 +20,7 @@ from loads.runners import LocalRunner, DistributedRunner
 from loads.tests.support import (get_runner_args, start_process, stop_process,
                                  hush)
 from loads.transport.client import Pool, Client
-from loads.transport.util import DEFAULT_FRONTEND
+from loads.transport.util import DEFAULT_FRONTEND, verify_broker
 
 
 _EXAMPLES_DIR = os.path.join(os.path.dirname(__file__), os.pardir, 'examples')
@@ -70,6 +70,10 @@ def start_servers():
         assert status == {}, status
 
     client.close()
+
+    if verify_broker() is None:
+        raise ValueError('Broker seem down')
+
     return procs
 
 
