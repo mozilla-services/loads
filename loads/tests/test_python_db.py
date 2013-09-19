@@ -30,6 +30,10 @@ ONE_RUN = [
 
     {'test': 'test_es (loads.examples.test_blog.TestWebSite)',
      'agent_id': _AGENT_ID, 'loads_status': [1, 1, 1, 0],
+     'data_type': 'addError', 'run_id': _RUN_ID},
+
+    {'test': 'test_es (loads.examples.test_blog.TestWebSite)',
+     'agent_id': _AGENT_ID, 'loads_status': [1, 1, 1, 0],
      'data_type': 'stopTest', 'run_id': _RUN_ID},
 
     {'agent_id': _AGENT_ID, 'data_type': 'stopTestRun',
@@ -63,7 +67,7 @@ class TestBrokerDB(unittest2.TestCase):
 
         self.loop.add_callback(add_data)
         self.loop.add_callback(add_data)
-        self.loop.add_timeout(time.time() + .5, self.loop.stop)
+        self.loop.add_timeout(time.time() + 2.1, self.loop.stop)
         self.loop.start()
 
         # let's check if we got the data in the file
@@ -74,8 +78,8 @@ class TestBrokerDB(unittest2.TestCase):
         with open(os.path.join(self.db.directory, '2-db.json')) as f:
             data2 = [json.loads(line) for line in f]
 
-        self.assertEqual(len(data), 12)
-        self.assertEqual(len(data2), 12)
+        self.assertEqual(len(data), 14)
+        self.assertEqual(len(data2), 14)
         counts = self.db.get_counts('1')
 
         for type_ in ('addSuccess', 'stopTestRun', 'stopTest',
@@ -87,7 +91,7 @@ class TestBrokerDB(unittest2.TestCase):
         self.assertEqual(len(batch), 2)
 
         batch = list(self.db.get_data('1', start=2))
-        self.assertEqual(len(batch), 10)
+        self.assertEqual(len(batch), 12)
 
         batch = list(self.db.get_data('1', start=2, size=5))
         self.assertEqual(len(batch), 5)
@@ -102,7 +106,7 @@ class TestBrokerDB(unittest2.TestCase):
 
         # group by
         res = list(self.db.get_data('1', groupby=True))
-        self.assertEqual(len(res), 6)
+        self.assertEqual(len(res), 7)
         self.assertEqual(res[0]['count'], 2)
 
         res = list(self.db.get_data('1', data_type='add_hit', groupby=True))
@@ -113,7 +117,7 @@ class TestBrokerDB(unittest2.TestCase):
 
         # len(data) < asked ize
         batch = list(self.db.get_data('1', start=2, size=5000))
-        self.assertEqual(len(batch), 10)
+        self.assertEqual(len(batch), 12)
 
     def test_metadata(self):
         self.assertEqual(self.db.get_metadata('1'), {})
@@ -142,3 +146,25 @@ class TestBrokerDB(unittest2.TestCase):
         self.assertTrue(self.db.ping())
         urls = self.db.get_urls('1')
         self.assertEqual(urls, {'http://127.0.0.1:9200/': 2})
+
+    def test_get_errors(self):
+        def add_data():
+            for line in ONE_RUN:
+                data = dict(line)
+                data['run_id'] = '1'
+                self.db.add(data)
+                data['run_id'] = '2'
+                self.db.add(data)
+
+        self.loop.add_callback(add_data)
+        self.loop.add_callback(add_data)
+        self.loop.add_timeout(time.time() + .5, self.loop.stop)
+        self.loop.start()
+
+        self.assertTrue(self.db.ping())
+
+        errors = list(self.db.get_errors('2'))
+        self.assertEqual(len(errors), 2, errors)
+
+        errors = list(self.db.get_errors('1'))
+        self.assertEqual(len(errors), 2, errors)

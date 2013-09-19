@@ -4,7 +4,9 @@ import shutil
 
 import psutil
 from zmq.green.eventloop import ioloop
-from loads.transport.brokerctrl import BrokerController, NotEnoughWorkersError
+from loads.transport.brokerctrl import (BrokerController,
+                                        NotEnoughWorkersError,
+                                        _compute_observers)
 
 
 class Stream(object):
@@ -96,3 +98,9 @@ class TestBrokerController(unittest2.TestCase):
 
         back2 = self.ctrl.get_data(None, {'run_id': 'run'})
         self.assertEqual(back, back2)
+
+    def test_compute_observers(self):
+        obs = ['irc', 'loads.observers.irc']
+        observers = _compute_observers(obs)
+        self.assertEqual(len(observers), 2)
+        self.assertRaises(ImportError, _compute_observers, ['blah'])

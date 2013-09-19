@@ -95,6 +95,8 @@ class FunctionalTest(TestCase):
     def tearDown(self):
         runs = self.client.list_runs()
         for run_id in runs:
+            if not isinstance(run_id, basestring):
+                continue
             self.client.stop_run(run_id)
 
     def test_normal_run(self):

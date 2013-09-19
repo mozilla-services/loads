@@ -15,7 +15,7 @@ class BrokerDB(BaseDB):
     """
     name = 'python'
     options = {'directory': (DEFAULT_DBDIR, 'DB path.', str),
-               'sync_delay': (250, 'Sync delay', int)}
+               'sync_delay': (2000, 'Sync delay', int)}
 
     def _initialize(self):
         self.directory = self.params['directory']
@@ -25,6 +25,7 @@ class BrokerDB(BaseDB):
             os.makedirs(self.directory)
 
         self._buffer = defaultdict(Queue)
+        self._errors = defaultdict(Queue)
         self._callback = ioloop.PeriodicCallback(self.flush, self.sync_delay,
                                                  self.loop)
         self._callback.start()
@@ -60,13 +61,35 @@ class BrokerDB(BaseDB):
         data_type = data.get('data_type', 'unknown')
         size = data.get('size', 1)
         self._counts[run_id][data_type] += size
-        self._buffer[run_id].put(data)
+        self._buffer[run_id].put(dict(data))
+
         if 'url' in data:
             self._urls[run_id][data['url']] += 1
 
+        if data_type == 'addError':
+            self._errors[run_id].put(dict(data))
+
         self._dirty = True
 
+    def _dump_queue(self, run_id, queue, filename):
+        # lines
+        qsize = queue.qsize()
+        if qsize == 0:
+            return
+
+        if run_id is None:
+            run_id = 'unknown'
+
+        with open(filename, 'a+') as f:
+            for i in range(qsize):
+                line = queue.get()
+                if 'run_id' not in line:
+                    line['run_id'] = run_id
+
+                f.write(json.dumps(line, sort_keys=True) + '\n')
+
     def flush(self):
+
         if not self._dirty:
             return
 
@@ -80,21 +103,15 @@ class BrokerDB(BaseDB):
         if len(self._buffer) == 0:
             return
 
+        for run_id, queue in self._errors.items():
+            # error lines
+            filename = os.path.join(self.directory, run_id + '-errors.json')
+            self._dump_queue(run_id, queue, filename)
+
         for run_id, queue in self._buffer.items():
-            # lines
-            qsize = queue.qsize()
-            if qsize == 0:
-                continue
-
-            if run_id is None:
-                run_id = 'unknown'
-
+            # all lines
             filename = os.path.join(self.directory, run_id + '-db.json')
-
-            with open(filename, 'a+') as f:
-                for i in range(qsize):
-                    line = queue.get()
-                    f.write(json.dumps(line, sort_keys=True) + '\n')
+            self._dump_queue(run_id, queue, filename)
 
             # counts
             filename = os.path.join(self.directory, run_id + '-counts.json')
@@ -137,6 +154,40 @@ class BrokerDB(BaseDB):
                     for path in os.listdir(self.directory)
                     if path.endswith('-db.json')])
 
+    def _batch(self, filename, start=None, size=None, filter=None):
+        if start is not None and size is not None:
+            end = start + size
+        else:
+            end = None
+
+        # XXX suboptimal iterates until start is reached.
+        sent = 0
+
+        with open(filename) as f:
+            for current, line in enumerate(iter(f.readline, '')):
+                data = json.loads(line)
+                if filter is not None and filter(data):
+                    continue
+                if start is not None and current < start:
+                    continue
+                elif end is not None and current > end or sent == size:
+                    raise StopIteration()
+                yield data, line
+                sent += 1
+
+    def get_errors(self, run_id, start=None, size=None):
+        if size is not None and start is None:
+            start = 0
+
+        self.flush()
+        filename = os.path.join(self.directory, run_id + '-errors.json')
+
+        if not os.path.exists(filename):
+            raise StopIteration()
+
+        for data, line in self._batch(filename, start, size):
+            yield data
+
     def get_data(self, run_id, data_type=None, groupby=False, start=None,
                  size=None):
         if size is not None and start is None:
@@ -152,34 +203,13 @@ class BrokerDB(BaseDB):
             return (data_type is not None and
                     data_type != data.get('data_type'))
 
-        def _batch():
-            if start is not None and size is not None:
-                end = start + size
-            else:
-                end = None
-
-            # XXX suboptimal iterates until start is reached.
-            sent = 0
-
-            with open(filename) as f:
-                for current, line in enumerate(iter(f.readline, '')):
-                    data = json.loads(line)
-                    if _filtered(data):
-                        continue
-                    if start is not None and current < start:
-                        continue
-                    elif end is not None and current > end or sent == size:
-                        raise StopIteration()
-                    yield data, line
-                    sent += 1
-
         if not groupby:
-            for data, line in _batch():
+            for data, line in self._batch(filename, start, size, _filtered):
                 yield data
         else:
             grouped = dict()
 
-            for data, line in _batch():
+            for data, line in self._batch(filename, start, size, _filtered):
                 if line in grouped:
                     grouped[line] = grouped[line][0] + 1, data
                 else:
