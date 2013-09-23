@@ -282,9 +282,10 @@ class LocalRunner(object):
                 output.flush()
 
     def refresh(self):
-        for output in self.outputs:
-            if hasattr(output, 'refresh'):
-                output.refresh(self.run_id)
+        if not self.stop:
+            for output in self.outputs:
+                if hasattr(output, 'refresh'):
+                    output.refresh(self.run_id)
 
     def _grefresh(self):
         self.refresh()
