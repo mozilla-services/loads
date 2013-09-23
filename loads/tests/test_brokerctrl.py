@@ -2,10 +2,10 @@ import unittest2
 import tempfile
 import shutil
 from collections import defaultdict
-import json
 
 import psutil
 from zmq.green.eventloop import ioloop
+from loads.util import json
 from loads.transport.brokerctrl import (BrokerController,
                                         NotEnoughWorkersError,
                                         _compute_observers)
@@ -80,7 +80,7 @@ class TestBrokerController(unittest2.TestCase):
 
         # make sure the STOP cmd made it through
         msgs = [msg for msg in Stream.msgs if '_STATUS' not in msg[-1]]
-        self.assertEqual(msgs[0][-1], '{"command": "STOP"}')
+        self.assertEqual(msgs[0][-1], '{"command":"STOP"}')
         self.assertEqual(len(msgs), 1)
 
     def test_db_access(self):

@@ -1,6 +1,6 @@
 """ Message class.
 """
-import json
+from loads.util import json
 
 
 class Message(object):

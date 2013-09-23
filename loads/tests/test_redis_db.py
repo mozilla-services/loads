@@ -1,6 +1,5 @@
 import unittest2
 import time
-import json
 
 from zmq.green.eventloop import ioloop
 try:
@@ -12,6 +11,7 @@ except Exception:
     NO_TEST = True
 
 from loads.tests.test_python_db import ONE_RUN
+from loads.util import json
 
 
 _KEYS = ['errors:1', 'errors:2', 'data:1', 'data:2', 'counters:1',
