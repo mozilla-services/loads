@@ -189,7 +189,6 @@ class Broker(object):
         data = json.loads(msg[-1])
         if 'error' in data:
             result = data['error']
-            logger.error(result.get('exception'))
         else:
             result = data['result']
 

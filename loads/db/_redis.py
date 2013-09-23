@@ -79,7 +79,7 @@ class RedisDB(BaseDB):
             pipeline.incrby('url:%s:%s' % (run_id, url), 1)
 
         # adding data
-        dumped = json.dumps(data, sort_keys=True)
+        dumped = json.dumps(data)
         pipeline.lpush('data:%s' % run_id, dumped)
 
         # adding errors
