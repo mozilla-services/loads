@@ -8,7 +8,7 @@ install:
     - pip install redis
     - pip install -r test-requirements.txt --use-mirrors
     - python setup.py develop
-script: flake8 loads && nosetests -sv --with-coverage --cover-package=loads loads/tests
+script: flake8 loads && COVERAGE_PROCESS_START=1 nosetests -sv --with-coverage --cover-package=loads loads/tests
 services:
   - redis-server
 notifications:
@@ -19,5 +19,6 @@ notifications:
     on_success: change
 after_success:
   # Report coverage results to coveralls.io
+  - coverage combine
   - pip install coveralls
   - coveralls
