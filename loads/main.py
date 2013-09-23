@@ -117,7 +117,7 @@ def run(args):
                 _detach_question(runner)
 
 
-def main(sysargs=None):
+def _parse(sysargs=None):
     if sysargs is None:
         sysargs = sys.argv[1:]
 
@@ -219,7 +219,6 @@ def main(sysargs=None):
     add_options(output_list(), parser, fmt='--output-{name}-{option}')
 
     args = parser.parse_args(sysargs)
-
     if args.config is not None:
         # second pass !
         config = Config(args.config)
@@ -230,6 +229,13 @@ def main(sysargs=None):
 
     if args.quiet and 'stdout' in args.output:
         args.output.remove('stdout')
+
+    return args, parser
+
+
+def main(sysargs=None):
+    # parsing the command line
+    args, parser = _parse(sysargs)
 
     # loggers setting
     wslogger = logging.getLogger('ws4py')
@@ -242,48 +248,43 @@ def main(sysargs=None):
         print(__version__)
         sys.exit(0)
 
-    if args.ping_broker:
+    if args.ping_broker or args.purge_broker or args.check_cluster:
+
         client = Client(args.broker)
-        res = client.ping()
-        print('Broker running on pid %d' % res['pid'])
-        print('%d agents registered' % len(res['agents']))
-        print('endpoints:')
-        for name, location in res['endpoints'].items():
-            print('  - %s: %s' % (name, location))
+        ping = client.ping()
 
-        runs = client.list_runs()
-        if len(runs) == 0:
-            print('Nothing is running right now.')
-        else:
-            print('We have %d run(s) right now:' % len(runs))
-            for run_id, agents in runs.items():
-                print('  - %s with %d agent(s)' % (run_id, len(agents)))
-        sys.exit(0)
+        if args.purge_broker:
+            runs = client.purge_broker()
+            if len(runs) == 0:
+                print('Nothing to purge.')
+            else:
+                print('We have %d run(s) right now:' % len(runs))
+                print('Purged.')
+            sys.exit(0)
 
-    if args.purge_broker:
-        client = Client(args.broker)
-        runs = client.list_runs()
-        if len(runs) == 0:
-            print('Nothing to purge.')
-        else:
-            print('We have %d run(s) right now:' % len(runs))
+        elif args.ping_broker:
+            print('Broker running on pid %d' % ping['pid'])
+            print('%d agents registered' % len(ping['agents']))
+            print('endpoints:')
+            for name, location in ping['endpoints'].items():
+                print('  - %s: %s' % (name, location))
 
-            for run_id, workers in runs.items():
-                print('Purging %s...' % run_id)
-                client.stop_run(run_id)
+            runs = client.list_runs()
+            if len(runs) == 0:
+                print('Nothing is running right now.')
+            else:
+                print('We have %d run(s) right now:' % len(runs))
+                for run_id, agents in runs.items():
+                    print('  - %s with %d agent(s)' % (run_id, len(agents)))
+            sys.exit(0)
 
-            print('Purged.')
+        elif args.check_cluster:
+            args.fqn = 'loads.examples.test_blog.TestWebSite.test_health'
+            args.agents = len(ping['agents'])
+            args.hits = '1'
+            print('Running a healt check on all %d agents' % args.agents)
 
-        sys.exit(0)
-
-    if args.check_cluster:
-        args.fqn = 'loads.examples.test_blog.TestWebSite.test_health'
-        client = Client(args.broker)
-        res = client.ping()
-        args.agents = len(res['agents'])
-        args.hits = '1'
-        print('Running a healt check on all %d agents' % args.agents)
-
+    # if we don't have an fqn or we're not attached, something's wrong
     if args.fqn is None and not args.attach:
         parser.print_usage()
         sys.exit(0)
@@ -291,7 +292,3 @@ def main(sysargs=None):
     args = dict(args._get_kwargs())
     res = run(args)
     return res
-
-
-if __name__ == '__main__':
-    sys.exit(main())

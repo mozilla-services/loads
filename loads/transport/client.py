@@ -5,6 +5,7 @@ import contextlib
 import json
 import zlib
 import os
+import functools
 
 import zmq
 
@@ -204,6 +205,14 @@ class Client(object):
         return self.execute({'command': 'CTRL_AGENT_STOP',
                              'agent_id': agent_id})
 
+    def purge_broker(self):
+        runs = self.list_runs()
+        if len(runs) == 0:
+            return runs
+        for run_id, workers in runs.items():
+            self.stop_run(run_id)
+        return runs
+
 
 class Pool(object):
     """The pool class manage several :class:`Client` instances
@@ -259,49 +268,16 @@ class Pool(object):
         else:
             self._connectors.put(connector)
 
-    def execute(self, job, timeout=None):
+    def __getattribute__(self, name):
+        if not hasattr(Client, name):
+            return object.__getattribute__(self, name)
+        return functools.partial(self._runner, name)
+
+    def _runner(self, name, *args, **kw):
+        timeout = kw.get('timeout', self.timeout)
         with self._connector(timeout) as connector:
-            return connector.execute(job, timeout)
+            meth = getattr(connector, name)
+            return meth(*args, **kw)
 
     def close(self):
         self.ctx.destroy(0)
-
-    def ping(self, timeout=None):
-        with self._connector(self.timeout) as connector:
-            return connector.ping(timeout)
-
-    def run(self, args, async=True):
-        with self._connector(self.timeout) as connector:
-            return connector.run(args, async)
-
-    def status(self, agent_id):
-        with self._connector(self.timeout) as connector:
-            return connector.status(agent_id)
-
-    def list(self):
-        with self._connector(self.timeout) as connector:
-            return connector.list()
-
-    def list_runs(self):
-        with self._connector(self.timeout) as connector:
-            return connector.list_runs()
-
-    def stop(self, agent_id):
-        with self._connector(self.timeout) as connector:
-            return connector.stop(agent_id)
-
-    def stop_run(self, run_id):
-        with self._connector(self.timeout) as connector:
-            return connector.stop_run(run_id)
-
-    def get_data(self, run_id):
-        with self._connector(self.timeout) as connector:
-            return connector.get_data(run_id)
-
-    def get_urls(self, run_id):
-        with self._connector(self.timeout) as connector:
-            return connector.get_urls(run_id)
-
-    def get_counts(self, run_id):
-        with self._connector(self.timeout) as connector:
-            return connector.get_counts(run_id)

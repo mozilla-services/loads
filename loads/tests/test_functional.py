@@ -225,7 +225,7 @@ class FunctionalTest(TestCase):
 
         # simulate a 'detach' answer
         def _raw_input(msg):
-            return 'd'
+            return 'detach'
 
         from loads import main
         main.raw_input = _raw_input
