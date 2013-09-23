@@ -14,6 +14,8 @@ class RemoteTestResult(TestResult):
         super(RemoteTestResult, self).__init__(config, args)
         self.counts = defaultdict(int)
         self.run_id = None
+        if args is None:
+            self.args = {}
 
     def __getattribute__(self, name):
         properties = {'nb_finished_tests': 'stopTest',
@@ -40,12 +42,12 @@ class RemoteTestResult(TestResult):
         self.counts.update(counts)
 
     def _get_values(self, name):
+        """Calls the broker to get the errors or failures.
+        """
         if name in 'failures':
             key = 'addFailure'
         elif name == 'errors':
             key = 'addError'
-        else:
-            raise NotImplementedError(name)
 
         client = Client(self.args['broker'])
 
