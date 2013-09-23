@@ -50,12 +50,22 @@ loads_status
 ------------
 
 Some messages take a `loads_status` argument. `loads_status` is a list of
-values concerning the current status of the load. It contains, in this order:
+values concerning the current status of the load.
 
-- cycles: the number of cycles that will be running in total
-- user: the number of users per cycle)
-- current_cycle: the cycle we are currently in
-- current_user: the current user that's doing the requests
+With loads, you can run cycle of runs. For instance, if you pass 10:50:100 for
+the users, it will start with 10 users in parallel, and then 50 and finally
+100.
+
+Loads status contains information about the current number of users we have to
+run for the cycle we are in (50, for instance), and the user we are currently
+taking care of (could be 12). Same applies for the hits.
+
+It contains, in this order:
+
+- hits: the number of hits that will be running on this cycle.
+- user: the number of users that will be running on this cycle.
+- current_hit: the current hit we're running.
+- current_user: the current user doing the requests.
 
 errors / exceptions
 -------------------
