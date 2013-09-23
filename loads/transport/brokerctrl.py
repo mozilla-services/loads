@@ -2,14 +2,13 @@ import random
 import time
 import sys
 import traceback
-import json
 from collections import defaultdict
 import datetime
 from uuid import uuid4
 
 from loads.db import get_database
 from loads.transport.client import DEFAULT_TIMEOUT_MOVF
-from loads.util import logger, resolve_name
+from loads.util import logger, resolve_name, json
 from loads.results import RemoteTestResult
 
 
@@ -169,14 +168,8 @@ class BrokerController(object):
         return self._db.get_metadata(data['run_id'])
 
     def save_data(self, agent_id, data):
-        # we are saving data by agent ids.
-        # we need to find out what is the run_id
-        for _agent_id, (run_id, started) in self._runs.items():
-            if _agent_id != agent_id:
-                continue
-            data['run_id'] = run_id
-            data['started'] = started
-            break
+        if agent_id in self._runs:
+            data['run_id'], data['started'] = self._runs[agent_id]
         self._db.add(data)
 
     def get_urls(self, msg, data):

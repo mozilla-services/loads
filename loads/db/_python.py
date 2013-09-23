@@ -1,10 +1,10 @@
 import os
 from collections import defaultdict
-import json
 
 from gevent.queue import Queue
 from zmq.green.eventloop import ioloop
 from loads.db import BaseDB
+from loads.util import json
 
 
 DEFAULT_DBDIR = os.path.join('/tmp', 'loads')

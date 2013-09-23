@@ -6,7 +6,6 @@
 """
 import argparse
 import errno
-import json
 import logging
 import os
 import random
@@ -22,7 +21,7 @@ import zmq
 from zmq.eventloop import ioloop, zmqstream
 
 from loads.transport import util
-from loads.util import logger, set_logger
+from loads.util import logger, set_logger, json
 from loads.transport.util import (DEFAULT_FRONTEND, DEFAULT_TIMEOUT_MOVF,
                                   DEFAULT_MAX_AGE, DEFAULT_MAX_AGE_DELTA)
 from loads.transport.message import Message

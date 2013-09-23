@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 import datetime
-import json
+import simplejson as json
 import logging
 import logging.handlers
 import os

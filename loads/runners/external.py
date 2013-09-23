@@ -1,5 +1,4 @@
 import datetime
-import json
 import os
 import subprocess
 import sys
@@ -8,7 +7,7 @@ import zmq
 from zmq.eventloop import ioloop, zmqstream
 
 from loads.runners.local import LocalRunner
-from loads.util import null_streams
+from loads.util import null_streams, json
 
 
 DEFAULT_EXTERNAL_RUNNER_RECEIVER = "ipc:///tmp/loads-external-receiver.ipc"

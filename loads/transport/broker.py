@@ -5,12 +5,11 @@ import sys
 import traceback
 import argparse
 import os
-import json
 
 import zmq.green as zmq
 from zmq.green.eventloop import ioloop, zmqstream
 
-from loads.util import set_logger, logger
+from loads.util import set_logger, logger, json
 from loads.transport.util import (register_ipc_file, DEFAULT_FRONTEND,
                                   DEFAULT_BACKEND,
                                   DEFAULT_REG, verify_broker,
