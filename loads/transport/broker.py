@@ -5,12 +5,11 @@ import sys
 import traceback
 import argparse
 import os
-import json
 
 import zmq.green as zmq
 from zmq.green.eventloop import ioloop, zmqstream
 
-from loads.util import set_logger, logger
+from loads.util import set_logger, logger, json
 from loads.transport.util import (register_ipc_file, DEFAULT_FRONTEND,
                                   DEFAULT_BACKEND,
                                   DEFAULT_REG, verify_broker,
@@ -120,7 +119,6 @@ class Broker(object):
         self.ctrl.save_data(agent_id, data)
 
     def _deregister(self):
-        logger.debug('Unregistering all agents')
         self.ctrl.unregister_agents()
 
     def _handle_reg(self, msg):
@@ -180,8 +178,6 @@ class Broker(object):
             self.send_json(target, {'error': 'unknown command %s' % cmd})
 
     def _handle_recv_back(self, msg):
-        # back => front
-        logger.debug('front <- back [%s]' % msg)
         # let's remove the agent id and track the time it took
         agent_id = msg[0]
         msg = msg[1:]
@@ -190,7 +186,6 @@ class Broker(object):
         data = json.loads(msg[-1])
         if 'error' in data:
             result = data['error']
-            logger.error(result.get('exception'))
         else:
             result = data['result']
 
@@ -201,14 +196,8 @@ class Broker(object):
                 # if the tests are finished, publish this on the pubsub.
                 self._publisher.send(json.dumps({'data_type': 'run-finished',
                                                  'run_id': run_id}))
-
-            else:
-                logger.error("agent sent back a weird status")
-                logger.error(str(result))
-
             return
 
-        logger.debug('Sending back to caller %s' % msg)
         # other things are pass-through
         try:
             self._frontstream.send_multipart(msg)

@@ -2,11 +2,11 @@ import unittest2
 import time
 import os
 import shutil
-import json
 import tempfile
 
 from zmq.green.eventloop import ioloop
 from loads.db._python import BrokerDB
+from loads.util import json
 
 
 _RUN_ID = '8b91dee8-0aec-4bb9-b0a0-87269a9c2874'

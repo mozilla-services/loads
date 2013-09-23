@@ -2,13 +2,13 @@ import threading
 from Queue import Queue
 import errno
 import contextlib
-import json
 import zlib
 import os
 import functools
 
 import zmq
 
+from loads.util import json
 from loads.transport.exc import TimeoutError, ExecutionError
 from loads.transport.message import Message
 from loads.util import logger, glob

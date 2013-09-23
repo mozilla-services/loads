@@ -280,7 +280,7 @@ class FunctionalTest(TestCase):
                 time.sleep(.1)
                 continue
             try:
-                data = self.client.get_data(runs.keys()[0])
+                data = self.client.get_data(runs.keys()[-1])
             except Exception:
                 raise AssertionError(str(runs))
 

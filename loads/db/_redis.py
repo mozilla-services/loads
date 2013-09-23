@@ -4,9 +4,9 @@ except ImportError:
     raise ImportError("You need to install http://pypi.python.org/pypi/redis")
 
 import hashlib
-from json import dumps, loads
 
 from loads.db import BaseDB
+from loads.util import json
 
 
 class RedisDB(BaseDB):
@@ -32,7 +32,7 @@ class RedisDB(BaseDB):
     #
     def save_metadata(self, run_id, metadata):
         key = 'metadata:%s' % run_id
-        self._redis.set(key, dumps(metadata))
+        self._redis.set(key, json.dumps(metadata))
 
     def update_metadata(self, run_id, **metadata):
         existing = self.get_metadata(run_id)
@@ -44,7 +44,7 @@ class RedisDB(BaseDB):
         metadata = self._redis.get(key)
         if metadata is None:
             return {}
-        return loads(metadata)
+        return json.loads(metadata)
 
     def add(self, data):
         if 'run_id' not in data:
@@ -79,7 +79,7 @@ class RedisDB(BaseDB):
             pipeline.incrby('url:%s:%s' % (run_id, url), 1)
 
         # adding data
-        dumped = dumps(data, sort_keys=True)
+        dumped = json.dumps(data)
         pipeline.lpush('data:%s' % run_id, dumped)
 
         # adding errors
@@ -137,7 +137,7 @@ class RedisDB(BaseDB):
                 end = len
 
         for index in range(start, end):
-            yield loads(self._redis.lindex(key, index))
+            yield json.loads(self._redis.lindex(key, index))
 
     def get_data(self, run_id, data_type=None, groupby=False, start=None,
                  size=None):
@@ -158,7 +158,7 @@ class RedisDB(BaseDB):
                     end = len
 
             for index in range(start, end):
-                data = loads(self._redis.lindex(key, index))
+                data = json.loads(self._redis.lindex(key, index))
                 if data_type is None or data_type == data.get('data_type'):
                     yield data
         else:
@@ -168,7 +168,8 @@ class RedisDB(BaseDB):
 
             bcounters = 'bcounters:%s' % run_id
             for hash in self._redis.smembers(bcounters):
-                data = loads(self._redis.get('bvalue:%s:%s' % (run_id, hash)))
+                data = json.loads(self._redis.get('bvalue:%s:%s' %
+                                  (run_id, hash)))
                 filtered = (data_type is not None and
                             data_type != data.get('data_type'))
                 if filtered:

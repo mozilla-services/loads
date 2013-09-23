@@ -1,6 +1,6 @@
-import json
 import unittest2
 from loads.transport.message import Message
+from loads.util import json
 
 
 class TestMessage(unittest2.TestCase):

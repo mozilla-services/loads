@@ -6,7 +6,6 @@
 """
 import argparse
 import errno
-import json
 import logging
 import os
 import random
@@ -22,7 +21,7 @@ import zmq
 from zmq.eventloop import ioloop, zmqstream
 
 from loads.transport import util
-from loads.util import logger, set_logger
+from loads.util import logger, set_logger, json
 from loads.transport.util import (DEFAULT_FRONTEND, DEFAULT_TIMEOUT_MOVF,
                                   DEFAULT_MAX_AGE, DEFAULT_MAX_AGE_DELTA)
 from loads.transport.message import Message
@@ -197,7 +196,6 @@ class Agent(object):
             res = {'result': {'status': status,
                               'command': command}}
 
-            logger.debug('Status: %s' % str(res))
             return res
         elif command == 'STOP':
             return self._stop_runs(command)
@@ -252,7 +250,6 @@ class Agent(object):
             res = {'error': {'agent_id': self.pid, 'error': '\n'.join(exc)}}
             logger.error(res)
 
-        logger.debug('Sending back to broker %s' % res)
         try:
             self._backstream.send(res)
         except Exception:

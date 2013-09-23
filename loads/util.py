@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 import datetime
-import json
+import ujson as json    # NOQA
+import json as _json
 import logging
 import logging.handlers
 import os
@@ -49,7 +50,7 @@ def total_seconds(td):
     return (td.microseconds + diff) / float(10 ** 6)
 
 
-class DateTimeJSONEncoder(json.JSONEncoder):
+class DateTimeJSONEncoder(_json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, datetime.datetime):
             return obj.isoformat()
