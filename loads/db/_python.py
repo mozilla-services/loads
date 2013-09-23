@@ -86,7 +86,7 @@ class BrokerDB(BaseDB):
                 if 'run_id' not in line:
                     line['run_id'] = run_id
 
-                f.write(json.dumps(line, sort_keys=True) + '\n')
+                f.write(json.dumps(line) + '\n')
 
     def flush(self):
 
