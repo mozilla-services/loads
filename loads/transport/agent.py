@@ -196,7 +196,6 @@ class Agent(object):
             res = {'result': {'status': status,
                               'command': command}}
 
-            logger.debug('Status: %s' % str(res))
             return res
         elif command == 'STOP':
             return self._stop_runs(command)
@@ -251,7 +250,6 @@ class Agent(object):
             res = {'error': {'agent_id': self.pid, 'error': '\n'.join(exc)}}
             logger.error(res)
 
-        logger.debug('Sending back to broker %s' % res)
         try:
             self._backstream.send(res)
         except Exception:

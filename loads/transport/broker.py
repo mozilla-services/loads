@@ -119,7 +119,6 @@ class Broker(object):
         self.ctrl.save_data(agent_id, data)
 
     def _deregister(self):
-        logger.debug('Unregistering all agents')
         self.ctrl.unregister_agents()
 
     def _handle_reg(self, msg):
@@ -179,8 +178,6 @@ class Broker(object):
             self.send_json(target, {'error': 'unknown command %s' % cmd})
 
     def _handle_recv_back(self, msg):
-        # back => front
-        logger.debug('front <- back [%s]' % msg)
         # let's remove the agent id and track the time it took
         agent_id = msg[0]
         msg = msg[1:]
@@ -200,13 +197,9 @@ class Broker(object):
                 self._publisher.send(json.dumps({'data_type': 'run-finished',
                                                  'run_id': run_id}))
 
-            else:
-                logger.error("agent sent back a weird status")
-                logger.error(str(result))
 
             return
 
-        logger.debug('Sending back to caller %s' % msg)
         # other things are pass-through
         try:
             self._frontstream.send_multipart(msg)
