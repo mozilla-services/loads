@@ -196,8 +196,6 @@ class Broker(object):
                 # if the tests are finished, publish this on the pubsub.
                 self._publisher.send(json.dumps({'data_type': 'run-finished',
                                                  'run_id': run_id}))
-
-
             return
 
         # other things are pass-through

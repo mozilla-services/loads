@@ -57,10 +57,9 @@ class BrokerDB(BaseDB):
             return json.load(f)
 
     def add(self, data):
-        run_id = data.get('run_id')
+        run_id = data['run_id']
         data_type = data.get('data_type', 'unknown')
-        size = data.get('size', 1)
-        self._counts[run_id][data_type] += size
+        self._counts[run_id][data_type] += data.get('size', 1)
         self._buffer[run_id].put(dict(data))
 
         if 'url' in data:

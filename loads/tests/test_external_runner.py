@@ -1,11 +1,11 @@
 from unittest import TestCase
 import datetime
-import json
 
 import mock
 from zmq.eventloop import ioloop
 
 from loads.runners import ExternalRunner as ExternalRunner_
+from loads.util import json
 
 
 class ExternalRunner(ExternalRunner_):

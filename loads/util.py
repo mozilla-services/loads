@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 import datetime
-import ujson as json
+import ujson as json    # NOQA
 import json as _json
 import logging
 import logging.handlers

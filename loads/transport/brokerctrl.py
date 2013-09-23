@@ -170,6 +170,7 @@ class BrokerController(object):
     def save_data(self, agent_id, data):
         if agent_id in self._runs:
             data['run_id'], data['started'] = self._runs[agent_id]
+
         self._db.add(data)
 
     def get_urls(self, msg, data):
