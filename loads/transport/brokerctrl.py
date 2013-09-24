@@ -116,13 +116,44 @@ class BrokerController(object):
             logger.error('\n'.join(exc))
 
     def clean(self):
-        # XXX here we want to check out the runs
-        # and cleanup _run given the status of the run
-        # on each agent
+        """This is called periodically to :
+
+        - send a _STATUS command to all active agents to refresh their status
+        - detect agents that have not responded for a while and discard them
+          from the run and from the agents list
+        """
+        now = time.time()
+
         for agent_id, (run_id, when) in self._runs.items():
-            status_msg = ['', json.dumps({'command': '_STATUS',
-                                          'run_id': run_id})]
-            self.send_to_agent(agent_id, status_msg)
+            # when was the last time we've got a response ?
+            if agent_id in self._agent_times:
+                __, last_status_time = self._agent_times[agent_id]
+            else:
+                last_status_time = now
+                # we want to initiate the timer
+                self._agent_times[agent_id] = now, now
+
+            # is the agent not responding since 10 seconds ?
+            if now - last_status_time > 10:
+                # let's kill the agent...
+                quit = ['', json.dumps({'command': 'QUIT'})]
+                self.send_to_agent(agent_id, quit)
+
+                # and remove it from the run
+                run_id = self.update_status(agent_id, ['terminated'])
+
+                if run_id is not None:
+                    # if the tests are finished, publish this on the pubsub.
+                    self.broker._publisher.send(json.dumps({'data_type': 'run-finished',
+                                                            'run_id': run_id}))
+            return
+
+
+            else:
+               # sending a _STATUS call to on each active agent
+                status_msg = ['', json.dumps({'command': '_STATUS',
+                                              'run_id': run_id})]
+                self.send_to_agent(agent_id, status_msg)
 
     def update_status(self, agent_id, processes_status):
         """Checks the status of the processes. If all the processes are done,
