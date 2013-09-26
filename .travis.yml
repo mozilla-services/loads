@@ -22,3 +22,6 @@ after_success:
   - coverage combine
   - pip install coveralls
   - coveralls
+branches:
+  only:
+      - master
