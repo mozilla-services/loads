@@ -5,8 +5,7 @@ import shutil
 import tempfile
 
 from zmq.green.eventloop import ioloop
-from loads.db._python import BrokerDB
-from loads.util import json
+from loads.db._python import BrokerDB, read_zfile
 
 
 _RUN_ID = '8b91dee8-0aec-4bb9-b0a0-87269a9c2874'
@@ -71,12 +70,13 @@ class TestBrokerDB(unittest2.TestCase):
         self.loop.start()
 
         # let's check if we got the data in the file
-        with open(os.path.join(self.db.directory, '1-db.json')) as f:
-            data = [json.loads(line) for line in f]
+        db = os.path.join(self.db.directory, '1-db.json')
+        data = [record for record, line in read_zfile(db)]
         data.sort()
 
-        with open(os.path.join(self.db.directory, '2-db.json')) as f:
-            data2 = [json.loads(line) for line in f]
+        db = os.path.join(self.db.directory, '2-db.json')
+        data2 = [record for record, line in read_zfile(db)]
+        data2.sort()
 
         self.assertEqual(len(data), 14)
         self.assertEqual(len(data2), 14)

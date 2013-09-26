@@ -1,3 +1,4 @@
+import zlib
 import os
 from collections import defaultdict
 
@@ -8,6 +9,49 @@ from loads.util import json
 
 
 DEFAULT_DBDIR = os.path.join('/tmp', 'loads')
+ZLIB_START = 'x\x9c'
+ZLIB_END = 'x\x8c'
+
+
+def read_zfile(filename):
+    remaining = ''
+
+    with open(filename, 'rb') as f:
+        while True:
+            data = remaining + f.read(1024)
+            if not data:
+                raise StopIteration()
+
+            size = len(data)
+            pos = 0
+
+            while pos < size:
+                # grabbing a record
+                rstart = data.find(ZLIB_START, pos)
+                rend = data.find(ZLIB_END, rstart+1)
+
+                if rend == -1 or rstart == rend:
+                    # not a full record
+                    break
+
+                line = data[rstart:rend]
+                if not line:
+                    break
+
+                try:
+                    line = zlib.decompress(line)
+                except zlib.error:
+                    raise ValueError(line)
+
+                record = json.loads(line)
+                yield record, line
+
+                pos = rend + len(ZLIB_END)
+
+            if pos < size:
+                remaining = data[pos:]
+            else:
+                remaining = ''
 
 
 class BrokerDB(BaseDB):
@@ -79,13 +123,12 @@ class BrokerDB(BaseDB):
         if run_id is None:
             run_id = 'unknown'
 
-        with open(filename, 'a+') as f:
+        with open(filename, 'ab+') as f:
             for i in range(qsize):
                 line = queue.get()
                 if 'run_id' not in line:
                     line['run_id'] = run_id
-
-                f.write(json.dumps(line) + '\n')
+                f.write(zlib.compress(json.dumps(line)) + ZLIB_END)
 
     def flush(self):
 
@@ -161,18 +204,20 @@ class BrokerDB(BaseDB):
 
         # XXX suboptimal iterates until start is reached.
         sent = 0
+        current = 0
 
-        with open(filename) as f:
-            for current, line in enumerate(iter(f.readline, '')):
-                data = json.loads(line)
-                if filter is not None and filter(data):
-                    continue
-                if start is not None and current < start:
-                    continue
-                elif end is not None and current > end or sent == size:
-                    raise StopIteration()
-                yield data, line
-                sent += 1
+        for current, (record, line) in enumerate(read_zfile(filename)):
+            # filtering
+            if filter is not None and filter(record):
+                continue
+            if start is not None and current < start:
+                continue
+            elif end is not None and current > end or sent == size:
+                raise StopIteration()
+
+            yield record, line
+
+            sent += 1
 
     def get_errors(self, run_id, start=None, size=None):
         if size is not None and start is None:
