@@ -65,7 +65,6 @@ class BrokerController(object):
     def register_agent(self, agent_id):
         if agent_id not in self._agents:
             self._agents.append(agent_id)
-            logger.debug('%r registered' % agent_id)
 
     def unregister_agents(self):
         self._agents[:] = []
@@ -101,19 +100,19 @@ class BrokerController(object):
     def send_to_agent(self, agent_id, msg):
         msg = list(msg)
 
-        # start the timer
-        self._agent_times[agent_id] = time.time(), None
-
         # now we can send to the right guy
         msg.insert(0, agent_id)
         try:
             self.broker._backstream.send_multipart(msg)
         except Exception, e:
+            logger.debug('Failed to send %s' % str(msg))
             # we don't want to die on error. we just log it
             exc_type, exc_value, exc_traceback = sys.exc_info()
             exc = traceback.format_tb(exc_traceback)
             exc.insert(0, str(e))
             logger.error('\n'.join(exc))
+            logger.debug('Removing agent')
+            self._remove_agent(agent_id)
 
     def clean(self):
         """This is called periodically to :
@@ -126,15 +125,10 @@ class BrokerController(object):
 
         for agent_id, (run_id, when) in self._runs.items():
             # when was the last time we've got a response ?
-            if agent_id in self._agent_times:
-                __, last_status_time = self._agent_times[agent_id]
-            else:
-                last_status_time = now
-                # we want to initiate the timer
-                self._agent_times[agent_id] = now, now
+            last_contact = self._agent_times.get(agent_id)
 
             # is the agent not responding since 10 seconds ?
-            if now - last_status_time > 10:
+            if last_contact is not None and now - last_contact > 10:
                 # let's kill the agent...
                 quit = ['', json.dumps({'command': 'QUIT'})]
                 self.send_to_agent(agent_id, quit)
@@ -148,7 +142,7 @@ class BrokerController(object):
                                       'run_id': run_id})
                     self.broker._publisher.send(msg)
             else:
-               # sending a _STATUS call to on each active agent
+                # sending a _STATUS call to on each active agent
                 status_msg = ['', json.dumps({'command': '_STATUS',
                                               'run_id': run_id})]
                 self.send_to_agent(agent_id, status_msg)
@@ -158,7 +152,7 @@ class BrokerController(object):
            call self.test_ended() and return the run_id. Returns None
            otherwise.
         """
-        now = time.time()
+        self._agent_times[agent_id] = time.time()
 
         if 'running' not in processes_status:
             # ended
@@ -169,20 +163,13 @@ class BrokerController(object):
                 run_id, when = self._runs[agent_id]
                 del self._runs[agent_id]
 
-                # is the whole run over ?
-                running = [run_id_ for (run_id_, when_) in self._runs.values()]
+            # is the whole run over ?
+            running = [run_id_ for (run_id_, when_) in self._runs.values()]
 
-                # we want to tell the world if the run has ended
-                if run_id not in running:
-                    self.test_ended(run_id)
-                    return run_id
-        else:
-            # not over
-            if agent_id in self._agent_times:
-                start, stop = self._agent_times[agent_id]
-                self._agent_times[agent_id] = start, now
-            else:
-                self._agent_times[agent_id] = now, now
+            # we want to tell the world if the run has ended
+            if run_id not in running:
+                self.test_ended(run_id)
+                return run_id
 
     #
     # DB APIs
@@ -242,9 +229,9 @@ class BrokerController(object):
         # That will let us make sure a dead agent on
         # a distant box is removed
         if agent_id in self._agent_times:
-            start, stop = self._agent_times[agent_id]
-            if stop is not None:
-                duration = start - stop
+            last_contact = self._agent_times.get(agent_id)
+            if last_contact is not None:
+                duration = time.time() - last_contact
                 if duration > self.agent_timeout:
                     logger.debug('The agent %r is slow (%.2f)' % (agent_id,
                                                                   duration))
@@ -309,7 +296,6 @@ class BrokerController(object):
         for agent_id in agents:
             self.send_to_agent(agent_id, stop_msg)
 
-        self.clean()
         return agents
 
     #

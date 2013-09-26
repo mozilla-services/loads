@@ -189,7 +189,7 @@ class Broker(object):
         else:
             result = data['result']
 
-        if result.get('command') == '_STATUS':
+        if result.get('command') in ('_STATUS', 'STOP', 'QUIT'):
             statuses = result['status'].values()
             run_id = self.ctrl.update_status(agent_id, statuses)
             if run_id is not None:
