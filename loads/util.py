@@ -1,4 +1,3 @@
-from contextlib import contextmanager
 import datetime
 import ujson as json    # NOQA
 import json as _json
@@ -6,7 +5,6 @@ import logging
 import logging.handlers
 import os
 import sys
-import tempfile
 import urlparse
 import math
 import fnmatch
@@ -166,22 +164,6 @@ def resolve_name(name):
             raise ImportError(exc)
 
     return ret
-
-
-@contextmanager
-def temporary_file(suffix=''):
-    """Creates a temporary file ready to be written into.
-
-    This is a context manager, so that you can ask for a new file to write to
-    inside the with block and don't care about closing the file nor deleting
-    it.
-
-    :param suffix: the suffix to eventually pass to the mkstemp operation.
-    """
-    fd, filename = tempfile.mkstemp(suffix)
-    f = os.fdopen(fd, 'w+')
-    yield (f, filename)
-    f.close()
 
 
 def get_quantiles(data, quantiles):
