@@ -169,8 +169,6 @@ def resolve_name(name):
 def get_quantiles(data, quantiles):
     """Computes the quantiles for the data array you pass along.
 
-    This assumes that the data array you're passing is already sorted.
-
     :param data: the input array
     :param quantiles: a list of quantiles you want to compute.
 
@@ -196,7 +194,7 @@ def get_quantiles(data, quantiles):
                 return data[data_len - 1]
         j = int(math.floor(j))
 
-        if g == 0:
+        if g == 0 or j == len(data) - 1:
             return data[j]
         else:
             return data[j] + (data[j + 1] - data[j]) * (c + d * g)

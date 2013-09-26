@@ -4,6 +4,7 @@ import mock
 import os
 import unittest2 as unittest2
 import sys
+import StringIO
 
 import zmq
 import gevent
@@ -11,7 +12,8 @@ import gevent
 import loads
 from loads import util
 from loads.util import (resolve_name, set_logger, logger, dns_resolve,
-                        DateTimeJSONEncoder, try_import, split_endpoint)
+                        DateTimeJSONEncoder, try_import, split_endpoint,
+                        null_streams, get_quantiles)
 from loads.transport.util import (register_ipc_file, _cleanup_ipc_files, send,
                                   TimeoutError, recv, decode_params,
                                   dump_stacks)
@@ -33,14 +35,29 @@ class _BadSocket(object):
         raise err
 
 
+class FakeStdout(object):
+    def fileno(self):
+        return 1
+
+    def flush(self):
+        pass
+
+    def write(self, data):
+        pass
+
+
 class TestUtil(unittest2.TestCase):
     def setUp(self):
         util._DNS_CACHE = {}
+        self.stdout = sys.stdout
+        sys.stdout = FakeStdout()
+
+    def tearDown(self):
+        sys.stdout = self.stdout
 
     def test_resolve(self):
         ob = resolve_name('loads.tests.test_util.TestUtil')
         self.assertTrue(ob is TestUtil)
-
         ob = resolve_name('loads')
         self.assertTrue(ob is loads)
 
@@ -178,3 +195,15 @@ class TestUtil(unittest2.TestCase):
         try_import("loads.case", "loads.tests")
         with self.assertRaises(ImportError):
             try_import("loads.nonexistent1", "loads.nonexistent2")
+
+    def test_get_quantiles(self):
+        data = range(100)
+        quantiles = 0, 0.1, 0.5, 0.9, 1
+        res = get_quantiles(data, quantiles)
+        self.assertEqual(len(res), 5)
+
+    def test_nullstreams(self):
+        stream = StringIO.StringIO()
+        null_streams([stream, sys.stdout])
+        stream.write('ok')
+        sys.stdout.write('ok')
