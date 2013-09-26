@@ -144,11 +144,9 @@ class BrokerController(object):
 
                 if run_id is not None:
                     # if the tests are finished, publish this on the pubsub.
-                    self.broker._publisher.send(json.dumps({'data_type': 'run-finished',
-                                                            'run_id': run_id}))
-            return
-
-
+                    msg = json.dumps({'data_type': 'run-finished',
+                                      'run_id': run_id})
+                    self.broker._publisher.send(msg)
             else:
                # sending a _STATUS call to on each active agent
                 status_msg = ['', json.dumps({'command': '_STATUS',
