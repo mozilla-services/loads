@@ -165,19 +165,18 @@ class LocalRunner(object):
         if self.duration is None:
             for hit in self.hits:
                 gevent.sleep(0)
-
+                loads_status = list(self.args.get('loads_status',
+                                                  (hit, user, 0, num)))
                 for current_hit in range(hit):
-                    loads_status = self.args.get('loads_status',
-                                                 (hit, user, current_hit + 1,
-                                                  num))
-                    test(loads_status=loads_status)
+                    loads_status[2] = current_hit + 1
+                    test(loads_status=list(loads_status))
                     gevent.sleep(0)
         else:
             def spawn_test():
-                hit = 0
+                loads_status = list(self.args.get('loads_status',
+                                                  (0, user, 0, num)))
                 while True:
-                    hit = hit + 1
-                    loads_status = 0, user, hit, num
+                    loads_status[2] += 1
                     test(loads_status=loads_status)
                     gevent.sleep(0)
 

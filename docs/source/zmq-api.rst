@@ -5,7 +5,7 @@ Plugin-in external runners
 
 By default, Loads is built in a way which makes it possible to have tests
 runners written in any languages. To do that, it uses `ZeroMQ
-<http://zeromq.org>`_ to do communicate.
+<http://zeromq.org>`_ to do communication.
 
 This document describes the protocol you need to implement if you want to
 create your own runner.
@@ -14,8 +14,7 @@ Existing implementations
 ========================
 
 Currently, there is only a Python implementation and a JavaScript
-implementation (using the Mocha test framework for the latter). The JS runner
-is provided in a separate project named `loads.js
+implementation The JS runner is provided in a separate project named `loads.js
 <https://github.com/mozilla-services/loads.js>`_.
 
 If you have implemented your own runner, feel free to submit us a

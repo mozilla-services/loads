@@ -1,4 +1,4 @@
-import datetime
+import time
 import os
 import subprocess
 import sys
@@ -36,18 +36,14 @@ class ExternalRunner(LocalRunner):
 
         super(ExternalRunner, self).__init__(args)
 
-        # there is a need to count the number of runs so each of them is able
-        # to distinguish from the others when sending the loads_status
-        # information.
-        self._initialize()
         self._current_step = 0
+        self._step_started_at = None
 
-        timeout = args.get('external_process_timeout', 2)
-        self._timeout = datetime.timedelta(seconds=timeout)
+        self._duration = self.args.get('duration')
+        self._timeout = args.get('external_process_timeout', 2)
 
-        self._duration = None
-        if self.args.get('duration') is not None:
-            self._duration = datetime.timedelta(seconds=args['duration'])
+        self._processes = []
+        self._processes_pending_cleanup = []
 
         # hits and users are lists that can be None.
         hits, users = [1], [1]
@@ -59,7 +55,7 @@ class ExternalRunner(LocalRunner):
 
         self.args['hits'] = hits
         self.args['users'] = users
-        self._nb_steps = max(len(hits), len(users))
+        self._num_steps = max(len(hits), len(users))
 
         self._loop = loop or ioloop.IOLoop()
 
@@ -70,15 +66,9 @@ class ExternalRunner(LocalRunner):
         self._receiver_socket = (self.args.get('zmq_receiver')
                                  or DEFAULT_EXTERNAL_RUNNER_RECEIVER)
 
-    def _initialize(self):
-        self._current_run = 0
-        self._run_started_at = None
-        self._terminated = None
-        self._processes = []
-        self._processes_pending_cleanup = []
-
     @property
     def step_hits(self):
+        # How many hits to perform in the current step.
         # Take the last value or fallback on the last one.
         if len(self.args['hits']) >= self._current_step + 1:
             step = self._current_step
@@ -88,6 +78,7 @@ class ExternalRunner(LocalRunner):
 
     @property
     def step_users(self):
+        # How many users to spawn for the current step.
         # Take the last value or fallback on the last one.
         if len(self.args['users']) >= self._current_step + 1:
             step = self._current_step
@@ -116,25 +107,16 @@ class ExternalRunner(LocalRunner):
                 terminated.append(proc)
         self._processes = active
 
-        now = datetime.datetime.now()
+        # Force step to be over if the processes have run for too long.
         if self._duration is not None:
-            if now - self._run_started_at < self._duration:
-                # Re-spawn new tests, the party need to continue.
-                for _ in terminated:
-                    self.spawn_external_runner()
-                return
-            else:
-                # Wait for all the tests to finish and exit
-                if self._terminated is None:
-                    self._terminated = now
+            time_limit = self._duration + self._timeout
+        else:
+            time_limit = self.step_hits * self._timeout
+        time_limit = self._step_started_at + time_limit
 
-                if (len(self._processes) == 0
-                        or now > self._terminated + self._timeout):
-                    self._start_next_step()
-
-        elif (len(self._processes) == 0
-              or now > self._run_started_at + self._timeout):
-            # All the tests are finished, let's exit.
+        # If we've reached the end of the step, start the next one.
+        now = time.time()
+        if len(self._processes) == 0 or now > time_limit:
             self._start_next_step()
 
         # Refresh the outputs every time we check the processes status,
@@ -150,16 +132,15 @@ class ExternalRunner(LocalRunner):
                 proc.terminate()
                 self._processes_pending_cleanup.append(proc)
         self._processes = []
+
         # Reinitialize some variables and start a new run, or exit.
-        if self._current_step + 1 >= self._nb_steps:
+        if self._current_step >= self._num_steps:
             self.stop_run()
         else:
-            self._initialize()
-            self._run_started_at = datetime.datetime.now()
+            self._step_started_at = time.time()
+            for cur_user in range(self.step_users):
+                self.spawn_external_runner(cur_user + 1)
             self._current_step += 1
-
-            for _ in range(self.step_users * self.step_hits):
-                self.spawn_external_runner()
 
     def _recv_result(self, msg):
         """Called each time the underlying processes send a message via ZMQ.
@@ -167,7 +148,6 @@ class ExternalRunner(LocalRunner):
         This is used only if we are *not* in slave mode (in slave mode, the
         messages are sent directly to the broker).
         """
-
         # Actually add a callback to process the results to avoid blocking the
         # receival of messages.
         self._loop.add_callback(self._process_result, msg)
@@ -199,12 +179,8 @@ class ExternalRunner(LocalRunner):
 
         self._prepare_filesystem()
 
-        self._run_started_at = datetime.datetime.now()
-        nb_runs = self.step_hits * self.step_users
-
         self.test_result.startTestRun(self.args.get('agent_id'))
-        for _ in range(nb_runs):
-            self.spawn_external_runner()
+        self._start_next_step()
 
         self._loop.start()
 
@@ -212,34 +188,35 @@ class ExternalRunner(LocalRunner):
             self._receiver.close()
             self.context.destroy()
 
-    def spawn_external_runner(self):
+    def spawn_external_runner(self, cur_user):
         """Spawns an external runner with the given arguments.
 
         The loads options are passed via environment variables, that is:
 
             - LOADS_AGENT_ID for the id of the agent.
-            - LOADS_STATUS for the status of the run?
             - LOADS_ZMQ_RECEIVER for the address of the ZMQ socket to send the
               results to.
             - LOADS_RUN_ID for the id of the run (shared among workers of the
               same run).
+            - LOADS_TOTAL_USERS for the total number of users in this step
+            - LOADS_CURRENT_USER for the current user number
+            - LOADS_TOTAL_HITS for the total number of hits in this step
+            - LOADS_DURATION for the total duration of this step, if any
 
         We use environment variables because that's the easiest way to pass
         parameters to non-python executables.
         """
-        self._current_run += 1
-
         cmd = self.args['test_runner'].format(test=self.args['fqn'])
 
-        loads_status = ','.join(map(str, (self.step_hits, self.step_users,
-                                          self._current_run, 1)))
-
         env = os.environ.copy()
-
         env['LOADS_AGENT_ID'] = str(self.args.get('agent_id'))
-        env['LOADS_STATUS'] = loads_status
         env['LOADS_ZMQ_RECEIVER'] = self._receiver_socket
         env['LOADS_RUN_ID'] = self.args.get('run_id', '')
+        env['LOADS_TOTAL_USERS'] = str(self.step_users)
+        env['LOADS_CURRENT_USER'] = str(cur_user)
+        env['LOADS_TOTAL_HITS'] = str(self.step_hits)
+        if self._duration is not None:
+            env['LOADS_DURATION'] = str(self._duration)
 
         def silent_output():
             null_streams([sys.stdout, sys.stderr, sys.stdin])
