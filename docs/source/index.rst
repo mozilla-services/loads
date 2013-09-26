@@ -12,7 +12,7 @@ web sockets.
 
 .. image:: https://secure.travis-ci.org/mozilla-services/loads.png?branch=master
    :alt: Build Status
-   :target: https://secure.travis-ci.org/mozilla-services/loads
+   :target: https://secure.travis-ci.org/mozilla-services/loads/
 
 .. image:: https://coveralls.io/repos/mozilla-services/loads/badge.png?branch=master
    :target: https://coveralls.io/r/mozilla-services/loads
