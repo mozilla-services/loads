@@ -2,6 +2,7 @@ import unittest2
 import tempfile
 import shutil
 from collections import defaultdict
+import time
 
 import psutil
 from zmq.green.eventloop import ioloop
@@ -17,9 +18,13 @@ class Stream(object):
     def send_multipart(self, msg):
         self.msgs.append(msg)
 
+    send = send_multipart
+
 
 class FakeBroker(object):
     _backstream = Stream()
+    _publisher = Stream()
+
     msgs = defaultdict(list)
     endpoints = {'receiver': 'xxx'}
 
@@ -146,3 +151,16 @@ class TestBrokerController(unittest2.TestCase):
         got = got.items()
         got.sort()
         self.assertEqual(msg, got)
+
+    def test_clean(self):
+        self.ctrl.agent_timeout = 0.1
+        self.ctrl._associate('run', ['1', '2'])
+        self.ctrl.clean()
+        self.assertTrue('1' in self.ctrl._agent_times)
+        self.assertTrue('2' in self.ctrl._agent_times)
+
+        time.sleep(.2)
+        self.ctrl.clean()
+
+        self.assertEqual(self.ctrl._agent_times, {})
+        self.ctrl.test_ended('run')

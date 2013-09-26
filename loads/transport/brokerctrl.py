@@ -128,7 +128,8 @@ class BrokerController(object):
             last_contact = self._agent_times.get(agent_id)
 
             # is the agent not responding since 10 seconds ?
-            if last_contact is not None and now - last_contact > 10:
+            if (last_contact is not None and
+               now - last_contact > self.agent_timeout):
                 # let's kill the agent...
                 quit = ['', json.dumps({'command': 'QUIT'})]
                 self.send_to_agent(agent_id, quit)
@@ -142,6 +143,10 @@ class BrokerController(object):
                                       'run_id': run_id})
                     self.broker._publisher.send(msg)
             else:
+                # initialize the timer
+                if last_contact is None:
+                    self._agent_times[agent_id] = now
+
                 # sending a _STATUS call to on each active agent
                 status_msg = ['', json.dumps({'command': '_STATUS',
                                               'run_id': run_id})]
