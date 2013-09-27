@@ -27,6 +27,7 @@ class _Response(object):
 
 
 class _FakeResponse(object):
+    history = False
     elapsed = 1
     cookies = {}
     headers = {}
