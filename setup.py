@@ -19,7 +19,7 @@ requires = ['pyzmq', 'psutil', 'gevent', 'requests', 'ws4py', 'webtest',
 
 
 setup(name='loads',
-      version='0.2',
+      version='0.3',
       packages=find_packages(),
       include_package_data=True,
       description='A distributed load testing tool.',
