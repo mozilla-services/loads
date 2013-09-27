@@ -1,6 +1,11 @@
 CHANGES
 =======
 
+0.3 - unreleased
+----------------
+
+- Refactored Funkload output
+
 0.2 - 2013-09-27
 ----------------
 
