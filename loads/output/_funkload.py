@@ -98,7 +98,7 @@ class FunkloadOutput(object):
         cycles = self.args['users'] or ['1']
         if isinstance(cycles, str):
             cycles = cycles.split(':')
-        self.cycle_ids = {c: i for i, c in enumerate(cycles)}
+        self.cycle_ids = dict((c, i) for i, c in enumerate(cycles))
         module, class_, method = self.args['fqn'].rsplit('.', 2)
         config = {
             'id': method,
@@ -177,7 +177,8 @@ class FunkloadOutput(object):
         # also record the *current* test for the given loads_status
         self.current_tests[current] = self.tests[key] = t
 
-    def stopTest(self, test, loads_status=None, agent_id=None, _RESULT=_RESULT):
+    def stopTest(self, test, loads_status=None, agent_id=None,
+                 _RESULT=_RESULT):
         """Generates funkload XML items with the data concerning test results.
 
         Adds new XML nodes to the list of nodes for this output.
