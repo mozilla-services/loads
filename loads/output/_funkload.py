@@ -92,7 +92,8 @@ class FunkloadOutput(object):
     # Push handlers
     #
 
-    def startTestRun(self, agent_id=None, when=None, _HEADER=_HEADER, _CONFIG=_CONFIG):
+    def startTestRun(self, agent_id=None, when=None, _HEADER=_HEADER,
+                     _CONFIG=_CONFIG):
         self.start_time = when or datetime.utcnow()
         cycles = self.args['users'] or ['1']
         if isinstance(cycles, str):
@@ -102,7 +103,8 @@ class FunkloadOutput(object):
         config = {
             'id': method,
             'class': class_,
-            'class_description': 'Loads Funkload export {}'.format(LOADS_EXPORT_VERSION),
+            'class_description': 'Loads Funkload export {}'.format(
+                LOADS_EXPORT_VERSION),
             'cycle_time': '0',  # until issue #99 is resolved
             'cycles': cycles,
             'description': 'No test description',
