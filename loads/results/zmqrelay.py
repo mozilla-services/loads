@@ -12,7 +12,7 @@ class ZMQTestResult(object):
 
     def __init__(self, args):
         self.args = args
-        self.context = zmq.Context()
+        self.context = args.get('zmq_context', zmq.Context())
         self._init_socket()
         self.encoder = DateTimeJSONEncoder()
         self.agent_id = self.args.get('agent_id')
