@@ -1,15 +1,24 @@
+import os
+import sys
+import mozilla_sphinx_theme
+
+
 extensions = []
 templates_path = ['_templates']
 source_suffix = '.rst'
 master_doc = 'index'
 project = u'Loads'
+
 copyright = u'2013, Mozilla Services'
-version = '0.2'
-release = '0.2'
+
+CURDIR = os.path.abspath(os.path.dirname(__file__))
+sys.path.append(os.path.join(CURDIR, '..', '..'))
+sys.path.append(os.path.join(CURDIR, '..'))
+
+import loads
+version = release = loads.__version__
 exclude_patterns = []
 
-import mozilla_sphinx_theme
-import os
 
 html_theme_path = [os.path.dirname(mozilla_sphinx_theme.__file__)]
 
