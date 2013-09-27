@@ -51,6 +51,9 @@ class TestRedisDB(unittest2.TestCase):
         for key in _KEYS:
             self._redis.delete(key)
 
+        self.db.flush()
+        self.db.close()
+
     def test_brokerdb(self):
         self.assertEqual(list(self.db.get_data('swwqqsw')), [])
         self.assertTrue(self.db.ping())

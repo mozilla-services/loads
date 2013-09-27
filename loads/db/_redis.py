@@ -47,17 +47,9 @@ class RedisDB(BaseDB):
         return json.loads(metadata)
 
     def add(self, data):
-        if 'run_id' not in data:
-            data['run_id'] = 'unknown'
         run_id = data['run_id']
-
-        if 'data_type' not in data:
-            data['data_type'] = 'unknown'
-        data_type = data['data_type']
-
-        if 'size' not in data:
-            data['size'] = 1
-        size = data['size']
+        data_type = data['data_type'] = data.get('data_type', 'unknown')
+        size = data.get('size', 1)
 
         pipeline = self._redis.pipeline()
         pipeline.sadd('runs', run_id)
