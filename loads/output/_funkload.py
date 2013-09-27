@@ -14,7 +14,7 @@ from loads.results.base import Test
 # This may be compatible with earlier versions of funkload, but that's the
 # one that had been used when writing this output class.
 FUNKLOAD_VERSION = "1.17.0"
-LOADS_EXPORT_VERSION = "{}-0.2".format(__version__)
+LOADS_EXPORT_VERSION = "{0}-0.2".format(__version__)
 
 
 # XML templates
@@ -103,7 +103,7 @@ class FunkloadOutput(object):
         config = {
             'id': method,
             'class': class_,
-            'class_description': 'Loads Funkload export {}'.format(
+            'class_description': 'Loads Funkload export {0}'.format(
                 LOADS_EXPORT_VERSION),
             'cycle_time': '0',  # until issue #99 is resolved
             'cycles': cycles,
@@ -204,7 +204,7 @@ class FunkloadOutput(object):
         }
 
         for traceback in chain(t.errors, t.failures):
-            traceback = ' traceback="{}"'.format(
+            traceback = ' traceback="{0}"'.format(
                 quoteattr('\n'.join(format_tb(traceback))))
             self.nodes.append(_RESULT.format(
                 result='Failure',
