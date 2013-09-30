@@ -204,7 +204,7 @@ class FunkloadOutput(object):
         }
 
         for traceback in chain(t.errors, t.failures):
-            traceback = ' traceback="{0}"'.format(
+            traceback = 'traceback={0}'.format(
                 quoteattr('\n'.join(format_tb(traceback))))
             self.nodes.append(_RESULT.format(
                 result='Failure',
