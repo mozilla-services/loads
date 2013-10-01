@@ -12,3 +12,4 @@ lib
 local
 man
 ssh_server.log
+docs/build
