@@ -35,7 +35,7 @@ coverage: build build_extras
 	LONG=1 $(BIN)/nosetests -s -d -v --cover-html --cover-html-dir=html --with-coverage --cover-erase --cover-package loads loads/tests
 
 bin/sphinx-build:
-	bin/pip install Sphinx
+	bin/pip install Sphinx mozilla_sphinx_theme
 
 
 docs:  bin/sphinx-build
