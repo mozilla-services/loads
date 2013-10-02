@@ -14,7 +14,6 @@ from loads.output import (create_output, output_list, register_output,
 from loads import output
 
 from loads.tests.support import get_tb, hush
-from loads.results.base import Hit, Test
 
 
 TIME1 = datetime.datetime(2013, 5, 14, 0, 51, 8)
@@ -174,65 +173,84 @@ class TestFileOutput(TestCase):
             shutil.rmtree(tmpdir)
 
 
+class FakeTestCase(object):
+    def __init__(self, name):
+        self._testMethodName = name
+
+
 class TestFunkloadOutput(TestCase):
 
-    @patch('loads.output._funkload.print_tb', lambda x, file: file.write(x))
+    @patch('loads.output._funkload.format_tb', lambda x: x)
     def test_file_is_written(self):
 
         # Create a fake test result object
         test_result = FakeTestResult()
-
-        # populate it with some fake hits...
-        hit = Hit(url='http://notmyidea.org',
-                  method='GET',
-                  status=200,
-                  started=TIME1,
-                  elapsed=_1,
-                  loads_status=(1, 2, 3, 4))
-        test_result.hits.append(hit)
-
-        # ...and some fake tests.
-        test_result.tests['bacon', 1] = Test(TIME1, name='bacon',
-                                             series=1, hit=1, user=1)
-        test_result.tests['bacon', 1].success = 1
-
-        test_result.tests['egg', 1] = Test(TIME1, name='egg',
-                                           series=1, hit=1, user=1)
-        test_result.tests['egg', 1].errors = [(None, None, 'youpi yeah'), ]
 
         tmpdir = tempfile.mkdtemp()
         try:
             output = FunkloadOutput(
                 test_result,
                 {'output_funkload_filename': '%s/funkload.xml' % tmpdir,
-                 'fqn': 'MyTest',
-                 'hits': 200})
+                 'fqn': 'my_test_module.MyTestCase.test_mytest',
+                 'hits': 200, 'users': [1, 2, 5], 'duration': '1'})
+
+            # Drive the observer with some tests and hits
+            output.push('startTestRun', when=TIME1)
+
+            test_case, state = FakeTestCase('test_mytest_foo'), [1, 2, 3, 4]
+            output.push('startTest', test_case, state)
+            output.push('add_hit', state, started=TIME1, elapsed=_1,
+                        url='http://example.local/foo', method='GET',
+                        status=200)
+            output.push('addSuccess', test_case, state)
+            output.push('stopTest', test_case, state)
+
+            test_case, state = FakeTestCase('test_mytest_bar'), [1, 2, 3, 4]
+            output.push('startTest', test_case, state)
+            output.push('add_hit', state, started=TIME1, elapsed=_1,
+                        url='http://example.local/bar', method='GET',
+                        status=500)
+            output.push('addFailure', test_case, ['mock', 'traceback'], state)
+            output.push('stopTest', test_case, [1, 2, 3, 4])
+
             output.flush()
 
             with open('%s/funkload.xml' % tmpdir) as f:
                 content = f.read()
-                test = (('<response cycle="000" cvus="2" thread="000" '
-                         'suite="" name="" step="001" number="001" type="GET" '
-                         'result="Successful" url="http://notmyidea.org" '
-                         'code="200" description="" time="'),
-                        ('" duration="1.0" />'))
+                test = (
+                    '<response\n    cycle="001" cvus="002" thread="004" '
+                    'suite="" name=""\n    step="001" number="001" '
+                    'type="get" result="Successful" '
+                    'url="http://example.local/foo"\n    code="200" '
+                    'description="" time="1368492668" duration="1.0" />',)
                 for t in test:
                     self.assertIn(t, content)
 
-                test = (('<testResult cycle="000" cvus="1" thread="000" '
-                         'suite="" name="" time="'),
-                        ('" result="Success" steps="1" duration="0" '
-                         'connection_duration="" requests="" pages="" '
-                         'xmlrpc="" redirects="" images="" links="" />'))
+                test = (
+                    '<testResult\n    cycle="001" cvus="002" thread="004" '
+                    'suite="FakeTestCase"\n    name="test_mytest_foo" ',
+                    'result="Successful" steps="1"\n',
+                    'connection_duration="0" requests="1"\n    pages="1" '
+                    'xmlrpc="0" redirects="0" images="0" links="0"\n    />')
                 for t in test:
                     self.assertIn(t, content)
 
-                test = (('<testResult cycle="000" cvus="1" thread="000" '
-                         'suite="" name="" time="'),
-                        ('result="Failure" steps="1" duration="0" '
-                         'connection_duration="" requests="" pages="" '
-                         'xmlrpc="" redirects="" images="" links="" '
-                         'traceback="youpi yeah" />'))
+                test = (
+                    '<response\n    cycle="001" cvus="002" thread="004" '
+                    'suite="" name=""\n    step="001" number="001" '
+                    'type="get" result="Successful" '
+                    'url="http://example.local/bar"\n    code="500" '
+                    'description="" time="1368492668" duration="1.0" />',)
+                for t in test:
+                    self.assertIn(t, content)
+
+                test = (
+                    '<testResult\n    cycle="001" cvus="002" thread="004" '
+                    'suite="FakeTestCase"\n    name="test_mytest_foo" ',
+                    'result="Failure" steps="1"\n',
+                    'connection_duration="0" requests="1"\n    pages="1" '
+                    'xmlrpc="0" redirects="0" images="0" links="0"\n'
+                    '    traceback="mock&#10;traceback"/>')
                 for t in test:
                     self.assertIn(t, content)
 
