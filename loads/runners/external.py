@@ -55,7 +55,7 @@ class ExternalRunner(LocalRunner):
 
         self.args['hits'] = hits
         self.args['users'] = users
-        self._num_steps = max(len(hits), len(users))
+        self._nb_steps = max(len(hits), len(users))
 
         self._loop = loop or ioloop.IOLoop()
 
@@ -134,7 +134,7 @@ class ExternalRunner(LocalRunner):
         self._processes = []
 
         # Reinitialize some variables and start a new run, or exit.
-        if self._current_step >= self._num_steps:
+        if self._current_step >= self._nb_steps:
             self.stop_run()
         else:
             self._step_started_at = time.time()

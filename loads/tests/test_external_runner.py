@@ -62,16 +62,16 @@ class TestExternalRunner(TestCase):
         runner._current_step += 1
         self.assertEquals(runner.step_users, 10)
 
-    def test_num_steps(self):
+    def test_nb_steps(self):
         runner = ExternalRunner({'users': [1, 2, 10]})
-        self.assertEquals(runner._num_steps, 3)
+        self.assertEquals(runner._nb_steps, 3)
 
         runner = ExternalRunner({'hits': [1, 2, 10]})
-        self.assertEquals(runner._num_steps, 3)
+        self.assertEquals(runner._nb_steps, 3)
 
         runner = ExternalRunner({'users': [1, 2, 10],
                                  'hits': [1, 2, 3, 4]})
-        self.assertEquals(runner._num_steps, 4)
+        self.assertEquals(runner._nb_steps, 4)
 
     def test_check_processes_waits_for_step_to_complete(self):
         runner = ExternalRunner()
@@ -111,7 +111,7 @@ class TestExternalRunner(TestCase):
         runner = ExternalRunner()
         runner.stop_run = mock.MagicMock()
         runner._current_step = 1
-        runner._num_steps = 1
+        runner._nb_steps = 1
 
         procs = [FakeProcess(running=True), FakeProcess(running=False)]
         runner._processes = procs
@@ -127,7 +127,7 @@ class TestExternalRunner(TestCase):
         runner.spawn_external_runner = mock.MagicMock()
 
         runner._current_step = 0
-        runner._num_steps = 2
+        runner._nb_steps = 2
         self.assertTrue(runner._step_started_at is None)
 
         runner._start_next_step()
