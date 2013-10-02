@@ -167,7 +167,7 @@ class TestExternalRunner(TestCase):
     def test_execute_step_users(self):
         loop = ioloop.IOLoop()
         loop.start = mock.Mock()
-        runner = ExternalRunner({'hits': [1], 'users': [1,3,5]}, loop)
+        runner = ExternalRunner({'hits': [1], 'users': [1, 3, 5]}, loop)
         runner._prepare_filesystem = mock.Mock()
         runner.spawn_external_runner = mock.Mock()
 
