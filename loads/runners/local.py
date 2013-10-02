@@ -1,11 +1,11 @@
 import os
 import subprocess
 import sys
-import shutil
 
 import gevent
 
-from loads.util import resolve_name, glob, logger
+from loads.util import (resolve_name, logger, pack_include_files,
+                        unpack_include_files)
 from loads.results import ZMQTestResult, TestResult
 from loads.output import create_output
 
@@ -200,18 +200,13 @@ class LocalRunner(object):
                 if not os.path.exists(test_dir):
                     os.makedirs(test_dir)
 
-                # grab the files, if any
+                # Copy over the include files, if any.
+                # It's inefficient to package them up and then immediately
+                # unpackage them, but this has the advantage of ensuring
+                # consistency with how it's done in the distributed case.
                 includes = self.args.get('include_file', [])
-
-                for file_ in glob(includes):
-                    logger.debug('Copying %r' % file_)
-                    target = os.path.join(test_dir, file_)
-                    if os.path.isdir(file_):
-                        if os.path.exists(target):
-                            shutil.rmtree(target)
-                        shutil.copytree(file_, target)
-                    else:
-                        shutil.copyfile(file_, target)
+                filedata = pack_include_files(includes)
+                unpack_include_files(filedata, test_dir)
 
             # change to execution directory if asked
             logger.debug('chdir %r' % test_dir)
