@@ -1,11 +1,11 @@
 .. _zmq-api:
 
-Plugin-in external runners
+Pluging-in external runners
 ###########################
 
-By default, Loads is built in a way which makes it possible to have tests
-runners written in any languages. To do that, it uses `ZeroMQ
-<http://zeromq.org>`_ to do communicate.
+Loads is built in a way which makes it possible to have tests
+runners written in any language. To do that, it uses `ZeroMQ
+<http://zeromq.org>`_ to do communication.
 
 This document describes the protocol you need to implement if you want to
 create your own runner.
@@ -14,17 +14,64 @@ Existing implementations
 ========================
 
 Currently, there is only a Python implementation and a JavaScript
-implementation (using the Mocha test framework for the latter). The JS runner
-is provided in a separate project named `loads.js
+implementation. The JS runner is provided in a separate project named `loads.js
 <https://github.com/mozilla-services/loads.js>`_.
 
 If you have implemented your own runner, feel free to submit us a
 patch or a pull request.
 
+Using an external runner
+========================
+
+To instruct loads to use an external test runner, specify the path to the
+executable in the **--test-runner** option like this::
+
+    $ loads-runner --test-runner="./loadsjs/runner.js {test}" javascript_tests.js
+
+The format variable `{test}` will be replaced with the fully-qualified test
+name that is specified on the command-line.
+
 The protocol
 ============
 
-Each message sent to Loads needs to respect the following rules:
+Loads will spawn one instance of the external runner process per user, per
+cycle.  Details about the current cycle are passed in environment variables
+as follows:
+
+- **LOADS_ZMQ_RECEIVER**: The ZeroMQ endpoint to which all reporting and test
+  result data should be sent.  This is the only channel for the runner to
+  send data back to loads.
+
+- **LOADS_AGENT_ID**: The id of the agent running these tests.  This is used
+  to distinguish between results from multiple agents that may be reporting
+  to a common broker.
+
+- **LOADS_RUN_ID**: The unique id for the current run.  This is shared among
+  all agents participating in a run, and used to distinguish between multiple
+  runs being executed by a common broker.
+
+- **LOADS_TOTAL_USERS**: The total number of users in the current cycle. This
+  must be reported back as part of the loads_status field as described below.
+
+- **LOADS_CURRENT_USER**: The particular user for which this process has been
+  spawned. This must be reported back as part of the loads_status field as 
+  described below.
+  
+- **LOADS_TOTAL_HITS**: The total number of hits to perform for this cycle.
+  The runner must execute the specified tests this many times, and include the
+  current hit number in the loads_status field a described below.
+
+- **LOADS_DURATION**: The required duration of the cycle, in seconds.  If
+  present then the runner must perform the tests in a loop until this many
+  seconds have elapsed.
+  
+
+The **LOADS_TOTAL_HITS** and **LOADS_DURATION** variables define how many
+runs of the tests should be performed, and are equivalent to the **--hits**
+and **--duration** command-line arguments.
+
+The runner reports on its progress by sending messages to the specified ZeroMQ
+endpoint.  Each message sent to Loads needs to respect the following rules:
 
 - All the data is JSON encoded.
 - Dates are expressed in `ISO 8601 format

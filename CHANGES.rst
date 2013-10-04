@@ -5,6 +5,7 @@ CHANGES
 ----------------
 
 - Refactored Funkload output
+- Refactored external runner interface
 
 0.2 - 2013-09-27
 ----------------

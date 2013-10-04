@@ -1,5 +1,5 @@
 from unittest import TestCase
-import datetime
+import time
 
 import mock
 from zmq.eventloop import ioloop
@@ -35,6 +35,7 @@ class FakeProcess(object):
 
 
 class TestExternalRunner(TestCase):
+
     def test_step_hits(self):
         runner = ExternalRunner({'hits': [1, 2, 10]})
         self.assertEquals(runner.step_hits, 1)
@@ -72,78 +73,44 @@ class TestExternalRunner(TestCase):
                                  'hits': [1, 2, 3, 4]})
         self.assertEquals(runner._nb_steps, 4)
 
-    def test_check_processes_wait(self):
+    def test_check_processes_waits_for_step_to_complete(self):
         runner = ExternalRunner()
         runner._start_next_step = mock.MagicMock()
-        runner._run_started_at = datetime.datetime.now()
+        runner._step_started_at = time.time()
 
         runner._processes = [FakeProcess(running=False),
                              FakeProcess(running=True)]
         runner._check_processes()
         self.assertFalse(runner._start_next_step.called)
 
-    def test_check_processes_timeouts(self):
+        runner._processes[0]._running = False
+        runner._check_processes()
+        self.assertTrue(runner._start_next_step.called)
+
+    def test_check_processes_ends_step_if_procs_time_out(self):
         runner = ExternalRunner({'process_timeout': 2})
         runner._start_next_step = mock.MagicMock()
-        runner._run_started_at = (
-            datetime.datetime.now() - datetime.timedelta(seconds=5))
+        runner._step_started_at = time.time() - 5
 
         runner._processes = [FakeProcess(running=False),
                              FakeProcess(running=True)]
         runner._check_processes()
         self.assertTrue(runner._start_next_step.called)
 
-    def test_check_processes_finishes(self):
+    def test_check_processes_reaps_pending_processes(self):
         runner = ExternalRunner()
         runner._start_next_step = mock.MagicMock()
-        runner._run_started_at = datetime.datetime.now()
-
-        runner._processes = [FakeProcess(running=True),
-                             FakeProcess(running=True)]
-        runner._check_processes()
-        self.assertFalse(runner._start_next_step.called)
-
-    def test_check_processes_respawn_when_using_duration(self):
-        runner = ExternalRunner({'duration': 5})
-        runner._start_next_step = mock.MagicMock()
-        runner.spawn_external_runner = mock.MagicMock()
-        runner._run_started_at = datetime.datetime.now()
-
-        runner._processes = [FakeProcess(running=False),
-                             FakeProcess(running=False)]
-        runner._check_processes()
-        self.assertTrue(runner.spawn_external_runner.called)
-        self.assertEquals(2, runner.spawn_external_runner.call_count)
-        self.assertFalse(runner._start_next_step.called)
-
-    def test_check_processes_stop_respawning_when_duration_is_over(self):
-        runner = ExternalRunner({'duration': 5})
-        runner._start_next_step = mock.MagicMock()
-        runner.spawn_external_runner = mock.MagicMock()
-        runner._run_started_at = (
-            datetime.datetime.now() - datetime.timedelta(seconds=10))
-
-        runner._processes = [FakeProcess(running=False),
-                             FakeProcess(running=False)]
-        runner._check_processes()
-        self.assertFalse(runner.spawn_external_runner.called)
-        self.assertTrue(runner._start_next_step.called)
-
-    def test_check_processes_adds_pending_processes(self):
-        runner = ExternalRunner()
-        runner._start_next_step = mock.MagicMock()
-        runner.spawn_external_runner = mock.MagicMock()
-        runner._run_started_at = datetime.datetime.now()
+        runner._step_started_at = time.time()
 
         runner._processes_pending_cleanup = [FakeProcess(running=True),
                                              FakeProcess(running=False)]
         runner._check_processes()
         self.assertEquals(len(runner._processes_pending_cleanup), 1)
 
-    def test_processes_are_reaped(self):
+    def test_processes_are_reaped_at_end_of_step(self):
         runner = ExternalRunner()
         runner.stop_run = mock.MagicMock()
-        runner._current_step = 0
+        runner._current_step = 1
         runner._nb_steps = 1
 
         procs = [FakeProcess(running=True), FakeProcess(running=False)]
@@ -154,18 +121,25 @@ class TestExternalRunner(TestCase):
         self.assertEquals(len(runner._processes), 0)
         self.assertTrue(procs[0] in runner._processes_pending_cleanup)
 
-    def test_runner_is_reinitialized(self):
+    def test_runner_is_reinitialized_on_each_step(self):
         runner = ExternalRunner()
         runner.stop_run = mock.MagicMock()
-        runner._initialize = mock.MagicMock()
         runner.spawn_external_runner = mock.MagicMock()
 
         runner._current_step = 0
         runner._nb_steps = 2
+        self.assertTrue(runner._step_started_at is None)
 
         runner._start_next_step()
         self.assertFalse(runner.stop_run.called)
-        self.assertTrue(runner._initialize.called)
+        self.assertEqual(runner._current_step, 1)
+        self.assertTrue(runner._step_started_at is not None)
+
+        runner._step_started_at = None
+        runner._start_next_step()
+        self.assertFalse(runner.stop_run.called)
+        self.assertEqual(runner._current_step, 2)
+        self.assertTrue(runner._step_started_at is not None)
 
         runner._start_next_step()
         self.assertTrue(runner.stop_run.called)
@@ -186,18 +160,59 @@ class TestExternalRunner(TestCase):
 
         runner._execute()
 
+        self.assertTrue(loop.start.called)
         self.assertTrue(runner._prepare_filesystem.called)
+        self.assertEquals(runner.spawn_external_runner.call_count, 2)
+
+    def test_execute_step_users(self):
+        loop = ioloop.IOLoop()
+        loop.start = mock.Mock()
+        runner = ExternalRunner({'hits': [1], 'users': [1, 3, 5]}, loop)
+        runner._prepare_filesystem = mock.Mock()
+        runner.spawn_external_runner = mock.Mock()
+
+        runner._execute()
+        self.assertTrue(loop.start.called)
+        self.assertTrue(runner._prepare_filesystem.called)
+        self.assertEquals(runner.spawn_external_runner.call_count, 1)
+
+        runner._start_next_step()
         self.assertEquals(runner.spawn_external_runner.call_count, 4)
+
+        runner._start_next_step()
+        self.assertEquals(runner.spawn_external_runner.call_count, 9)
 
     @mock.patch('loads.runners.external.subprocess.Popen',
                 lambda *args, **kwargs: FakeProcess(options=(args, kwargs)))
     def test_spawn_external_runner(self):
         runner = ExternalRunner({'test_runner': 'foobar', 'hits': [2, 3],
                                  'users': [2, 4], 'fqn': 'baz'})
-        runner.spawn_external_runner()
+        runner.spawn_external_runner(1)
         self.assertEquals(len(runner._processes), 1)
 
         args, kwargs = runner._processes[0].options
         self.assertTrue(['foobar'] in args)
         loads_options = [e for e in kwargs['env'] if e.startswith('LOADS_')]
-        self.assertEquals(len(loads_options), 4)
+        loads_options.sort()
+        self.assertEquals(loads_options,
+                          ["LOADS_AGENT_ID", "LOADS_CURRENT_USER",
+                           "LOADS_RUN_ID", "LOADS_TOTAL_HITS",
+                           "LOADS_TOTAL_USERS", "LOADS_ZMQ_RECEIVER"])
+
+    @mock.patch('loads.runners.external.subprocess.Popen',
+                lambda *args, **kwargs: FakeProcess(options=(args, kwargs)))
+    def test_spawn_external_runner_with_duration(self):
+        runner = ExternalRunner({'test_runner': 'foobar', 'duration': 5,
+                                 'users': [2, 4], 'fqn': 'baz'})
+        runner.spawn_external_runner(1)
+        self.assertEquals(len(runner._processes), 1)
+
+        args, kwargs = runner._processes[0].options
+        self.assertTrue(['foobar'] in args)
+        loads_options = [e for e in kwargs['env'] if e.startswith('LOADS_')]
+        loads_options.sort()
+        self.assertEquals(loads_options,
+                          ["LOADS_AGENT_ID", "LOADS_CURRENT_USER",
+                           "LOADS_DURATION", "LOADS_RUN_ID",
+                           "LOADS_TOTAL_HITS", "LOADS_TOTAL_USERS",
+                           "LOADS_ZMQ_RECEIVER"])

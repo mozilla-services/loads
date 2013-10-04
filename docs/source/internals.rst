@@ -116,6 +116,10 @@ the results directly or proxy them to a ZMQ backend.
 The latter, the `DistributedRunner`, runs the tests on a Loads cluster, using
 a :term:`broker` and one or more :term:`agents`.
 
+There is also an `ExternalRunner` class that spawns subprocesses to run the
+tests.  This can be used to write tests in a language other than python, and
+have them report results using the same ZeroMQ API as the python runner.
+
 A runner has a constructor, which takes an ``arg`` argument, a dict, with all
 the startup options it may need. It is then started with the `execute` method.
 
