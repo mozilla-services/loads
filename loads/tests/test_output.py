@@ -210,7 +210,11 @@ class TestFunkloadOutput(TestCase):
             output.push('add_hit', state, started=TIME1, elapsed=_1,
                         url='http://example.local/bar', method='GET',
                         status=500)
-            output.push('addFailure', test_case, ['mock', 'traceback'], state)
+            output.push(
+                'addFailure', test_case, (
+                    Exception, Exception('Mock Exception'),
+                    ['mock', 'traceback']),
+                state)
             output.push('stopTest', test_case, [1, 2, 3, 4])
 
             output.flush()

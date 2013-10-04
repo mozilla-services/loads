@@ -163,11 +163,11 @@ class FunkloadOutput(object):
 
     def addError(self, test, exc_info, loads_status, agent_id=None):
         test = self._get_test(test, loads_status, agent_id)
-        test.errors.append(exc_info)
+        test.errors.append(exc_info[2])
 
     def addFailure(self, test, exc_info, loads_status, agent_id=None):
         test = self._get_test(test, loads_status, agent_id)
-        test.failures.append(exc_info)
+        test.failures.append(exc_info[2])
 
     def startTest(self, test, loads_status=None, agent_id=None):
         hit, user = loads_status[:2]
