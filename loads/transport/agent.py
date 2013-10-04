@@ -14,14 +14,13 @@ import shlex
 import sys
 import time
 import traceback
-import zlib
 from collections import defaultdict
 
 import zmq
 from zmq.eventloop import ioloop, zmqstream
 
 from loads.transport import util
-from loads.util import logger, set_logger, json
+from loads.util import logger, set_logger, json, unpack_include_files
 from loads.transport.util import (DEFAULT_FRONTEND, DEFAULT_TIMEOUT_MOVF,
                                   DEFAULT_MAX_AGE, DEFAULT_MAX_AGE_DELTA)
 from loads.transport.message import Message
@@ -110,32 +109,6 @@ class Agent(object):
                                               ping_delay * 1000,
                                               io_loop=self.loop)
 
-    def _copy_files(self, data):
-        old_dir = os.getcwd()
-        try:
-            test_dir = data['args'].get('test_dir')
-
-            if test_dir is not None:
-                if not os.path.exists(test_dir):
-                    logger.debug('Creating the test directory "%r"' % test_dir)
-                    os.makedirs(test_dir)
-
-                logger.debug('Moving to %r' % test_dir)
-                os.chdir(test_dir)
-
-            for filename, file_data in data['files'].items():
-                dirname = os.path.dirname(filename)
-                if not os.path.exists(dirname):
-                    os.makedirs(dirname)
-
-                with open(filename, 'w') as f:
-                    logger.debug('Creating %r in %r' % (filename,
-                                                        os.getcwd()))
-                    file_data = file_data.encode('latin1')
-                    f.write(zlib.decompress(file_data))
-        finally:
-            os.chdir(old_dir)
-
     def _run(self, args, run_id=None):
         logger.debug('Starting a run.')
 
@@ -167,8 +140,11 @@ class Agent(object):
 
         if command == 'RUN':
             # XXX should be done in _run or at least asynchronously
-            if 'files' in data:
-                self._copy_files(data)
+            if 'filedata' in data:
+                test_dir = data['args'].get('test_dir', '.')
+                if not os.path.exists(test_dir):
+                    os.makedirs(test_dir)
+                unpack_include_files(data['filedata'], test_dir)
 
             args = data['args']
             run_id = data.get('run_id')

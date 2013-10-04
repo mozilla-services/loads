@@ -9,6 +9,8 @@ import urlparse
 import math
 import fnmatch
 import random
+import zipfile
+from cStringIO import StringIO
 
 from gevent import socket as gevent_socket
 
@@ -219,9 +221,69 @@ def try_import(*packages):
 
 def glob(patterns, location='.'):
     for pattern in patterns:
-        for file_ in os.listdir(location):
+        basedir, pattern = os.path.split(pattern)
+        basedir = os.path.abspath(os.path.join(location, basedir))
+        for file_ in os.listdir(basedir):
             if fnmatch.fnmatch(file_, pattern):
-                yield os.path.join(location, file_)
+                yield os.path.join(basedir, file_)
+
+
+def pack_include_files(include_files, location='.'):
+    """Package up the specified include_files into a zipfile data bundle.
+
+    This is a convenience function for packaging up data files into a binary
+    blob, that can then be shipped to the different agents.  Unpack the files
+    using unpack_include_files().
+    """
+    file_data = StringIO()
+    zf = zipfile.ZipFile(file_data, "w", compression=zipfile.ZIP_DEFLATED)
+
+    def store_file(name, filepath):
+        info = zipfile.ZipInfo(name)
+        info.external_attr =  os.stat(filepath).st_mode << 16L
+        with open(filepath) as f:
+            zf.writestr(info, f.read())
+
+    for basepath in glob(include_files, location):
+        basedir, basename = os.path.split(basepath)
+        if not os.path.isdir(basepath):
+            store_file(basename, basepath)
+        else:
+            for root, dirnames, filenames in os.walk(basepath):
+                for filename in filenames:
+                    filepath = os.path.join(root, filename)
+                    store_file(filepath[len(basedir):], filepath)
+
+    zf.close()
+    return file_data.getvalue()
+
+
+def maybe_makedirs(dirpath):
+    """Like os.makedirs, but not an error if the final directory exists."""
+    if not os.path.isdir(dirpath):
+        os.makedirs(dirpath)
+
+
+def unpack_include_files(file_data, location='.'):
+    """Unpackage a blob of include_files data into the specified directory.
+
+    This is a convenience function for unpackaging data files from a binary
+    blob, that can be used on the different agents.  It accepts data in the
+    format produced by pack_include_files().
+    """
+    zf = zipfile.ZipFile(StringIO(file_data), "r")
+    for itemname in zf.namelist():
+        itempath = os.path.join(location, itemname.lstrip("/"))
+        if itemname.endswith("/"):
+            maybe_makedirs(itempath)
+        else:
+            maybe_makedirs(os.path.dirname(itempath))
+            with open(itempath, "w") as f:
+                f.write(zf.read(itemname))
+            mode = zf.getinfo(itemname).external_attr >> 16L
+            if mode:
+                os.chmod(itempath, mode)
+    zf.close()
 
 
 def null_streams(streams):

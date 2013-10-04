@@ -2,8 +2,6 @@ import threading
 from Queue import Queue
 import errno
 import contextlib
-import zlib
-import os
 import functools
 
 import zmq
@@ -11,7 +9,7 @@ import zmq
 from loads.util import json
 from loads.transport.exc import TimeoutError, ExecutionError
 from loads.transport.message import Message
-from loads.util import logger, glob
+from loads.util import logger, pack_include_files
 from loads.transport.util import (send, recv, DEFAULT_FRONTEND,
                                   timed, DEFAULT_TIMEOUT,
                                   DEFAULT_TIMEOUT_MOVF,
@@ -138,26 +136,7 @@ class Client(object):
                'agents': agents_needed,
                'args': args}
 
-        files = {}
-
-        for file_ in glob(includes):
-            logger.debug('Compressing %r' % file_)
-
-            # no stream XXX
-            if os.path.isdir(file_):
-                for root, dirs, _files in os.walk(file_):
-                    for f in _files:
-                        fullname = os.path.join(root, f)
-                        with open(fullname) as f:
-                            data = zlib.compress(f.read()).decode('latin1')
-                        files[fullname] = data
-            else:
-                with open(file_) as f:
-                    data = zlib.compress(f.read()).decode('latin1')
-
-                files[file_] = data
-
-        cmd['files'] = files
+        cmd['filedata'] = pack_include_files(includes)
         res = self.execute(cmd)
         logger.debug('Run on its way')
         logger.debug(res)

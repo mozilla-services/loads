@@ -1,10 +1,11 @@
-from tempfile import mkstemp
+from tempfile import mkstemp, mkdtemp
 import datetime
 import mock
 import os
 import unittest2 as unittest2
 import sys
 import StringIO
+import shutil
 
 import zmq
 import gevent
@@ -13,7 +14,8 @@ import loads
 from loads import util
 from loads.util import (resolve_name, set_logger, logger, dns_resolve,
                         DateTimeJSONEncoder, try_import, split_endpoint,
-                        null_streams, get_quantiles)
+                        null_streams, get_quantiles, pack_include_files,
+                        unpack_include_files)
 from loads.transport.util import (register_ipc_file, _cleanup_ipc_files, send,
                                   TimeoutError, recv, decode_params,
                                   dump_stacks)
@@ -207,3 +209,68 @@ class TestUtil(unittest2.TestCase):
         null_streams([stream, sys.stdout])
         stream.write('ok')
         sys.stdout.write('ok')
+
+
+class TestIncludeFileHandling(unittest2.TestCase):
+
+    def setUp(self):
+        self.workdir = mkdtemp()
+        self.orig_cwd = os.getcwd()
+        os.chdir(self.workdir)
+
+    def tearDown(self):
+        os.chdir(self.orig_cwd)
+        shutil.rmtree(self.workdir)
+
+    def test_include_of_single_file(self):
+        with open("test1.txt", "w") as f:
+            f.write("hello world")
+        filedata = pack_include_files(["test1.txt"])
+        os.makedirs("outdir")
+        os.chdir("outdir")
+        unpack_include_files(filedata)
+        self.assertEquals(os.listdir("."), ["test1.txt"])
+
+    def test_include_of_single_file_with_explicit_location(self):
+        os.makedirs("indir")
+        os.makedirs("outdir")
+        with open("indir/test1.txt", "w") as f:
+            f.write("hello world")
+        filedata = pack_include_files(["*.txt"], "./indir")
+        unpack_include_files(filedata, "./outdir")
+        self.assertEquals(os.listdir("outdir"), ["test1.txt"])
+
+    def test_preservation_of_file_mode(self):
+        with open("test1.sh", "w") as f:
+            f.write("#!/bin/sh\necho 'hello world'\n")
+        os.chmod("test1.sh", 0755)
+        with open("private.txt", "w") as f:
+            f.write("TOP SECRET DATA\n")
+        os.chmod("private.txt", 0600)
+        filedata = pack_include_files(["*.*"])
+        os.unlink("test1.sh")
+        os.unlink("private.txt")
+        unpack_include_files(filedata)
+        self.assertEquals(os.stat("test1.sh").st_mode & 0777, 0755)
+        self.assertEquals(os.stat("private.txt").st_mode & 0777, 0600)
+
+    def test_relative_globbing_and_direcotry_includes(self):
+        os.makedirs("indir")
+        os.makedirs("outdir")
+        os.chdir("indir")
+        with open("test1.txt", "w") as f:
+            f.write("hello world")
+        with open("test2.txt", "w") as f:
+            f.write("hello world")
+        os.makedirs("subdir/subsubdir")
+        os.chdir("subdir/subsubdir")
+        with open("test3.txt", "w") as f:
+            f.write("hello world")
+        os.chdir("../../../outdir")
+        filedata = pack_include_files(["../indir/*.txt", "../indir/*dir"])
+        unpack_include_files(filedata)
+        self.assertEquals(sorted(os.listdir(".")),
+                          ["subdir", "test1.txt", "test2.txt"])
+        self.assertEquals(os.listdir("./subdir"), ["subsubdir"])
+        self.assertEquals(os.listdir("./subdir/subsubdir"), ["test3.txt"])
+        
