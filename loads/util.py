@@ -271,7 +271,9 @@ def unpack_include_files(file_data, location='.'):
     blob, that can be used on the different agents.  It accepts data in the
     format produced by pack_include_files().
     """
-    zf = zipfile.ZipFile(StringIO(file_data), "r")
+    file_data = str(file_data)
+    zf = zipfile.ZipFile(StringIO(file_data))
+
     for itemname in zf.namelist():
         itempath = os.path.join(location, itemname.lstrip("/"))
         if itemname.endswith("/"):

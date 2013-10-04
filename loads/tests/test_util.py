@@ -273,4 +273,10 @@ class TestIncludeFileHandling(unittest2.TestCase):
                           ["subdir", "test1.txt", "test2.txt"])
         self.assertEquals(os.listdir("./subdir"), ["subsubdir"])
         self.assertEquals(os.listdir("./subdir/subsubdir"), ["test3.txt"])
-        
+
+    def test_unicode_unpack(self):
+        # make sure we pass string
+        data = (u'PK\x05\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                 '\x00\x00\x00\x00\x00\x00\x00\x00\x00')
+
+        unpack_include_files(data)
