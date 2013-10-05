@@ -240,7 +240,7 @@ def pack_include_files(include_files, location='.'):
 
     def store_file(name, filepath):
         info = zipfile.ZipInfo(name)
-        info.external_attr =  os.stat(filepath).st_mode << 16L
+        info.external_attr = os.stat(filepath).st_mode << 16L
         with open(filepath) as f:
             zf.writestr(info, f.read())
 

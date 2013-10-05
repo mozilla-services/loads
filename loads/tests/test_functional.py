@@ -12,8 +12,10 @@ import requests
 import tempfile
 import shutil
 import sys
+import zipfile
+from cStringIO import StringIO
 
-from unittest2 import TestCase, skipIf
+from unittest2 import TestCase
 
 from loads.main import run as start_runner
 from loads.runners import LocalRunner, DistributedRunner
@@ -293,3 +295,30 @@ class FunctionalTest(TestCase):
 
         if data == []:
             raise AssertionError('No data back')
+
+    def test_sending_crap_ujson(self):
+        test_dir = self._get_dir()
+        os.chdir(os.path.dirname(__file__))
+
+        data = StringIO()
+        filepath = 'test_here.py'
+        zf = zipfile.ZipFile(data, "w", compression=zipfile.ZIP_DEFLATED)
+        info = zipfile.ZipInfo('test_here.py')
+        info.external_attr = os.stat(filepath).st_mode << 16L
+
+        with open(filepath) as f:
+            zf.writestr(info, f.read())
+
+        zf.close()
+        data = data.getvalue()
+
+        args = get_runner_args(
+            fqn='test_here.TestWebSite.test_something',
+            agents=1,
+            users=1,
+            hits=1,
+            test_dir=test_dir,
+            include_file=['test_here.py'])
+
+        args['crap'] = data
+        self.assertRaises(ValueError, start_runner, args)

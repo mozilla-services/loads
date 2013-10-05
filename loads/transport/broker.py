@@ -139,8 +139,15 @@ class Broker(object):
 
         All commands starting with CTRL_ are sent to the controller.
         """
-        data = json.loads(msg[2])
         target = msg[:-1]
+
+        try:
+            data = json.loads(msg[2])
+        except ValueError:
+            exc = 'Invalid JSON received.'
+            logger.exception(exc)
+            self.send_json(target, {'error': exc})
+            return
 
         cmd = data['command']
 
