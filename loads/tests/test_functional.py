@@ -258,7 +258,6 @@ class FunctionalTest(TestCase):
         return dir
 
     @hush
-    @skipIf(sys.version[1] == '6', 'Fails under 2.6')
     def test_file_copy_test_file(self):
         test_dir = self._get_dir()
         os.chdir(os.path.dirname(__file__))

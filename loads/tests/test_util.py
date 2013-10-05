@@ -279,4 +279,4 @@ class TestIncludeFileHandling(unittest2.TestCase):
         data = (u'PK\x05\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00'
                  '\x00\x00\x00\x00\x00\x00\x00\x00\x00')
 
-        unpack_include_files(data)
+        unpack_include_files(data.encode('base64'))

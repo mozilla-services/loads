@@ -255,7 +255,7 @@ def pack_include_files(include_files, location='.'):
                     store_file(filepath[len(basedir):], filepath)
 
     zf.close()
-    return file_data.getvalue()
+    return file_data.getvalue().encode('base64')
 
 
 def maybe_makedirs(dirpath):
@@ -271,7 +271,7 @@ def unpack_include_files(file_data, location='.'):
     blob, that can be used on the different agents.  It accepts data in the
     format produced by pack_include_files().
     """
-    file_data = str(file_data)
+    file_data = str(file_data).decode('base64')
     zf = zipfile.ZipFile(StringIO(file_data))
 
     for itemname in zf.namelist():
