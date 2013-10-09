@@ -9,7 +9,7 @@ try:
     except Exception:
         NO_REDIS_RUNNING = True
 except ImportError:
-    NO_REDIS_RUNNING, NO_REDIS_LIB = True
+    NO_REDIS_RUNNING = NO_REDIS_LIB = True
 
 
 class TestDB(unittest2.TestCase):
