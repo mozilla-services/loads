@@ -149,6 +149,7 @@ class FunctionalTest(TestCase):
         start_runner(get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_something',
             agents=2,
+            project_name='test_distributed_run',
             output=['null'],
             observer=['loads.tests.test_functional.observer',
                       'loads.tests.test_functional.observer_fail'],
@@ -158,6 +159,10 @@ class FunctionalTest(TestCase):
         runs = client.list_runs()
         run_id = runs.keys()[0]
         client.stop_run(run_id)
+
+        # checking the metadata
+        metadata = client.get_metadata(run_id)
+        self.assertEqual(metadata['project_name'], 'test_distributed_run')
 
         # checking the data
         data = client.get_data(run_id)

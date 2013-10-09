@@ -2,17 +2,21 @@ import unittest2
 from loads.db import get_backends, get_database, BaseDB
 try:
     import redis
-    redis.StrictRedis().ping()
-    NO_REDIS = False
-except Exception:
-    NO_REDIS = True
+    NO_REDIS_LIB = False
+    try:
+        redis.StrictRedis().ping()
+        NO_REDIS_RUNNING = False
+    except Exception:
+        NO_REDIS_RUNNING = True
+except ImportError:
+    NO_REDIS_RUNNING = NO_REDIS_LIB = True
 
 
 class TestDB(unittest2.TestCase):
 
     def test_get_backends(self):
         backends = get_backends()
-        if NO_REDIS:
+        if NO_REDIS_LIB:
             self.assertEqual(len(backends), 1)
         else:
             self.assertEqual(len(backends), 2)
@@ -21,7 +25,7 @@ class TestDB(unittest2.TestCase):
         db = get_database('python')
         self.assertTrue(db.ping())
 
-        if not NO_REDIS:
+        if not NO_REDIS_RUNNING:
             db = get_database('redis')
             self.assertTrue(db.ping())
 
