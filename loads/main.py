@@ -171,6 +171,9 @@ def _parse(sysargs=None):
                         help='Deactivate Gevent monkey patching.',
                         action='store_true', default=False)
 
+    parser.add_argument('--project-name', help='Project name.',
+                        default='N/A')
+
     #
     # distributed options
     #

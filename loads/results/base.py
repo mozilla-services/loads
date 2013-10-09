@@ -42,6 +42,10 @@ class TestResult(object):
                       self.socket_data_received)
 
     @property
+    def project_name(self):
+        return self.args.get('project_name', 'N/A')
+
+    @property
     def nb_finished_tests(self):
         return len(self._get_tests(finished=True))
 
