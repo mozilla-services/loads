@@ -65,6 +65,7 @@ class LocalRunner(object):
         self.test = None
         self.slave = args.get('slave', False)
         self.run_id = None
+        self.project_name = args.get('project_name', 'N/A')
 
         # Only resolve the name of the test if we're using the default python
         # test-runner.

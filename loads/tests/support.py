@@ -45,7 +45,8 @@ def get_runner_args(fqn, users=1, hits=1, duration=None,
                     zmq_endpoint='tcp://127.0.0.1:5558', output=['null'],
                     test_dir=None, include_file=None, python_dep=None,
                     observer=None, slave=False, agent_id=None, run_id=None,
-                    loads_status=None, externally_managed=False):
+                    loads_status=None, externally_managed=False,
+                    project_name='N/A'):
     if output is None:
         output = ['null']
 
@@ -71,7 +72,8 @@ def get_runner_args(fqn, users=1, hits=1, duration=None,
             'include_file': include_file,
             'python_dep': python_dep,
             'slave': slave,
-            'externally_managed': externally_managed}
+            'externally_managed': externally_managed,
+            'project_name': project_name}
 
     if duration is not None:
         args['duration'] = float(duration)
