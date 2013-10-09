@@ -139,13 +139,14 @@ class Agent(object):
         logger.debug('Received command %s' % command)
         if command == 'RUN':
             # XXX should be done in _run or at least asynchronously
-            if 'filedata' in data:
+            filedata = data.get('filedata')
+            if filedata:
                 test_dir = data['args'].get('test_dir')
                 if test_dir is None:
                     test_dir = '.'
                 if not os.path.exists(test_dir):
                     os.makedirs(test_dir)
-                unpack_include_files(data['filedata'], test_dir)
+                unpack_include_files(filedata, test_dir)
 
             args = data['args']
             run_id = data.get('run_id')
