@@ -68,7 +68,7 @@ class ExternalRunner(LocalRunner):
 
     @property
     def step_hits(self):
-        # How many hits to perform in the current step.
+        """How many hits to perform in the current step."""
         # Take the last value or fallback on the last one.
         if len(self.args['hits']) >= self._current_step + 1:
             step = self._current_step
@@ -78,7 +78,7 @@ class ExternalRunner(LocalRunner):
 
     @property
     def step_users(self):
-        # How many users to spawn for the current step.
+        """How many users to spawn for the current step."""
         # Take the last value or fallback on the last one.
         if len(self.args['users']) >= self._current_step + 1:
             step = self._current_step
@@ -214,8 +214,9 @@ class ExternalRunner(LocalRunner):
         env['LOADS_RUN_ID'] = self.args.get('run_id', '')
         env['LOADS_TOTAL_USERS'] = str(self.step_users)
         env['LOADS_CURRENT_USER'] = str(cur_user)
-        env['LOADS_TOTAL_HITS'] = str(self.step_hits)
-        if self._duration is not None:
+        if self._duration is None:
+            env['LOADS_TOTAL_HITS'] = str(self.step_hits)
+        else:
             env['LOADS_DURATION'] = str(self._duration)
 
         def silent_output():
