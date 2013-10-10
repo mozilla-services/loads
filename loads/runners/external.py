@@ -214,8 +214,9 @@ class ExternalRunner(LocalRunner):
         env['LOADS_RUN_ID'] = self.args.get('run_id', '')
         env['LOADS_TOTAL_USERS'] = str(self.step_users)
         env['LOADS_CURRENT_USER'] = str(cur_user)
-        env['LOADS_TOTAL_HITS'] = str(self.step_hits)
-        if self._duration is not None:
+        if self._duration is None:
+            env['LOADS_TOTAL_HITS'] = str(self.step_hits)
+        else:
             env['LOADS_DURATION'] = str(self._duration)
 
         def silent_output():
