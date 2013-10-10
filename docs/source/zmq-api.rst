@@ -68,7 +68,7 @@ as follows:
 
 The **LOADS_TOTAL_HITS** and **LOADS_DURATION** variables define how many
 runs of the tests should be performed, and are equivalent to the **--hits**
-and **--duration** command-line arguments.
+and **--duration** command-line arguments.  They are mutually exclusive.
 
 The runner reports on its progress by sending messages to the specified ZeroMQ
 endpoint.  Each message sent to Loads needs to respect the following rules:
