@@ -214,5 +214,4 @@ class TestExternalRunner(TestCase):
         self.assertEquals(loads_options,
                           ["LOADS_AGENT_ID", "LOADS_CURRENT_USER",
                            "LOADS_DURATION", "LOADS_RUN_ID",
-                           "LOADS_TOTAL_HITS", "LOADS_TOTAL_USERS",
-                           "LOADS_ZMQ_RECEIVER"])
+                           "LOADS_TOTAL_USERS", "LOADS_ZMQ_RECEIVER"])
