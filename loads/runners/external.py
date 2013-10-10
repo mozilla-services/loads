@@ -68,7 +68,7 @@ class ExternalRunner(LocalRunner):
 
     @property
     def step_hits(self):
-        # How many hits to perform in the current step.
+        """How many hits to perform in the current step."""
         # Take the last value or fallback on the last one.
         if len(self.args['hits']) >= self._current_step + 1:
             step = self._current_step
@@ -78,7 +78,7 @@ class ExternalRunner(LocalRunner):
 
     @property
     def step_users(self):
-        # How many users to spawn for the current step.
+        """How many users to spawn for the current step."""
         # Take the last value or fallback on the last one.
         if len(self.args['users']) >= self._current_step + 1:
             step = self._current_step
