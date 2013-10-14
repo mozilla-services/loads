@@ -77,9 +77,49 @@ class BrokerDB(BaseDB):
         self._dirty = False
         self._metadata = defaultdict(dict)
         self._urls = defaultdict(lambda: defaultdict(int))
+        self._headers = defaultdict(dict)
+        self._key_headers = defaultdict(dict)
 
     def ping(self):
         return True
+
+    def _update_headers(self, run_id):
+        filename = os.path.join(self.directory, run_id + '-headers.json')
+        if os.path.exists(filename):
+            with open(filename) as f:
+                self._headers[run_id].update(json.load(f))
+            for key, value in self._headers[run_id].items():
+                self._key_headers[run_id][value] = key
+
+    def _compress_headers(self, run_id, data):
+        result = {}
+        headers = self._headers[run_id]
+
+        for key, value in data.items():
+            if key not in self._key_headers[run_id]:
+                self._dirty = True
+                compressed_keys = headers.keys()
+                if len(compressed_keys) == 0:
+                    next_compressed_key = 0
+                else:
+                    compressed_keys.sort()
+                    next_compressed_key = compressed_keys[-1] + 1
+
+                self._headers[run_id][next_compressed_key] = key
+                self._key_headers[run_id][key] = next_compressed_key
+                key = next_compressed_key
+            else:
+                key = self._key_headers[run_id][key]
+
+            result[key] = value
+
+        return result
+
+    def _uncompress_headers(self, run_id, data):
+        result = {}
+        for key, value in data.items():
+            result[self._headers[run_id][int(key)]] = value
+        return result
 
     def update_metadata(self, run_id, **metadata):
         existing = self._metadata.get(run_id, {})
@@ -128,6 +168,7 @@ class BrokerDB(BaseDB):
                 line = queue.get()
                 if 'run_id' not in line:
                     line['run_id'] = run_id
+                line = self._compress_headers(run_id, line)
                 f.write(zlib.compress(json.dumps(line)) + ZLIB_END)
 
     def flush(self):
@@ -166,6 +207,11 @@ class BrokerDB(BaseDB):
             with open(filename, 'w') as f:
                 json.dump(self._urls[run_id], f)
 
+            # headers
+            filename = os.path.join(self.directory, run_id + '-headers.json')
+            with open(filename, 'w') as f:
+                json.dump(self._headers[run_id], f)
+
         self._dirty = False
 
     def close(self):
@@ -196,7 +242,8 @@ class BrokerDB(BaseDB):
                     for path in os.listdir(self.directory)
                     if path.endswith('-db.json')])
 
-    def _batch(self, filename, start=None, size=None, filter=None):
+    def _batch(self, filename, start=None, size=None, filter=None,
+               run_id=None):
         if start is not None and size is not None:
             end = start + size
         else:
@@ -207,6 +254,8 @@ class BrokerDB(BaseDB):
         current = 0
 
         for current, (record, line) in enumerate(read_zfile(filename)):
+            record = self._uncompress_headers(run_id, record)
+
             # filtering
             if filter is not None and filter(record):
                 continue
@@ -215,7 +264,7 @@ class BrokerDB(BaseDB):
             elif end is not None and current > end or sent == size:
                 raise StopIteration()
 
-            yield record, line
+            yield record
 
             sent += 1
 
@@ -229,7 +278,9 @@ class BrokerDB(BaseDB):
         if not os.path.exists(filename):
             raise StopIteration()
 
-        for data, line in self._batch(filename, start, size):
+        self._update_headers(run_id)
+
+        for data in self._batch(filename, start, size, run_id=run_id):
             yield data
 
     def get_data(self, run_id, data_type=None, groupby=False, start=None,
@@ -243,22 +294,44 @@ class BrokerDB(BaseDB):
         if not os.path.exists(filename):
             raise StopIteration()
 
+        self._update_headers(run_id)
+
         def _filtered(data):
             return (data_type is not None and
                     data_type != data.get('data_type'))
 
         if not groupby:
-            for data, line in self._batch(filename, start, size, _filtered):
+            for data in self._batch(filename, start, size, _filtered,
+                                    run_id=run_id):
                 yield data
         else:
-            grouped = dict()
 
-            for data, line in self._batch(filename, start, size, _filtered):
-                if line in grouped:
-                    grouped[line] = grouped[line][0] + 1, data
-                else:
-                    grouped[line] = 1, data
+            def _same_dict(dict1, dict2):
+                for key, value in dict1.items():
+                    if key == 'count':
+                        continue
 
-            for count, data in grouped.values():
-                data['count'] = count
+                    if key not in dict2:
+                        return False
+
+                    if value != dict2[key]:
+                        return False
+
+                return True
+
+            result = []
+
+            def _append_result(data):
+                for existing in result:
+                    if _same_dict(data, existing):
+                        existing['count'] += 1
+                        return
+                data['count'] = 1
+                result.append(data)
+
+            for data in self._batch(filename, start, size, _filtered,
+                                    run_id=run_id):
+                _append_result(data)
+
+            for data in result:
                 yield data

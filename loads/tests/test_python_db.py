@@ -96,6 +96,9 @@ class TestBrokerDB(unittest2.TestCase):
         batch = list(self.db.get_data('1', start=2, size=5))
         self.assertEqual(len(batch), 5)
 
+        data = [self.db._uncompress_headers('1', line) for line in data]
+        data.sort()
+
         data3 = list(self.db.get_data('1'))
         data3.sort()
         self.assertEqual(data3, data)
