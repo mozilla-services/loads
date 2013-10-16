@@ -64,7 +64,6 @@ class Agent(object):
         self.timeout = timeout
         self.max_age = max_age
         self.max_age_delta = max_age_delta
-        self.delayed_exit = None
         self.env = os.environ.copy()
         self.running = False
         self._workers = {}
@@ -253,10 +252,8 @@ class Agent(object):
 
         # give it a chance to finish a message
         logger.debug('Starting the graceful period')
-        self.graceful_delay = ioloop.DelayedCallback(self._stop,
-                                                     self.timeout * 1000,
-                                                     io_loop=self.loop)
-        self.graceful_delay.start()
+        delay = time.time() + self.timeout
+        self.loop.add_timeout(delay, self._stop)
 
     def _stop(self):
         logger.debug('Stopping the agent')
@@ -300,10 +297,7 @@ class Agent(object):
                 delta = 0
 
             cb_time = self.max_age + delta
-            self.delayed_exit = ioloop.DelayedCallback(self.stop,
-                                                       cb_time * 1000,
-                                                       io_loop=self.loop)
-            self.delayed_exit.start()
+            self.loop.add_timeout(time.time() + cb_time, self.stop)
 
         while self.running:
             try:

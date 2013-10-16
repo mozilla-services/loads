@@ -2,6 +2,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 import unittest2
+import time
+
 from zmq.green.eventloop import ioloop
 from loads.transport.heartbeat import Stethoscope, Heartbeat
 
@@ -37,8 +39,7 @@ class TestHeartbeat(unittest2.TestCase):
         loop.add_callback(start)
 
         # stetho 0.2 seconds after
-        cb = ioloop.DelayedCallback(start_2, 200, io_loop=loop)
-        cb.start()
+        loop.add_timeout(time.time() + .2, start_2)
 
         def stop():
             hb.stop()
@@ -46,8 +47,7 @@ class TestHeartbeat(unittest2.TestCase):
             loop.stop()
 
         # all stops after 1s
-        cb = ioloop.DelayedCallback(stop, 1000, io_loop=loop)
-        cb.start()
+        loop.add_timeout(time.time() + 1., stop)
 
         # let's go
         loop.start()
@@ -77,7 +77,8 @@ class TestHeartbeat(unittest2.TestCase):
 
         stetho = Stethoscope('ipc:///tmp/stetho.ipc', onbeat=_onbeat,
                              onbeatlost=_onbeatlost, delay=0.1,
-                             io_loop=loop, onregister=_onregister)
+                             io_loop=loop, onregister=_onregister,
+                             warmup_delay=0)
 
         # scenario
         def start():
@@ -91,17 +92,17 @@ class TestHeartbeat(unittest2.TestCase):
             stetho.stop()
             loop.stop()
 
+        # that starts the heartbeat and the client
         loop.add_callback(start)
 
         # the hb stops after 500ms
-        cb = ioloop.DelayedCallback(stop_hb, 500, io_loop=loop)
-        cb.start()
+        loop.add_timeout(time.time() + .5, stop_hb)
 
         # the st stops after 1 second, then the loop
-        cb = ioloop.DelayedCallback(stop_st, 1500, io_loop=loop)
-        cb.start()
+        loop.add_timeout(time.time() + 1., stop_st)
+
         loop.start()
 
         self.assertTrue(len(beats) > 0)
         self.assertEqual(beats[:2], ['o', '+'])
-        self.assertTrue(len(lost) > 3)
+        self.assertTrue(len(lost) > 0)
