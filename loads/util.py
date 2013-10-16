@@ -11,6 +11,7 @@ import fnmatch
 import random
 import zipfile
 from cStringIO import StringIO
+import hashlib
 
 from gevent import socket as gevent_socket
 
@@ -310,3 +311,21 @@ def null_streams(streams):
                 pass
     finally:
         os.close(devnull)
+
+
+def dict_hash(data, omit_keys=None):
+    """Useful to identify a data mapping.
+    """
+    if omit_keys is None:
+        omit_keys = []
+
+    hash = hashlib.md5()
+
+    for key, value in data.items():
+        if key in omit_keys:
+            continue
+        hash.update(str(key))
+        hash.update(str(value))
+        hash.update('ENDMARKER')
+
+    return hash.hexdigest()

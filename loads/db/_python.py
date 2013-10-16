@@ -5,7 +5,7 @@ from collections import defaultdict
 from gevent.queue import Queue
 from zmq.green.eventloop import ioloop
 from loads.db import BaseDB
-from loads.util import json
+from loads.util import json, dict_hash
 
 
 DEFAULT_DBDIR = os.path.join('/tmp', 'loads')
@@ -306,32 +306,16 @@ class BrokerDB(BaseDB):
                 yield data
         else:
 
-            def _same_dict(dict1, dict2):
-                for key, value in dict1.items():
-                    if key == 'count':
-                        continue
-
-                    if key not in dict2:
-                        return False
-
-                    if value != dict2[key]:
-                        return False
-
-                return True
-
-            result = []
-
-            def _append_result(data):
-                for existing in result:
-                    if _same_dict(data, existing):
-                        existing['count'] += 1
-                        return
-                data['count'] = 1
-                result.append(data)
+            result = {}
 
             for data in self._batch(filename, start, size, _filtered,
                                     run_id=run_id):
-                _append_result(data)
+                data_hash = dict_hash(data, ['count'])
+                if data_hash in result:
+                    result[data_hash]['count'] += 1
+                else:
+                    data['count'] = 1
+                    result[data_hash] = data
 
-            for data in result:
+            for data in result.values():
                 yield data

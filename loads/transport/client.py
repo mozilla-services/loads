@@ -111,7 +111,8 @@ class Client(object):
                         raise
 
         if socks.get(self.master) == zmq.POLLIN:
-            return json.loads(recv(self.master))
+            data = recv(self.master)
+            return json.loads(data)
 
         raise TimeoutError(timeout)
 

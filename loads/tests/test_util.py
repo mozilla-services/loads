@@ -15,7 +15,7 @@ from loads import util
 from loads.util import (resolve_name, set_logger, logger, dns_resolve,
                         DateTimeJSONEncoder, try_import, split_endpoint,
                         null_streams, get_quantiles, pack_include_files,
-                        unpack_include_files)
+                        unpack_include_files, dict_hash)
 from loads.transport.util import (register_ipc_file, _cleanup_ipc_files, send,
                                   TimeoutError, recv, decode_params,
                                   dump_stacks)
@@ -280,3 +280,15 @@ class TestIncludeFileHandling(unittest2.TestCase):
                 '\x00\x00\x00\x00\x00\x00\x00\x00\x00')
 
         unpack_include_files(data.encode('base64'))
+
+    def test_dict_hash(self):
+        data1 = {1: 2, 3: 4}
+        data2 = {1: 2, 3: 4}
+
+        self.assertEqual(dict_hash(data1), dict_hash(data2))
+
+        data1['count'] = 'b'
+        self.assertNotEqual(dict_hash(data1), dict_hash(data2))
+
+        self.assertEqual(dict_hash(data1, omit_keys=['count']),
+                         dict_hash(data2))
