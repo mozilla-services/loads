@@ -171,3 +171,21 @@ class TestBrokerDB(unittest2.TestCase):
 
         errors = list(self.db.get_errors('1'))
         self.assertEqual(len(errors), 2, errors)
+
+    def test_get_projects(self):
+
+        def add_data():
+            for line in ONE_RUN:
+                data = dict(line)
+                data['run_id'] = '1'
+                self.db.add(data)
+                self.db.update_metadata('1', project_name='foo')
+                data['run_id'] = '2'
+                self.db.update_metadata('2', project_name='baz')
+                self.db.add(data)
+
+        self.loop.add_callback(add_data)
+        self.loop.add_callback(add_data)
+        self.loop.add_timeout(time.time() + .5, self.loop.stop)
+        self.loop.start()
+        self.assertEqual(self.db.get_projects(), ['baz', 'foo'])

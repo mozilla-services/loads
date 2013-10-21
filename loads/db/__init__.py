@@ -23,6 +23,9 @@ class BaseDB(object):
     #
     # APIs
     #
+    def get_projects(self):
+        raise NotImplementedError()
+
     def save_metadata(self, run_id, metadata):
         raise NotImplementedError()
 

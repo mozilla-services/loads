@@ -121,6 +121,22 @@ class BrokerDB(BaseDB):
             result[self._headers[run_id][int(key)]] = value
         return result
 
+    #
+    # APIs
+    #
+    def get_projects(self):
+        """Returns a list of projects.
+        """
+        projects = []
+        for run_id in self.get_runs():
+            metadata = self.get_metadata(run_id)
+            project = metadata.get('project_name')
+            if project is not None and project not in projects:
+                projects.append(project)
+
+        projects.sort()
+        return projects
+
     def update_metadata(self, run_id, **metadata):
         existing = self._metadata.get(run_id, {})
         existing.update(metadata)
@@ -238,6 +254,7 @@ class BrokerDB(BaseDB):
             return json.load(f)
 
     def get_runs(self):
+        self.flush()
         return set([path[:-len('-db.json')]
                     for path in os.listdir(self.directory)
                     if path.endswith('-db.json')])
