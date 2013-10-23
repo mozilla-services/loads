@@ -143,13 +143,15 @@ def _parse(sysargs=None):
                              '- glob-style',
                         action='append', default=[])
 
-    # loads works with hits or duration
+    # loads works with hits or duration and optionally a concurrency limit
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--hits', help='Number of hits per user',
                        type=str, default=None)
     group.add_argument('-d', '--duration', help='Duration of the test (s)',
                        type=int, default=None)
 
+    parser.add_argument('--concurrency', help='Maximum concurrency',
+                       type=int, default=None)
     parser.add_argument('--version', action='store_true', default=False,
                         help='Displays Loads version and exits.')
 
