@@ -327,3 +327,33 @@ class FunctionalTest(TestCase):
 
         args['crap'] = data
         self.assertRaises(ValueError, start_runner, args)
+
+    def test_concurrency_hits(self):
+        runner = LocalRunner(get_runner_args(
+            fqn='loads.examples.test_blog.TestWebSite.test_sleep',
+            output=['null'],
+            agents=1,
+            users=1,
+            hits=10,
+            concurrency=2
+        ))
+        runner.execute()
+
+        rps = runner.test_result.requests_per_second()
+
+        assert 6 < rps < 8
+
+    def test_concurrency_duration(self):
+        runner = LocalRunner(get_runner_args(
+            fqn='loads.examples.test_blog.TestWebSite.test_sleep',
+            output=['null'],
+            agents=1,
+            users=1,
+            duration=2,
+            concurrency=5
+        ))
+        runner.execute()
+
+        rps = runner.test_result.requests_per_second()
+
+        assert 14 < rps < 16

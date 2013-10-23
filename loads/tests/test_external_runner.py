@@ -195,9 +195,10 @@ class TestExternalRunner(TestCase):
         loads_options = [e for e in kwargs['env'] if e.startswith('LOADS_')]
         loads_options.sort()
         self.assertEquals(loads_options,
-                          ["LOADS_AGENT_ID", "LOADS_CURRENT_USER",
-                           "LOADS_RUN_ID", "LOADS_TOTAL_HITS",
-                           "LOADS_TOTAL_USERS", "LOADS_ZMQ_RECEIVER"])
+                          ["LOADS_AGENT_ID", "LOADS_CONCURRENCY",
+                           "LOADS_CURRENT_USER", "LOADS_RUN_ID",
+                           "LOADS_TOTAL_HITS", "LOADS_TOTAL_USERS",
+                           "LOADS_ZMQ_RECEIVER"])
 
     @mock.patch('loads.runners.external.subprocess.Popen',
                 lambda *args, **kwargs: FakeProcess(options=(args, kwargs)))
@@ -212,6 +213,7 @@ class TestExternalRunner(TestCase):
         loads_options = [e for e in kwargs['env'] if e.startswith('LOADS_')]
         loads_options.sort()
         self.assertEquals(loads_options,
-                          ["LOADS_AGENT_ID", "LOADS_CURRENT_USER",
-                           "LOADS_DURATION", "LOADS_RUN_ID",
-                           "LOADS_TOTAL_USERS", "LOADS_ZMQ_RECEIVER"])
+                          ["LOADS_AGENT_ID", "LOADS_CONCURRENCY",
+                           "LOADS_CURRENT_USER", "LOADS_DURATION",
+                           "LOADS_RUN_ID", "LOADS_TOTAL_USERS",
+                           "LOADS_ZMQ_RECEIVER"])

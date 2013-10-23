@@ -171,14 +171,17 @@ class LocalRunner(object):
             return
 
         if self.duration is None:
-            for hit in self.hits:
-                gevent.sleep(0)
+            def spawn_test(current_hit):
                 loads_status = list(self.args.get('loads_status',
                                                   (hit, user, 0, num)))
+                loads_status[2] = current_hit + 1
+                test(loads_status=list(loads_status))
+                gevent.sleep(0)
+
+            for hit in self.hits:
                 for current_hit in range(hit):
-                    loads_status[2] = current_hit + 1
-                    test(loads_status=list(loads_status))
-                    gevent.sleep(0)
+                    pool.spawn(spawn_test, current_hit)
+                pool.join()
         else:
             def spawn_test():
                 loads_status = list(self.args.get('loads_status',
