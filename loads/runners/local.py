@@ -195,7 +195,7 @@ class LocalRunner(object):
                     while True:
                         pool.spawn(spawn_test)
                         gevent.sleep(0)
-                    pool.join(timeout=timer)
+                    pool.join()
             except KeyboardInterrupt:
                 pass
 
