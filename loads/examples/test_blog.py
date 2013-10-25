@@ -96,5 +96,5 @@ class TestWebSite(TestCase):
 
     def test_sleep(self):
         root = 'http://ec2-54-244-173-6.us-west-2.compute.amazonaws.com:8282'
-        res = self.session.get(root)
+        self.session.get(root)
         gevent.sleep(.2)

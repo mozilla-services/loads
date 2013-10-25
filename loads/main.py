@@ -151,7 +151,7 @@ def _parse(sysargs=None):
                        type=int, default=None)
 
     parser.add_argument('--concurrency', help='Maximum concurrency',
-                       type=int, default=None)
+                        type=int, default=None)
     parser.add_argument('--version', action='store_true', default=False,
                         help='Displays Loads version and exits.')
 

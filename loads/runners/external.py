@@ -203,7 +203,7 @@ class ExternalRunner(LocalRunner):
             - LOADS_CURRENT_USER for the current user number
             - LOADS_TOTAL_HITS for the total number of hits in this step
             - LOADS_DURATION for the total duration of this step, if any
-            - LOADS_CONCURRENCY for the maximum concurrency of this step, if limited
+            - LOADS_CONCURRENCY for the maximum concurrency of this step
 
         We use environment variables because that's the easiest way to pass
         parameters to non-python executables.
