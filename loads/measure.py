@@ -69,14 +69,19 @@ class Session(_Session):
         self.test_result = test_result
         self.loads_status = None, None, None, None
 
+    def request(self, method, url, headers=None, **kwargs):
+        if not url.startswith('https://'):
+            url, original, resolved = dns_resolve(url)
+            if headers is None:
+                headers = {}
+            headers['Host'] = original
+        return super(Session, self).request(
+            method, url, headers=headers, **kwargs)
+
     def send(self, request, **kwargs):
         """Do the actual request from within the session, doing some
         measures at the same time about the request (duration, status, etc).
         """
-        if not request.url.startswith('https://'):
-            request.url, original, resolved = dns_resolve(request.url)
-            request.headers['Host'] = original
-
         # attach some information to the request object for later use.
         start = datetime.datetime.utcnow()
         res = _Session.send(self, request, **kwargs)
