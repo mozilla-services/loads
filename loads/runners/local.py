@@ -67,13 +67,6 @@ class LocalRunner(object):
         self.run_id = None
         self.project_name = args.get('project_name', 'N/A')
 
-        # Only resolve the name of the test if we're using the default python
-        # test-runner.
-        if args.get('test_runner') is None and self.fqn:
-            self.test = resolve_name(self.fqn)
-        else:
-            self.test = None
-
         self.outputs = []
         self.stop = False
 
