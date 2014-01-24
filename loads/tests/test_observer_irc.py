@@ -52,7 +52,8 @@ class TestIRC(unittest2.TestCase):
     def test_send(self):
 
         results = 'yeah'
-        irc(results, {})
+        client = irc()
+        client(results)
 
         # what did we send on IRC
         wanted = ['NICK loads',

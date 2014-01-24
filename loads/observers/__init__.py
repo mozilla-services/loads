@@ -1,1 +1,1 @@
-from loads.observers._irc import send_irc as irc    # NOQA
+from loads.observers._irc import IRCObserver as irc   # NOQA

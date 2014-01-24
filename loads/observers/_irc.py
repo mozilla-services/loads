@@ -1,44 +1,48 @@
 import irc.client
-import irc.logging
 
 
 class ExitError(Exception):
     pass
 
 
-def send_irc(test_results, conf):
-    msg = 'Test over. %s' % str(test_results)
-    send_message('#services-dev', msg)
+class IRCObserver(object):
+    def __init__(self, channel='#services-dev', server='irc.mozilla.org',
+                 nickname='loads', port=8443):
+        self.channel = channel
+        self.server = server
+        self.nickname = nickname
+        self.port = port
 
+    def __call__(self, test_results):
+        msg = 'Test over. %s' % str(test_results)
 
-def send_message(channel, message, server='irc.mozilla.org',
-                 nickname='loads', port=6667):
-    client = irc.client.IRC()
-    c = client.server().connect(server, port, nickname)
+        # creating the IRC client
+        client = irc.client.IRC()
 
-    def on_connect(connection, event):
-        connection.join(channel)
-        main_loop(connection)
+        c = client.server().connect(self.server, self.port, self.nickname)
 
-    def on_join(connection, event):
-        main_loop(connection)
+        def on_connect(connection, event):
+            connection.join(self.channel)
 
-    def main_loop(connection):
-        connection.privmsg(channel, message)
-        connection.quit("Bye !")
+        def on_endofnames(connection, event):
+            main_loop(connection)
 
-    def on_disconnect(connection, event):
-        raise ExitError()
+        def main_loop(connection):
+            connection.privmsg(self.channel, msg)
+            connection.quit("Bye !")
 
-    c.add_global_handler("welcome", on_connect)
-    c.add_global_handler("join", on_join)
-    c.add_global_handler("disconnect", on_disconnect)
+        def on_disconnect(connection, event):
+            raise ExitError()
 
-    try:
-        client.process_forever()
-    except ExitError:
-        pass
+        c.add_global_handler("welcome", on_connect)
+        c.add_global_handler("endofnames", on_endofnames)
+        c.add_global_handler("disconnect", on_disconnect)
 
+        try:
+            client.process_forever()
+        except ExitError:
+            pass
 
 if __name__ == '__main__':
-    send_message('#services-dev', 'ohay, I am the loads bot')
+    client = IRCObserver()
+    client('ohay, I am the loads bot')
