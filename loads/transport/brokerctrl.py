@@ -333,8 +333,16 @@ class BrokerController(object):
 
         # for each observer we call it with the test results
         for observer in observers:
+
+            options = {}
+            prefix = 'observer_%s_' % observer.name
+            for name, value in args.items():
+                if name.startswith(prefix):
+                    options[name[len(prefix):]] = value
+
+            # get the options
             try:
-                observer(test_result, args)
+                observer(args=args, **options)(test_result)
             except Exception:
                 # the observer code failed. We want to log it
                 logger.error('%r failed' % observer)

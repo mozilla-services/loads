@@ -50,7 +50,6 @@ class TestIRC(unittest2.TestCase):
         select.select = self.old_select
 
     def test_send(self):
-
         results = 'yeah'
         client = irc()
         client(results)

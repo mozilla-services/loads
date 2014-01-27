@@ -13,6 +13,7 @@ from loads.runners import (LocalRunner, DistributedRunner, ExternalRunner,
 from loads.transport.client import Client, TimeoutError
 from loads.transport.util import DEFAULT_FRONTEND, DEFAULT_PUBLISHER
 from loads.util import logger, set_logger
+from loads.observers import observers
 
 
 def _detach_question(runner):
@@ -164,8 +165,21 @@ def _parse(sysargs=None):
                              'the tests for the WebTest client.')
 
     parser.add_argument('--observer', action='append',
+                        choices=[observer.name for observer in observers],
                         help='Callable that will receive the final results. '
                              'Only in distributed mode (runs on the broker)')
+
+    #
+    # Loading observers options
+    #
+    for observer in observers:
+        prefix = '--observer-%s-' % observer.name
+        for option in observer.options:
+            name = prefix + option['name']
+            parser.add_argument(name, help=option.get('help'),
+                                default=option.get('default'),
+                                type=option.get('type'),
+                                action=option.get('action'))
 
     parser.add_argument('--no-patching',
                         help='Deactivate Gevent monkey patching.',

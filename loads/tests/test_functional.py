@@ -29,13 +29,22 @@ _EXAMPLES_DIR = os.path.join(os.path.dirname(__file__), os.pardir, 'examples')
 _RESULTS = os.path.join(os.path.dirname(__file__), 'observers')
 
 
-def observer(results, conf):
-    with open(_RESULTS, 'a+') as f:
-        f.write(str(results) + '\n')
+class Observer(object):
+    name = 'dummy'
+    options = {}
+
+    def __init__(self, *args, **kw):
+        pass
+
+    def __call__(self, results):
+        with open(_RESULTS, 'a+') as f:
+            f.write(str(results) + '\n')
 
 
-def observer_fail(results, conf):
-    raise ValueError("Boom")
+class ObserverFail(Observer):
+
+    def __call__(self, results):
+        raise ValueError("Boom")
 
 
 def start_servers():
@@ -151,8 +160,8 @@ class FunctionalTest(TestCase):
             agents=2,
             project_name='test_distributed_run',
             output=['null'],
-            observer=['loads.tests.test_functional.observer',
-                      'loads.tests.test_functional.observer_fail'],
+            observer=['loads.tests.test_functional.Observer',
+                      'loads.tests.test_functional.ObserverFail'],
             users=1, hits=5))
 
         client = Pool()
