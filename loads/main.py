@@ -299,7 +299,7 @@ def main(sysargs=None):
             args.fqn = 'loads.examples.test_blog.TestWebSite.test_health'
             args.agents = len(ping['agents'])
             args.hits = '1'
-            print('Running a healt check on all %d agents' % args.agents)
+            print('Running a health check on all %d agents' % args.agents)
 
     # if we don't have an fqn or we're not attached, something's wrong
     if args.fqn is None and not args.attach:
