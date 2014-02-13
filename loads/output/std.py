@@ -42,6 +42,7 @@ class StdOutput(object):
         write = sys.stdout.write
         self._duration_progress()
         write("\nDuration: %.2f seconds" % self.results.duration)
+        write("\nConcurrency: %s" % (self.results.concurrency or 'Unlimited'))
         write("\nHits: %d" % self.results.nb_hits)
         write("\nStarted: %s" % self.results.start_time)
         write("\nApproximate Average RPS: %d" %

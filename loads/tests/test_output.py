@@ -37,6 +37,7 @@ class FakeTestResult(object):
         self.failures = []
         self.hits = []
         self.tests = {}
+        self.concurrency = None
 
     def get_url_metrics(self):
         return {'http://foo': {'average_request_time': 1.234,

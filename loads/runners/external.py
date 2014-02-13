@@ -40,6 +40,7 @@ class ExternalRunner(LocalRunner):
         self._step_started_at = None
 
         self._duration = self.args.get('duration')
+        self._concurrency = self.args.get('concurrency', None)
         self._timeout = args.get('external_process_timeout', 2)
 
         self._processes = []
@@ -202,6 +203,7 @@ class ExternalRunner(LocalRunner):
             - LOADS_CURRENT_USER for the current user number
             - LOADS_TOTAL_HITS for the total number of hits in this step
             - LOADS_DURATION for the total duration of this step, if any
+            - LOADS_CONCURRENCY for the maximum concurrency of this step
 
         We use environment variables because that's the easiest way to pass
         parameters to non-python executables.
@@ -214,6 +216,7 @@ class ExternalRunner(LocalRunner):
         env['LOADS_RUN_ID'] = self.args.get('run_id', '')
         env['LOADS_TOTAL_USERS'] = str(self.step_users)
         env['LOADS_CURRENT_USER'] = str(cur_user)
+        env['LOADS_CONCURRENCY'] = str(self._concurrency)
         if self._duration is None:
             env['LOADS_TOTAL_HITS'] = str(self.step_hits)
         else:

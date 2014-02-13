@@ -46,6 +46,10 @@ class TestResult(object):
         return self.args.get('project_name', 'N/A')
 
     @property
+    def concurrency(self):
+        return self.args.get('concurrency')
+
+    @property
     def nb_finished_tests(self):
         return len(self._get_tests(finished=True))
 

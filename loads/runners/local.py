@@ -3,6 +3,7 @@ import subprocess
 import sys
 
 import gevent
+from gevent.pool import Pool
 
 from loads.util import (resolve_name, logger, pack_include_files,
                         unpack_include_files)
@@ -13,9 +14,9 @@ from loads.output import create_output
 def _compute_arguments(args):
     """
     Read the given :param args: and builds up the total number of runs, the
-    number of hits, duration, users and agents to use.
+    number of hits, duration, users, agents to use and the concurrency limit.
 
-    Returns a tuple of (total, hits, duration, users, agents).
+    Returns a tuple of (total, hits, duration, users, agents, concurrency).
     """
     users = args.get('users', '1')
     if isinstance(users, str):
@@ -40,7 +41,9 @@ def _compute_arguments(args):
         if agents is not None:
             total *= agents
 
-    return total, hits, duration, users, agents
+    concurrency = args.get('concurrency', None)
+
+    return total, hits, duration, users, agents, concurrency
 
 
 class LocalRunner(object):
@@ -71,12 +74,14 @@ class LocalRunner(object):
         self.stop = False
 
         (self.total, self.hits,
-         self.duration, self.users, self.agents) = _compute_arguments(args)
+         self.duration, self.users, self.agents,
+         self.concurrency) = _compute_arguments(args)
 
         self.args['hits'] = self.hits
         self.args['users'] = self.users
         self.args['agents'] = self.agents
         self.args['total'] = self.total
+        self.args['concurrency'] = self.concurrency
 
         # If we are in slave mode, set the test_result to a 0mq relay
         if self.slave:
@@ -153,32 +158,38 @@ class LocalRunner(object):
                                   test_result=self.test_result,
                                   config=self.args)
 
+        pool = Pool(self.concurrency)
+
         if self.stop:
             return
 
         if self.duration is None:
-            for hit in self.hits:
-                gevent.sleep(0)
+            def spawn_test(current_hit):
                 loads_status = list(self.args.get('loads_status',
                                                   (hit, user, 0, num)))
+                loads_status[2] = current_hit + 1
+                test(loads_status=list(loads_status))
+                gevent.sleep(0)
+
+            for hit in self.hits:
                 for current_hit in range(hit):
-                    loads_status[2] = current_hit + 1
-                    test(loads_status=list(loads_status))
-                    gevent.sleep(0)
+                    pool.spawn(spawn_test, current_hit)
+                pool.join()
         else:
             def spawn_test():
                 loads_status = list(self.args.get('loads_status',
                                                   (0, user, 0, num)))
-                while True:
-                    loads_status[2] += 1
-                    test(loads_status=loads_status)
-                    gevent.sleep(0)
+                loads_status[2] += 1
+                test(loads_status=loads_status)
+                gevent.sleep(0)
 
-            spawned_test = gevent.spawn(spawn_test)
-            timer = gevent.Timeout(self.duration).start()
             try:
-                spawned_test.join(timeout=timer)
-            except (gevent.Timeout, KeyboardInterrupt):
+                with gevent.Timeout(self.duration, False):
+                    while True:
+                        pool.spawn(spawn_test)
+                        gevent.sleep(0)
+                    pool.join()
+            except KeyboardInterrupt:
                 pass
 
     def _prepare_filesystem(self):

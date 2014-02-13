@@ -93,3 +93,8 @@ class TestWebSite(TestCase):
         res = self.app.get('/auth')
         self.assertTrue(user in res.body)
         self.incr_counter('lavabo')
+
+    def test_sleep(self):
+        root = 'http://ec2-54-244-173-6.us-west-2.compute.amazonaws.com:8282'
+        self.session.get(root)
+        gevent.sleep(.2)
