@@ -51,7 +51,7 @@ class TestIRC(unittest2.TestCase):
 
     def test_send(self):
         results = 'yeah'
-        client = irc()
+        client = irc(ssl=False)
         client(results)
 
         # what did we send on IRC
