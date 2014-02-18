@@ -1,4 +1,3 @@
-import socket
 from email.mime.text import MIMEText
 from email.header import Header
 from rfc822 import AddressList
@@ -11,7 +10,8 @@ class EMailObserver(object):
     name = 'email'
 
     options = [{'name': 'sender', 'type': str, 'default': 'tarek@mozilla.com'},
-               {'name': 'recipient', 'type': str, 'default': 'tarek@mozilla.com'},
+               {'name': 'recipient', 'type': str,
+                'default': 'tarek@mozilla.com'},
                {'name': 'host', 'type': str, 'default': 'localhost'},
                {'name': 'port', 'type': int, 'default': 25},
                {'name': 'user', 'type': str, 'default': None},
