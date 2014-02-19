@@ -93,6 +93,8 @@ class FunctionalTest(TestCase):
 
     @classmethod
     def setUpClass(cls):
+        if 'TRAVIS' in os.environ:
+            return
         cls.procs = start_servers()
         cls.client = Client()
         cls.location = os.getcwd()
@@ -100,6 +102,8 @@ class FunctionalTest(TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        if 'TRAVIS' in os.environ:
+            return
         for proc in cls.procs:
             stop_process(proc)
         os.chdir(cls.location)
