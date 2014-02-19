@@ -2,7 +2,7 @@ import itertools
 from collections import defaultdict
 
 from datetime import datetime, timedelta
-from loads.util import get_quantiles, total_seconds
+from loads.util import get_quantiles, total_seconds, seconds_to_time
 
 
 class TestResult(object):
@@ -31,15 +31,19 @@ class TestResult(object):
 
     def __str__(self):
 
-        msg = ('Ran %d tests in %.4f seconds. %d hits, %.2f RPS, '
-               '%s sockets opened, Bytes thru sockets %d')
+        duration = seconds_to_time(self.duration)
+        msg = 'Ran %d tests in %s. %d hits, %.2f RPS.' % (
+            self.nb_finished_tests,
+            duration,
+            self.nb_hits,
+            self.requests_per_second())
 
-        return msg % (self.nb_finished_tests,
-                      self.duration,
-                      self.nb_hits,
-                      self.requests_per_second(),
-                      self.socket,
-                      self.socket_data_received)
+        if self.socket > 0:
+            msg += ' %s sockets opened, Bytes thru sockets %d' % (
+                self.socket,
+                self.socket_data_received)
+
+        return msg
 
     @property
     def project_name(self):

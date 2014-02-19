@@ -329,3 +329,37 @@ def dict_hash(data, omit_keys=None):
         hash.update('ENDMARKER')
 
     return hash.hexdigest()
+
+
+def seconds_to_time(seconds, loose=False):
+    if seconds == 0:
+        return 'Now.'
+
+    minutes, seconds = divmod(seconds, 60)
+    hours, minutes = divmod(minutes, 60)
+    days, hours = divmod(hours, 24)
+    res = []
+
+    def _join():
+        if len(res) == 1:
+            return res[0]
+        else:
+            return '%s and %s.' % (' '.join(res[:-1]), res[-1])
+
+    if days > 0:
+        res.append('%d d' % days)
+        if loose:
+            return _join()
+    if hours > 0:
+        res.append('%d h' % hours)
+        if loose:
+            return _join()
+    if minutes > 0:
+        res.append('%d min' % minutes)
+        if loose:
+            return _join()
+
+    if seconds > 0:
+        res.append('%d sec' % seconds)
+
+    return _join()
