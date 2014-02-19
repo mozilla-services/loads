@@ -15,7 +15,7 @@ import sys
 import zipfile
 from cStringIO import StringIO
 
-from unittest2 import TestCase
+from unittest2 import TestCase, skipIf
 
 from loads.main import run as start_runner
 from loads.runners import LocalRunner, DistributedRunner
@@ -88,6 +88,7 @@ def start_servers():
     return procs
 
 
+@skipIf('TRAVIS' in os.environ, 'deactivated in Travis')
 class FunctionalTest(TestCase):
 
     @classmethod
