@@ -5,6 +5,7 @@ import sys
 import contextlib
 
 import mock
+from unittest2 import skipIf
 
 from loads.main import main, add_options
 from loads.tests.test_functional import start_servers
@@ -15,10 +16,13 @@ from loads import __version__
 config = os.path.join(os.path.dirname(__file__), 'config.ini')
 
 
+@skipIf('TRAVIS' in os.environ, 'not running this on Travis')
 class TestRunner(unittest2.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        if 'TRAVIS' in os.environ:
+            return
         start_servers()
 
     @hush
