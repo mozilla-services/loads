@@ -3,6 +3,7 @@ import time
 import os
 import shutil
 import tempfile
+import json
 
 from zmq.green.eventloop import ioloop
 from loads.db._python import BrokerDB, read_zfile
@@ -171,3 +172,30 @@ class TestBrokerDB(unittest2.TestCase):
 
         errors = list(self.db.get_errors('1'))
         self.assertEqual(len(errors), 2, errors)
+
+    def test_compression(self):
+        headers_f = os.path.join(self.db.directory, 'run-id-headers.json')
+        headers = {"1": 'one', "2": 'two'}
+
+        with open(headers_f, 'w') as f:
+            f.write(json.dumps(headers))
+
+        data = {'one': 'ok', 'two': 3, 'three': 'blah'}
+        self.db._update_headers('run-id')
+
+        self.db.add({'run_id': 'run-id', 'one': 'ok', 'two': 3,
+                     'three': 'blah'})
+
+        result = self.db._compress_headers('run-id', data)
+        result = result.items()
+        result.sort()
+        self.assertEqual(result, [(1, 'ok'), (2, 3), (3, 'blah')])
+        self.db.flush()
+
+        with open(headers_f) as f:
+            new_headers = json.loads(f.read())
+
+        wanted = [(1, u'one'), (2, u'two'), (3, u'three'), (4, u'run_id')]
+        new_headers = [(int(key), value) for key, value in new_headers.items()]
+        new_headers.sort()
+        self.assertEquals(new_headers, wanted)

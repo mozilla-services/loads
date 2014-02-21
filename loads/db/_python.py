@@ -87,7 +87,13 @@ class BrokerDB(BaseDB):
         filename = os.path.join(self.directory, run_id + '-headers.json')
         if os.path.exists(filename):
             with open(filename) as f:
-                self._headers[run_id].update(json.load(f))
+                headers = json.load(f)
+            # int keys are saved as strings in json
+            # so we need to convert them back
+            headers = dict([(int(key), value)
+                            for key, value in headers.items()])
+            self._headers[run_id].update(headers)
+
             for key, value in self._headers[run_id].items():
                 self._key_headers[run_id][value] = key
 
