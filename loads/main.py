@@ -215,6 +215,9 @@ def _parse(sysargs=None):
     parser.add_argument('-b', '--broker', help='Broker endpoint',
                         default=DEFAULT_FRONTEND)
 
+    parser.add_argument('--user-id', help='Name of the user who runs the test',
+                        type=str, default='undefined')
+
     outputs = [st.name for st in output_list()]
     outputs.sort()
 
