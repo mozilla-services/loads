@@ -11,7 +11,7 @@ from loads.util import json, dict_hash
 DEFAULT_DBDIR = os.path.join('/tmp', 'loads')
 ZLIB_START = 'x\x9c'
 ZLIB_END = 'x\x8c'
-GIGA = 1024. * 1024.
+GIGA = 1024. * 1024. * 1024.
 
 
 def read_zfile(filename):
