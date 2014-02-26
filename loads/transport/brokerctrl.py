@@ -363,6 +363,9 @@ class BrokerController(object):
             self.broker.send_json(target, {'error': 'Not enough agents'})
             return
 
+        # make sure the DB is prepared
+        self._db.prepare_run()
+
         # send to every agent with the run_id and the receiver endpoint
         data['run_id'] = run_id
         data['args']['zmq_receiver'] = self.broker.endpoints['receiver']
