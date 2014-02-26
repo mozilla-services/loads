@@ -39,7 +39,7 @@ class BrokerController(object):
         # agents registration and timers
         self._agents = []
         self._agent_times = {}
-        self.agent_timeout = agent_timeout
+        self.agent_timeout = agent_timeout * 4
         self._runs = {}
 
         # local DB
@@ -51,8 +51,9 @@ class BrokerController(object):
     def agents(self):
         return self._agents
 
-    def _remove_agent(self, agent_id):
-        logger.debug('%r removed' % agent_id)
+    def _remove_agent(self, agent_id, reason='unspecified'):
+        logger.debug('%r removed. %s' % (agent_id, reason))
+
         if agent_id in self._agents:
             self._agents.remove(agent_id)
 
@@ -66,12 +67,13 @@ class BrokerController(object):
         if agent_id not in self._agents:
             self._agents.append(agent_id)
 
-    def unregister_agents(self):
+    def unregister_agents(self, reason='unspecified'):
+        logger.debug('All agents removed. %s' % reason)
         self._agents[:] = []
 
-    def unregister_agent(self, agent_id):
+    def unregister_agent(self, agent_id, reason='unspecified'):
         if agent_id in self._agents:
-            self._remove_agent(agent_id)
+            self._remove_agent(agent_id, reason)
 
     def _associate(self, run_id, agents):
         when = time.time()
@@ -112,7 +114,7 @@ class BrokerController(object):
             exc.insert(0, str(e))
             logger.error('\n'.join(exc))
             logger.debug('Removing agent')
-            self._remove_agent(agent_id)
+            self._remove_agent(agent_id, '\n'.join(exc))
 
     def clean(self):
         """This is called periodically to :

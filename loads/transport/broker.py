@@ -121,13 +121,13 @@ class Broker(object):
         self.ctrl.save_data(agent_id, data)
 
     def _deregister(self):
-        self.ctrl.unregister_agents()
+        self.ctrl.unregister_agents('asked by the heartbeat.')
 
     def _handle_reg(self, msg):
         if msg[0] == 'REGISTER':
             self.ctrl.register_agent(msg[1])
         elif msg[0] == 'UNREGISTER':
-            self.ctrl.unregister_agent(msg[1])
+            self.ctrl.unregister_agent(msg[1], 'asked via UNREGISTER')
 
     def send_json(self, target, data):
         try:
