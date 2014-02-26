@@ -322,13 +322,12 @@ class BrokerController(object):
 
         # if we are using the web dashboard - we're just providing a link
         if self.broker.web_root is not None:
-            test_result = 'Visit %s/run/%s' % (self.broker.web_root, run_id)
+            test_result = '%s/run/%s' % (self.broker.web_root, run_id)
         else:
             # rebuild the test result instance
             test_result = RemoteTestResult(args=args)
             test_result.args = args
 
-            data = list(self._db.get_data(run_id, size=1))
             if len(data) > 0:
                 started = data[0]['started']
                 started = datetime.datetime.utcfromtimestamp(started)
