@@ -141,7 +141,7 @@ class Heartbeat(object):
         self._cb.start()
 
     def _ping(self):
-        logger.debug('*beat*')
+        #logger.debug('*beat*')
         if self.current_register == 0:
             if self.onregister is not None:
                 self.onregister()
