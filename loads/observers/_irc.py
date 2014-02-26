@@ -25,7 +25,7 @@ class IRCObserver(object):
         self.args = args
 
     def __call__(self, test_results):
-        msg = 'Test over. %s' % str(test_results)
+        msg = '\x0309[loads] \x0301Test Over. \x0302\x1f' + str(test_results)
 
         # creating the IRC client
         client = irc.client.IRC()
