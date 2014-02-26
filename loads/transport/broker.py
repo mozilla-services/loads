@@ -42,7 +42,7 @@ class Broker(object):
                  io_threads=DEFAULT_IOTHREADS,
                  agent_timeout=DEFAULT_TIMEOUT_MOVF,
                  receiver=DEFAULT_BROKER_RECEIVER, publisher=DEFAULT_PUBLISHER,
-                 db='python', dboptions=None):
+                 db='python', dboptions=None, web_root=None):
         # before doing anything, we verify if a broker is already up and
         # running
         logger.debug('Verifying if there is a running broker')
@@ -108,6 +108,8 @@ class Broker(object):
         self.ctrl = BrokerController(self, self.loop, db=db,
                                      dboptions=dboptions,
                                      agent_timeout=agent_timeout)
+
+        self.web_root = web_root
 
     def _handle_recv(self, msg):
         # publishing all the data received from agents
@@ -320,6 +322,9 @@ def main(args=sys.argv):
     parser.add_argument('--db', dest='db', default='python',
                         help="Database backend.")
 
+    parser.add_argument('--web-root', help='Root url of the web dashboard.',
+                        type=str, default=None)
+
     # add db args
     for backend, options in get_backends():
         for option, default, help, type_ in options:
@@ -361,7 +366,7 @@ def main(args=sys.argv):
                         heartbeat=args.heartbeat, register=args.register,
                         receiver=args.receiver, publisher=args.publisher,
                         io_threads=args.io_threads, db=args.db,
-                        dboptions=dboptions)
+                        dboptions=dboptions, web_root=args.web_root)
     except DuplicateBrokerError, e:
         logger.info('There is already a broker running on PID %s' % e)
         logger.info('Exiting')

@@ -11,6 +11,7 @@ from loads.util import json, dict_hash
 DEFAULT_DBDIR = os.path.join('/tmp', 'loads')
 ZLIB_START = 'x\x9c'
 ZLIB_END = 'x\x8c'
+GIGA = 1024. * 1024.
 
 
 def read_zfile(filename):
@@ -54,16 +55,29 @@ def read_zfile(filename):
                 remaining = ''
 
 
+def get_dir_size(path):
+    """Returns directory size in gigabytes
+    """
+    total_size = 0.
+    for dirpath, dirnames, filenames in os.walk(path):
+        for file_ in filenames:
+            fp = os.path.join(dirpath, file_)
+            total_size += os.path.getsize(fp)
+    return total_size / GIGA
+
+
 class BrokerDB(BaseDB):
     """A simple DB that's synced on disc eventually
     """
     name = 'python'
     options = {'directory': (DEFAULT_DBDIR, 'DB path.', str),
-               'sync_delay': (2000, 'Sync delay', int)}
+               'sync_delay': (2000, 'Sync delay', int),
+               'max_size': (-1, 'Max Size in Gigabytes', float)}
 
     def _initialize(self):
         self.directory = self.params['directory']
         self.sync_delay = self.params['sync_delay']
+        self.max_size = self.params['max_size']
 
         if not os.path.exists(self.directory):
             os.makedirs(self.directory)
@@ -177,8 +191,28 @@ class BrokerDB(BaseDB):
                 line = self._compress_headers(run_id, line)
                 f.write(zlib.compress(json.dumps(line)) + ZLIB_END)
 
-    def flush(self):
+    def prepare_run(self):
+        if self.max_size == -1:
+            return
+        current_size = get_dir_size(self.directory)
+        runs = self.get_runs()
+        if current_size >= self.max_size:
+            # we need to wipe up older runs until we have enough space
+            for run_id in runs:
+                self.delete_run(run_id)
+                if get_dir_size(self.directory) < self.max_size:
+                    return
 
+    def delete_run(self, run_id):
+        for suffix in ('metadata', 'errors', 'db', 'counts', 'urls',
+                       'headers'):
+
+            filename = os.path.join(self.directory,
+                                    '%s-%s.json' % (run_id, suffix))
+            if os.path.exists(filename):
+                os.remove(filename)
+
+    def flush(self):
         if not self._dirty:
             return
 
@@ -244,9 +278,15 @@ class BrokerDB(BaseDB):
             return json.load(f)
 
     def get_runs(self):
-        return set([path[:-len('-db.json')]
-                    for path in os.listdir(self.directory)
-                    if path.endswith('-db.json')])
+        runs = []
+        for path in os.listdir(self.directory):
+            if path.endswith('-db.json'):
+                created = os.stat(os.path.join(self.directory, path)).st_mtime
+                runs.append((created, path))
+
+        # from older to newer...
+        runs.sort()
+        return [path[:-len('-db.json')] for created, path in runs]
 
     def _batch(self, filename, start=None, size=None, filter=None,
                run_id=None):

@@ -320,20 +320,24 @@ class BrokerController(object):
         if observers == []:
             return
 
-        # rebuild the test result instance
-        test_result = RemoteTestResult(args=args)
-        test_result.args = args
+        # if we are using the web dashboard - we're just providing a link
+        if self.broker.web_root is not None:
+            test_result = 'Visit %s/run/%s' % (self.broker.web_root, run_id)
+        else:
+            # rebuild the test result instance
+            test_result = RemoteTestResult(args=args)
+            test_result.args = args
 
-        data = list(self._db.get_data(run_id, size=1))
-        if len(data) > 0:
-            started = datetime.datetime.utcfromtimestamp(data[0]['started'])
-            test_result.startTestRun(when=started)
+            data = list(self._db.get_data(run_id, size=1))
+            if len(data) > 0:
+                started = data[0]['started']
+                started = datetime.datetime.utcfromtimestamp(started)
+                test_result.startTestRun(when=started)
 
-        test_result.set_counts(self._db.get_counts(run_id))
+            test_result.set_counts(self._db.get_counts(run_id))
 
         # for each observer we call it with the test results
         for observer in observers:
-
             options = {}
             prefix = 'observer_%s_' % observer.name
             for name, value in args.items():
@@ -362,6 +366,9 @@ class BrokerController(object):
         except NotEnoughWorkersError:
             self.broker.send_json(target, {'error': 'Not enough agents'})
             return
+
+        # make sure the DB is prepared
+        self._db.prepare_run()
 
         # send to every agent with the run_id and the receiver endpoint
         data['run_id'] = run_id

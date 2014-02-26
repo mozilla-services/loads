@@ -170,3 +170,6 @@ class RedisDB(BaseDB):
                 counter = self._redis.get('bcount:%s:%s' % (run_id, hash))
                 data['count'] = int(counter)
                 yield data
+
+    def prepare_run(self):
+        pass

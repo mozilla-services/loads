@@ -6,7 +6,7 @@ import tempfile
 import json
 
 from zmq.green.eventloop import ioloop
-from loads.db._python import BrokerDB, read_zfile
+from loads.db._python import BrokerDB, read_zfile, get_dir_size
 
 
 _RUN_ID = '8b91dee8-0aec-4bb9-b0a0-87269a9c2874'
@@ -47,7 +47,7 @@ class TestBrokerDB(unittest2.TestCase):
         self.tmp = tempfile.mkdtemp()
         dboptions = {'directory': self.tmp}
         self.db = BrokerDB(self.loop, db='python',
-                           dboptions=dboptions)
+                           **dboptions)
 
     def tearDown(self):
         shutil.rmtree(self.db.directory)
@@ -199,3 +199,30 @@ class TestBrokerDB(unittest2.TestCase):
         new_headers = [(int(key), value) for key, value in new_headers.items()]
         new_headers.sort()
         self.assertEquals(new_headers, wanted)
+
+    def test_max_size(self):
+        # adding some data for run_1 and run_2
+        self.db.prepare_run()
+
+        for run in ('run_1', 'run_2', 'run_3'):
+            for i in range(1000):
+                self.db.add({'run_id': run, 'one': 'ok', 'two': 3,
+                             'three': 'blah'})
+            time.sleep(.1)
+
+        # flushing
+        self.db.flush()
+        self.assertEqual(self.db.get_runs(), ['run_1', 'run_2', 'run_3'])
+
+        # setting the max size to current size
+        self.db.max_size = get_dir_size(self.tmp)
+        self.db.prepare_run()
+
+        # adding data for run_4
+        for i in range(1000):
+            self.db.add({'run_id': 'run_4', 'one': 'ok', 'two': 3,
+                         'three': 'blah'})
+
+        # run-1 should have been wiped...
+        self.db.flush()
+        self.assertEqual(self.db.get_runs(), ['run_2', 'run_3', 'run_4'])
