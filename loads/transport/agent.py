@@ -126,6 +126,7 @@ class Agent(object):
             proc = subprocess.Popen(cmd, cwd=args.get('test_dir'))
         except Exception, e:
             msg = 'Failed to start process ' + str(e)
+            logger.debug(msg)
             raise ExecutionError(msg)
 
         self._workers[proc.pid] = proc, run_id
@@ -175,8 +176,10 @@ class Agent(object):
 
             return res
         elif command == 'STOP':
+            logger.debug('asked to STOP all runs')
             return self._stop_runs(command)
         elif command == 'QUIT':
+            logger.debug('asked to QUIT')
             try:
                 return self._stop_runs(command)
             finally:
@@ -187,6 +190,7 @@ class Agent(object):
     def _stop_runs(self, command):
         status = {}
         for pid, (proc, run_id) in self._workers.items():
+            logger.debug('terminating proc for run %s' % str(run_id))
             if proc.poll() is None:
                 proc.terminate()
                 del self._workers[pid]

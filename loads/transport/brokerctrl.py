@@ -133,6 +133,7 @@ class BrokerController(object):
             if (last_contact is not None and
                now - last_contact > self.agent_timeout):
                 # let's kill the agent...
+                logger.debug('Killing agent %s' % str(agent_id))
                 quit = ['', json.dumps({'command': 'QUIT'})]
                 self.send_to_agent(agent_id, quit)
 
@@ -140,6 +141,7 @@ class BrokerController(object):
                 run_id = self.update_status(agent_id, ['terminated'])
 
                 if run_id is not None:
+                    logger.debug('publishing end of run')
                     # if the tests are finished, publish this on the pubsub.
                     msg = json.dumps({'data_type': 'run-finished',
                                       'run_id': run_id})
