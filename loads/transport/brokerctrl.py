@@ -332,8 +332,8 @@ class BrokerController(object):
             test_result = RemoteTestResult(args=args)
             test_result.args = args
 
-            if len(data) > 0:
-                started = data[0]['started']
+            if 'started' in args:
+                started = args['started']
                 started = datetime.datetime.utcfromtimestamp(started)
                 test_result.startTestRun(when=started)
 

@@ -58,7 +58,7 @@ class TestIRC(unittest2.TestCase):
         wanted = ['NICK loads',
                   'USER loads 0 * :loads',
                   'JOIN #services-dev',
-                  'PRIVMSG #services-dev :Test over. yeah',
+                  'PRIVMSG #services-dev :[loads] Test Over. \x1fyeah',
                   'QUIT :Bye !',
                   'QUIT :Connection reset by peer']
 
