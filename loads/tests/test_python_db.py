@@ -208,10 +208,10 @@ class TestBrokerDB(unittest2.TestCase):
             for i in range(1000):
                 self.db.add({'run_id': run, 'one': 'ok', 'two': 3,
                              'three': 'blah'})
+            # flushing
+            self.db.flush()
             time.sleep(.1)
 
-        # flushing
-        self.db.flush()
         self.assertEqual(self.db.get_runs(), ['run_1', 'run_2', 'run_3'])
 
         # setting the max size to current size
