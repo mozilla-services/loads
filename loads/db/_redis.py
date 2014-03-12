@@ -173,3 +173,12 @@ class RedisDB(BaseDB):
 
     def prepare_run(self):
         pass
+
+    def is_summarized(self, run_id):
+        return False
+
+    def summarize_run(self, run_id):
+        pass
+
+    def delete_run(self, run_id):
+        pass

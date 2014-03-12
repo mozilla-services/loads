@@ -179,8 +179,8 @@ class FunctionalTest(TestCase):
         self.assertEqual(metadata['project_name'], 'test_distributed_run')
 
         # checking the data
-        data = client.get_data(run_id)
-        self.assertTrue(len(data) > 25, len(data))
+        # the run is over so the detailed lines where pruned
+        self.assertRaises(ValueError, client.get_data, run_id)
         self.assertEqual(client.get_urls(run_id),
                          {u'http://127.0.0.1:9000/': 10})
         counts = dict(client.get_counts(run_id))
@@ -208,7 +208,7 @@ class FunctionalTest(TestCase):
         for i in range(10):
             runs = client.list_runs()
             time.sleep(.1)
-            data = client.get_data(runs.keys()[0])
+            data = client.get_metadata(runs.keys()[0])
             if len(data) > 0:
                 return
 
@@ -224,7 +224,7 @@ class FunctionalTest(TestCase):
         start_runner(args)
         client = Pool()
         runs = client.list_runs()
-        data = client.get_data(runs.keys()[0])
+        data = client.get_metadata(runs.keys()[0])
         self.assertTrue(len(data) > 5, len(data))
 
     def test_distributed_detach(self):
@@ -300,7 +300,7 @@ class FunctionalTest(TestCase):
                 time.sleep(.1)
                 continue
             try:
-                data = self.client.get_data(runs.keys()[-1])
+                data = self.client.get_metadata(runs.keys()[-1])
             except Exception:
                 raise AssertionError(str(runs))
 

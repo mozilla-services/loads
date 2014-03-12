@@ -16,6 +16,10 @@ class NotEnoughWorkersError(Exception):
     pass
 
 
+class NoDetailedDataError(Exception):
+    pass
+
+
 def _compute_observers(observers):
     """Reads the arguments and returns an observers list"""
     def _resolver(name):
@@ -206,6 +210,9 @@ class BrokerController(object):
         # XXX stream ?
         run_id = data['run_id']
 
+        if self._db.is_summarized(run_id):
+            raise NoDetailedDataError(run_id)
+
         start = data.get('start')
         if start is not None:
             start = int(start)
@@ -322,6 +329,7 @@ class BrokerController(object):
         observers = _compute_observers(args.get('observer'))
 
         if observers == []:
+            self._db.summarize_run(run_id)
             return
 
         # if we are using the web dashboard - we're just providing a link
@@ -353,6 +361,8 @@ class BrokerController(object):
             except Exception:
                 # the observer code failed. We want to log it
                 logger.error('%r failed' % observer)
+
+        self._db.summarize_run(run_id)
 
     #
     # The run apis
