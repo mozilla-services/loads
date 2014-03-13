@@ -12,6 +12,7 @@ from loads.transport.exc import TimeoutError
 from loads.util import logger
 
 DEFAULT_FRONTEND = "ipc:///tmp/loads-front.ipc"
+DEFAULT_SSH_FRONTEND = "tcp://127.0.0.1:7780"
 DEFAULT_BACKEND = "ipc:///tmp/loads-back.ipc"
 DEFAULT_HEARTBEAT = "ipc:///tmp/loads-beat.ipc"
 DEFAULT_REG = "ipc:///tmp/loads-reg.ipc"
