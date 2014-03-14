@@ -2,7 +2,7 @@ Running Loads behind SSH
 ========================
 
 If you deploy your cluster on a dedicated server, Loads does not
-provide any security whatsoever on al the ZMQ sockets it binds.
+provide any security whatsoever on all the ZMQ sockets it binds.
 
 The best way to secure your installation is to make sure the
 sockets can't be reached from the outside world and use
@@ -25,13 +25,13 @@ with a TCP port for the frontend option and the publisher option::
     $ loads-broker --frontend tcp://0.0.0.0:7780 \
         --publisher tcp://0.0.0.0:7776
 
-From there, running loads-runner is done by using the **ssh** option::
+From there, running **loads-runner** is done by using the **ssh** option::
 
     $ loads-runner --shh tarek@loads-cluster ...
 
 Loads will create an SSH tunnel for both sockets. You don't even need to
 specify the **broker** option in case the two tunneled ports are
-using the **7780** and **7776** ports. This are the default ports
+using the **7780** and **7776** ports. These are the default ports
 Loads will try to tunnel in case you use the **ssh** option.
 
 
