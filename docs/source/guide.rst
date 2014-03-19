@@ -160,6 +160,8 @@ with an HTTP service::
 
     class TestWebSite(TestCase):
 
+        server_url = "http://your-server-url"
+
         def test_something(self):
             self.assertTrue('tarek' in self.app.get('/'))
 
