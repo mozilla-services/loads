@@ -212,7 +212,8 @@ class TestBrokerDB(unittest2.TestCase):
             self.db.flush()
             time.sleep(.1)
 
-        self.assertEqual(self.db.get_runs(), ['run_1', 'run_2', 'run_3'])
+        self.assertEqual(set(self.db.get_runs()),
+                         set(['run_1', 'run_2', 'run_3']))
 
         # setting the max size to current size
         self.db.max_size = get_dir_size(self.tmp)
