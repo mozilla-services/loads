@@ -140,6 +140,9 @@ class LocalRunner(object):
                     self.test_result.nb_errors + self.test_result.nb_failures):
                 return 1
             return 0
+        except Exception:
+            self.test_result.addError('XXX', sys.exc_info(), (0, 0, 0, 0))
+            raise
         finally:
             self.running = False
             os.chdir(old_location)

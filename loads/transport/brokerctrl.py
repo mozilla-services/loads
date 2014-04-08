@@ -172,9 +172,11 @@ class BrokerController(object):
             if agent_id in self._agent_times:
                 del self._agent_times[agent_id]
 
-            if agent_id in self._runs:
-                run_id, when = self._runs[agent_id]
-                del self._runs[agent_id]
+            if agent_id not in self._runs:
+                return
+
+            run_id, when = self._runs[agent_id]
+            del self._runs[agent_id]
 
             # is the whole run over ?
             running = [run_id_ for (run_id_, when_) in self._runs.values()]
