@@ -207,7 +207,6 @@ class Agent(object):
     def _handle_recv_back(self, msg):
         # do the message and send the result
         if self.debug:
-            #logger.debug('Message received from the broker')
             target = timed()(self._handle_commands)
         else:
             target = self._handle_commands

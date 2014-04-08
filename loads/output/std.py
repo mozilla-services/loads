@@ -114,13 +114,15 @@ class StdOutput(object):
         for line in data:
             if len(line) == 0:
                 continue
-            exc_class, exc, tb = line[0]
-            if isinstance(exc_class, basestring):
-                name = exc_class
-            else:
-                name = exc_class.__name__
 
-            errors[name, exc, tb] += 1
+            exc_class, exc_, tb_ = line[0]
+
+            if isinstance(exc_class, basestring):
+                name_ = exc_class
+            else:
+                name_ = exc_class.__name__
+
+            errors[name_, exc_, tb_] += 1
 
         errors = [(count, name, exc, tb) for (name, exc, tb), count
                   in errors.items()]

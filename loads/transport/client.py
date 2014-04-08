@@ -91,7 +91,6 @@ class Client(object):
         return res['result']
 
     def close(self):
-        #self.master.close()
         self.master.setsockopt(zmq.LINGER, 0)
         self.master.close()
 

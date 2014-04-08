@@ -301,8 +301,8 @@ class BrokerDB(BaseDB):
         runs = []
         for path in os.listdir(self.directory):
             if path.endswith('-metadata.json'):
-                created = os.stat(os.path.join(self.directory, path)).st_mtime
-                runs.append((created, path))
+                creat_ = os.stat(os.path.join(self.directory, path)).st_mtime
+                runs.append((creat_, path))
 
         # from older to newer...
         runs.sort()

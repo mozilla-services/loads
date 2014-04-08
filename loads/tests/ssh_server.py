@@ -41,7 +41,6 @@ class _SFTPServer(paramiko.SFTPServerInterface):
     ROOT = os.getcwd()
 
     def _realpath(self, path):
-        #return self.ROOT + self.canonicalize(path)
         return path
 
     def list_folder(self, path):
