@@ -200,6 +200,7 @@ class TestBrokerDB(unittest2.TestCase):
         new_headers.sort()
         self.assertEquals(new_headers, wanted)
 
+    @unittest2.skipIf('TRAVIS' in os.environ, '')
     def test_max_size(self):
         # adding some data for run_1 and run_2
         self.db.prepare_run()
@@ -208,10 +209,10 @@ class TestBrokerDB(unittest2.TestCase):
             for i in range(1000):
                 self.db.add({'run_id': run, 'one': 'ok', 'two': 3,
                              'three': 'blah'})
+            # flushing
+            self.db.flush()
             time.sleep(.1)
 
-        # flushing
-        self.db.flush()
         self.assertEqual(self.db.get_runs(), ['run_1', 'run_2', 'run_3'])
 
         # setting the max size to current size

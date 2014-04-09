@@ -32,16 +32,23 @@ class Client(object):
       than **timeout_max_overflow**. When the number goes over
       **timeout_overflows**, the usual TimeoutError is raised.
       When a agent returns on time, the counter is reset.
+    - **ssh** ssh tunnel server.
     """
     def __init__(self, frontend=DEFAULT_FRONTEND, timeout=DEFAULT_TIMEOUT,
                  timeout_max_overflow=DEFAULT_TIMEOUT_MOVF,
                  timeout_overflows=DEFAULT_TIMEOUT_OVF,
-                 debug=False, ctx=None):
+                 debug=False, ctx=None, ssh=None):
+        self.ssh = ssh
         self.kill_ctx = ctx is None
         self.ctx = ctx or zmq.Context()
         self.frontend = frontend
         self.master = self.ctx.socket(zmq.REQ)
-        self.master.connect(frontend)
+        if ssh:
+            from zmq import ssh
+            ssh.tunnel_connection(self.master, frontend, self.ssh)
+        else:
+            self.master.connect(frontend)
+
         self.poller = zmq.Poller()
         self.poller.register(self.master, zmq.POLLIN)
         self.timeout = timeout * 1000
@@ -84,7 +91,6 @@ class Client(object):
         return res['result']
 
     def close(self):
-        #self.master.close()
         self.master.setsockopt(zmq.LINGER, 0)
         self.master.close()
 

@@ -53,7 +53,6 @@ class Stethoscope(object):
         self._endpoint = self.context.socket(zmq.SUB)
         self._endpoint.setsockopt(zmq.SUBSCRIBE, '')
         self._endpoint.linger = 0
-        #self._endpoint.identity = str(os.getpid())
         self._endpoint.connect(self.endpoint)
         self._stream = zmqstream.ZMQStream(self._endpoint, self.loop)
         self._stream.on_recv(self._handle_recv)
@@ -126,7 +125,6 @@ class Heartbeat(object):
         logger.debug('Publishing to ' + self.endpoint)
         self._endpoint = self.context.socket(zmq.PUB)
         self._endpoint.linger = 0
-        #self._endpoint.identity = b'HB'
         self._endpoint.hwm = 0
         self._endpoint.bind(self.endpoint)
         self._cb = ioloop.PeriodicCallback(self._ping, interval * 1000,
@@ -141,7 +139,6 @@ class Heartbeat(object):
         self._cb.start()
 
     def _ping(self):
-        #logger.debug('*beat*')
         if self.current_register == 0:
             if self.onregister is not None:
                 self.onregister()

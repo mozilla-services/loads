@@ -4,7 +4,7 @@ import zmq.green as zmq
 from zmq.green.eventloop import ioloop, zmqstream
 
 from loads.runners.local import LocalRunner
-from loads.transport.util import DEFAULT_PUBLISHER
+from loads.transport.util import DEFAULT_PUBLISHER, DEFAULT_SSH_PUBLISHER
 from loads.util import logger, split_endpoint
 from loads.results import TestResult, RemoteTestResult
 from loads.transport.client import Client
@@ -24,6 +24,7 @@ class DistributedRunner(LocalRunner):
 
     def __init__(self, args):
         super(DistributedRunner, self).__init__(args)
+        self.ssh = args.get('ssh')
         self.run_id = None
         self._test_result = None
         self._stopped_agents = 0
@@ -57,7 +58,8 @@ class DistributedRunner(LocalRunner):
     @property
     def client(self):
         if self._client is None:
-            self._client = Client(self.args['broker'])
+            self._client = Client(self.args['broker'],
+                                  ssh=self.args.get('ssh'))
         return self._client
 
     @property
@@ -127,7 +129,14 @@ class DistributedRunner(LocalRunner):
             else:
                 zmq_publisher = DEFAULT_PUBLISHER
 
-        self.sub.connect(zmq_publisher)
+        if not self.ssh:
+            self.sub.connect(zmq_publisher)
+        else:
+            if zmq_publisher == DEFAULT_PUBLISHER:
+                zmq_publisher = DEFAULT_SSH_PUBLISHER
+            from zmq import ssh
+            ssh.tunnel_connection(self.sub, zmq_publisher, self.ssh)
+
         self.zstream = zmqstream.ZMQStream(self.sub, self.loop)
         self.zstream.on_recv(self._recv_result)
         self.zmq_publisher = zmq_publisher

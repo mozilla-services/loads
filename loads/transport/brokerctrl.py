@@ -16,6 +16,10 @@ class NotEnoughWorkersError(Exception):
     pass
 
 
+class NoDetailedDataError(Exception):
+    pass
+
+
 def _compute_observers(observers):
     """Reads the arguments and returns an observers list"""
     def _resolver(name):
@@ -168,9 +172,11 @@ class BrokerController(object):
             if agent_id in self._agent_times:
                 del self._agent_times[agent_id]
 
-            if agent_id in self._runs:
-                run_id, when = self._runs[agent_id]
-                del self._runs[agent_id]
+            if agent_id not in self._runs:
+                return
+
+            run_id, when = self._runs[agent_id]
+            del self._runs[agent_id]
 
             # is the whole run over ?
             running = [run_id_ for (run_id_, when_) in self._runs.values()]
@@ -205,6 +211,9 @@ class BrokerController(object):
     def get_data(self, msg, data):
         # XXX stream ?
         run_id = data['run_id']
+
+        if self._db.is_summarized(run_id):
+            raise NoDetailedDataError(run_id)
 
         start = data.get('start')
         if start is not None:
@@ -322,6 +331,7 @@ class BrokerController(object):
         observers = _compute_observers(args.get('observer'))
 
         if observers == []:
+            self._db.summarize_run(run_id)
             return
 
         # if we are using the web dashboard - we're just providing a link
@@ -332,8 +342,8 @@ class BrokerController(object):
             test_result = RemoteTestResult(args=args)
             test_result.args = args
 
-            if len(data) > 0:
-                started = data[0]['started']
+            if 'started' in args:
+                started = args['started']
                 started = datetime.datetime.utcfromtimestamp(started)
                 test_result.startTestRun(when=started)
 
@@ -353,6 +363,8 @@ class BrokerController(object):
             except Exception:
                 # the observer code failed. We want to log it
                 logger.error('%r failed' % observer)
+
+        self._db.summarize_run(run_id)
 
     #
     # The run apis

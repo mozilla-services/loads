@@ -162,6 +162,7 @@ class BrokerDB(BaseDB):
 
     def add(self, data):
         run_id = data['run_id']
+        self.update_metadata(run_id, has_data=1)
         data_type = data.get('data_type', 'unknown')
         self._counts[run_id][data_type] += data.get('size', 1)
         self._buffer[run_id].put(dict(data))
@@ -211,6 +212,25 @@ class BrokerDB(BaseDB):
                                     '%s-%s.json' % (run_id, suffix))
             if os.path.exists(filename):
                 os.remove(filename)
+
+        for mapping in (self._counts, self._metadata, self._urls,
+                        self._headers, self._key_headers):
+            if run_id in mapping:
+                del mapping[run_id]
+
+    def is_summarized(self, run_id):
+        db = os.path.join(self.directory, '%s-db.json' % run_id)
+        meta = os.path.join(self.directory, '%s-metadata.json' % run_id)
+        return os.path.exists(meta) and not os.path.exists(db)
+
+    def summarize_run(self, run_id):
+        # we just remove the -db file
+        # XXX in the future we'll want to move it to another
+        # storage so we keep the details.
+        filename = os.path.join(self.directory,
+                                '%s-db.json' % run_id)
+        if os.path.exists(filename):
+            os.remove(filename)
 
     def flush(self):
         if not self._dirty:
@@ -280,13 +300,13 @@ class BrokerDB(BaseDB):
     def get_runs(self):
         runs = []
         for path in os.listdir(self.directory):
-            if path.endswith('-db.json'):
-                created = os.stat(os.path.join(self.directory, path)).st_mtime
-                runs.append((created, path))
+            if path.endswith('-metadata.json'):
+                creat_ = os.stat(os.path.join(self.directory, path)).st_mtime
+                runs.append((creat_, path))
 
         # from older to newer...
         runs.sort()
-        return [path[:-len('-db.json')] for created, path in runs]
+        return [path[:-len('-metadata.json')] for created, path in runs]
 
     def _batch(self, filename, start=None, size=None, filter=None,
                run_id=None):

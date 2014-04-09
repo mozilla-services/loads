@@ -11,7 +11,8 @@ from loads.output import output_list
 from loads.runners import (LocalRunner, DistributedRunner, ExternalRunner,
                            RUNNERS)
 from loads.transport.client import Client, TimeoutError
-from loads.transport.util import DEFAULT_FRONTEND, DEFAULT_PUBLISHER
+from loads.transport.util import (DEFAULT_FRONTEND, DEFAULT_PUBLISHER,
+                                  DEFAULT_SSH_FRONTEND)
 from loads.util import logger, set_logger
 from loads.observers import observers
 
@@ -144,6 +145,9 @@ def _parse(sysargs=None):
                              '- glob-style',
                         action='append', default=[])
 
+    parser.add_argument('--ssh', help='SSH tunnel - e.g. user@server:port',
+                        type=str, default=None)
+
     # loads works with hits or duration
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--hits', help='Number of hits per user',
@@ -268,9 +272,21 @@ def main(sysargs=None):
         print(__version__)
         sys.exit(0)
 
+    if args.ssh:
+        if args.broker == DEFAULT_FRONTEND:
+            args.broker = DEFAULT_SSH_FRONTEND
+
+        # control that we have pexpect
+        try:
+            import pexpect    # NOQA
+        except ImportError:
+            print("To use --ssh you need pexpect")
+            print("Try: pip install pexpect")
+            sys.exit(0)
+
     if args.ping_broker or args.purge_broker or args.check_cluster:
 
-        client = Client(args.broker)
+        client = Client(args.broker, ssh=args.ssh)
         ping = client.ping()
 
         if args.purge_broker:
@@ -299,8 +315,17 @@ def main(sysargs=None):
             sys.exit(0)
 
         elif args.check_cluster:
+            total_agents = len(ping['agents'])
+            runs = client.list_runs().items()
+            busy_agents = sum([len(agents) for run_id, agents in runs])
+            avail = total_agents - busy_agents
+            if avail == 0:
+                # no agents are available.
+                print('All agents are busy.')
+                sys.exit(0)
+
             args.fqn = 'loads.examples.test_blog.TestWebSite.test_health'
-            args.agents = len(ping['agents'])
+            args.agents = avail
             args.hits = '1'
             print('Running a health check on all %d agents' % args.agents)
 
