@@ -200,6 +200,7 @@ class TestBrokerDB(unittest2.TestCase):
         new_headers.sort()
         self.assertEquals(new_headers, wanted)
 
+    @unittest2.skipIf('TRAVIS' in os.environ, '')
     def test_max_size(self):
         # adding some data for run_1 and run_2
         self.db.prepare_run()
