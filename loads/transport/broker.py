@@ -192,7 +192,13 @@ class Broker(object):
         msg = msg[1:]
 
         # grabbing the data to update the agents statuses if needed
-        data = json.loads(msg[-1])
+        try:
+            data = json.loads(msg[-1])
+        except ValueError:
+            logger.error("Could not load the received message")
+            logger.error(str(msg))
+            return 
+
         if 'error' in data:
             result = data['error']
         else:
