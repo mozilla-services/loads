@@ -88,7 +88,12 @@ class DistributedRunner(LocalRunner):
                 method = getattr(self.test_result, data_type)
                 method(**data)
 
-            if data_type == 'stopTestRun':
+            agent_stopped = (data_type == 'batch'
+                             and 'stopTestRun' in data['counts'])
+            agent_stopped = agent_stopped or data_type == 'stopTestRun'
+
+
+            if agent_stopped:
                 # Make sure all the agents are finished before stopping the
                 # loop.
                 self._stopped_agents += 1

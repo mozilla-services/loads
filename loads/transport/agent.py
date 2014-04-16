@@ -111,6 +111,7 @@ class Agent(object):
     def _run(self, args, run_id=None):
         logger.debug('Starting a run.')
 
+        args['batched'] = True
         args['slave'] = True
         args['agent_id'] = self.pid
         args['zmq_receiver'] = self.endpoints['receiver']

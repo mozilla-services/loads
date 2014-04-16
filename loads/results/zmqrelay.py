@@ -1,8 +1,12 @@
 from cStringIO import StringIO
 import traceback
 import errno
+import time
+from collections import defaultdict
 
 import zmq.green as zmq
+import gevent
+from gevent.queue import Queue
 
 from loads.util import DateTimeJSONEncoder
 
@@ -103,3 +107,46 @@ class ZMQTestResult(object):
 
     def close(self):
         self.context.destroy()
+
+
+class ZMQSummarizedTestResult(ZMQTestResult):
+    def __init__(self, args):
+        super(ZMQSummarizedTestResult, self).__init__(args)
+        self.interval = 1.
+        self._data = Queue()
+        gevent.spawn_later(self.interval, self._dump_data)
+
+    def push(self, data_type, **data):
+        self._data.put_nowait((data_type, data))
+
+    def close(self):
+        while not self._data.empty():
+            self._dump_data()
+        self.context.destroy()
+
+    def _dump_data(self):
+        if self._data.empty():
+            gevent.spawn_later(self.interval, self._dump_data)
+            return
+
+        print 'DUMP'
+        data = {'data_type': 'batch',
+                'agent_id': self.agent_id,
+                'run_id': self.run_id,
+                'counts': defaultdict(list)}
+
+        # grabbing what we have
+        for _ in range(self._data.qsize()):
+            data_type, message = self._data.get()
+            data['counts'][data_type].append(message)
+
+        while True:
+            try:
+                self._push.send(self.encoder.encode(data), zmq.NOBLOCK)
+                return
+            except zmq.ZMQError as e:
+                if e.errno in (errno.EAGAIN, errno.EWOULDBLOCK):
+                    continue
+                else:
+                    raise
+        gevent.spawn_later(self.interval, self._dump_data)

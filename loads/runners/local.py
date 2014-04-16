@@ -6,7 +6,7 @@ import gevent
 
 from loads.util import (resolve_name, logger, pack_include_files,
                         unpack_include_files)
-from loads.results import ZMQTestResult, TestResult
+from loads.results import ZMQTestResult, TestResult, ZMQSummarizedTestResult
 from loads.output import create_output
 
 
@@ -80,7 +80,10 @@ class LocalRunner(object):
 
         # If we are in slave mode, set the test_result to a 0mq relay
         if self.slave:
-            self._test_result = ZMQTestResult(self.args)
+            if args.get('batched', False):
+                self._test_result = ZMQSummarizedTestResult(self.args)
+            else:
+                self._test_result = ZMQTestResult(self.args)
 
         # The normal behavior is to collect the results locally.
         else:

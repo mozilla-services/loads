@@ -225,6 +225,9 @@ def _parse(sysargs=None):
     outputs = [st.name for st in output_list()]
     outputs.sort()
 
+    parser.add_argument('--batched', action='store_true', default=False,
+                        help='Batch results in distributed mode')
+
     parser.add_argument('--quiet', action='store_true', default=False,
                         help='Do not print any log messages.')
     parser.add_argument('--output', action='append', default=['stdout'],

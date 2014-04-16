@@ -214,6 +214,15 @@ class TestResult(object):
             return 0
         return float(len(self.hits)) / self.duration
 
+    # batched results
+    def batch(self, **args):
+        for field, messages in args['counts'].items():
+            if hasattr(self, field):
+                for message in messages:
+                    message['agent_id'] = args['agent_id']
+                    print field
+                    getattr(self, field)(**message)
+
     # These are to comply with the APIs of unittest.
     def startTestRun(self, agent_id=None, when=None):
         if when is None:
