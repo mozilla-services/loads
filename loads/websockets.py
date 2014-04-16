@@ -1,5 +1,6 @@
 import gevent
 from collections import defaultdict
+from socket import error
 
 from ws4py.client.geventclient import WebSocketClient as _WS
 
@@ -40,9 +41,27 @@ def cleanup(greenlet):
         sock.close()
 
 
+# XXX we get [Errno 48] Address already in use errors o/wise
+# on very high load  (>10k sockets per agent)
+#
+# XXX I don't know why yet
+_TENTATIVE = 200
+
+
 def create_ws(url, test_result, callback=None, protocols=None,
               extensions=None, klass=None, test_case=None):
+    for i in range(_TENTATIVE):
+        try:
+            return _create_ws(url, test_result, callback, protocols,
+                              extensions, klass, test_case)
+        except error, e:
+            gevent.sleep(0)
 
+    raise e
+
+
+def _create_ws(url, test_result, callback=None, protocols=None,
+               extensions=None, klass=None, test_case=None):
     custom_klass = klass is not None
     if klass is None:
         klass = WebSocketClient
@@ -51,8 +70,8 @@ def create_ws(url, test_result, callback=None, protocols=None,
                    protocols=protocols, extensions=extensions,
                    callback=callback,
                    test_case=test_case)
-
     socket.daemon = True
+
     if not custom_klass:
         current = gevent.getcurrent()
         # XXX sometimes I get greenlets objects, sometime Greenlets... ????

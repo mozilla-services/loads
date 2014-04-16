@@ -23,6 +23,7 @@ class FakeProcess(object):
         self._running = running
         self.terminated = False
         self.options = options
+        self.returncode = 0
 
     def poll(self):
         if self._running:

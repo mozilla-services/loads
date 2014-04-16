@@ -111,6 +111,7 @@ class Agent(object):
     def _run(self, args, run_id=None):
         logger.debug('Starting a run.')
 
+        args['batched'] = True
         args['slave'] = True
         args['agent_id'] = self.pid
         args['zmq_receiver'] = self.endpoints['receiver']
@@ -119,9 +120,7 @@ class Agent(object):
         cmd = 'from loads.main import run;'
         cmd += 'run(%s)' % str(args)
         cmd = sys.executable + ' -c "%s"' % cmd
-
         cmd = shlex.split(cmd)
-
         try:
             proc = subprocess.Popen(cmd, cwd=args.get('test_dir'))
         except Exception, e:

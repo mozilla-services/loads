@@ -26,7 +26,6 @@ class DistributedRunner(LocalRunner):
         super(DistributedRunner, self).__init__(args)
         self.ssh = args.get('ssh')
         self.run_id = None
-        self._test_result = None
         self._stopped_agents = 0
         self._nb_agents = args.get('agents')
 
@@ -46,12 +45,6 @@ class DistributedRunner(LocalRunner):
         self.zstream.on_recv(self._recv_result)
 
         self.agents = []
-
-        # outputs
-        self.outputs = []
-        for output in args.get('output', ['stdout']):
-            self.register_output(output)
-
         self._client = None
         self.refresh_rate = 100
 
@@ -71,6 +64,10 @@ class DistributedRunner(LocalRunner):
             else:
                 self._test_result = TestResult(args=self.args)
 
+            # we want to reattach the outputs from Local
+            for output in self.outputs:
+                self._test_result.add_observer(output)
+
         return self._test_result
 
     def _recv_result(self, msg):
@@ -88,7 +85,11 @@ class DistributedRunner(LocalRunner):
                 method = getattr(self.test_result, data_type)
                 method(**data)
 
-            if data_type == 'stopTestRun':
+            agent_stopped = (data_type == 'batch'
+                             and 'stopTestRun' in data['counts'])
+            agent_stopped = agent_stopped or data_type == 'stopTestRun'
+
+            if agent_stopped:
                 # Make sure all the agents are finished before stopping the
                 # loop.
                 self._stopped_agents += 1

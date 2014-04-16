@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from loads.db import get_database
 from loads.transport.client import DEFAULT_TIMEOUT_MOVF
-from loads.util import logger, resolve_name, json
+from loads.util import logger, resolve_name, json, unbatch
 from loads.results import RemoteTestResult
 
 
@@ -202,7 +202,12 @@ class BrokerController(object):
         if agent_id in self._runs:
             data['run_id'], data['started'] = self._runs[agent_id]
 
-        self._db.add(data)
+        if data.get('data_type') == 'batch':
+            for data_type, message in unbatch(data):
+                message['data_type'] = data_type
+                self._db.add(message)
+        else:
+            self._db.add(data)
 
     def get_urls(self, msg, data):
         run_id = data['run_id']
