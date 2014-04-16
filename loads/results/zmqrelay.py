@@ -143,7 +143,7 @@ class ZMQSummarizedTestResult(ZMQTestResult):
         while True:
             try:
                 self._push.send(self.encoder.encode(data), zmq.NOBLOCK)
-                return
+                break
             except zmq.ZMQError as e:
                 if e.errno in (errno.EAGAIN, errno.EWOULDBLOCK):
                     continue
