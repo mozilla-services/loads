@@ -129,7 +129,6 @@ class ZMQSummarizedTestResult(ZMQTestResult):
             gevent.spawn_later(self.interval, self._dump_data)
             return
 
-        print 'DUMP'
         data = {'data_type': 'batch',
                 'agent_id': self.agent_id,
                 'run_id': self.run_id,

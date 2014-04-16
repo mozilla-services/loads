@@ -363,3 +363,12 @@ def seconds_to_time(seconds, loose=False):
         res.append('%d sec' % seconds)
 
     return _join()
+
+
+def unbatch(data):
+    for field, messages in data['counts'].items():
+        for message in messages:
+            message['agent_id'] = data['agent_id']
+            if 'run_id' in data:
+                message['run_id'] = data['run_id']
+            yield field, message

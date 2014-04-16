@@ -2,7 +2,7 @@ import itertools
 from collections import defaultdict
 
 from datetime import datetime, timedelta
-from loads.util import get_quantiles, total_seconds, seconds_to_time
+from loads.util import get_quantiles, total_seconds, seconds_to_time, unbatch
 
 
 class TestResult(object):
@@ -216,11 +216,8 @@ class TestResult(object):
 
     # batched results
     def batch(self, **args):
-        for field, messages in args['counts'].items():
+        for field, message in unbatch(args):
             if hasattr(self, field):
-                for message in messages:
-                    message['agent_id'] = args['agent_id']
-                    print field
                     getattr(self, field)(**message)
 
     # These are to comply with the APIs of unittest.
