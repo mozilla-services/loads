@@ -30,7 +30,6 @@ class TestResult(object):
         self.args = args
 
     def __str__(self):
-
         duration = seconds_to_time(self.duration)
         msg = 'Ran %d tests in %s. %d hits, %.2f RPS.' % (
             self.nb_finished_tests,
@@ -44,6 +43,9 @@ class TestResult(object):
                 self.socket_data_received)
 
         return msg
+
+    def close(self):
+        pass
 
     @property
     def project_name(self):
@@ -235,9 +237,9 @@ class TestResult(object):
 
     def startTest(self, test, loads_status, agent_id=None):
         hit, user, current_hit, current_user = loads_status
-        t = Test(name=test, hit=hit, user=user)
         key = self._get_key(test, loads_status, agent_id)
-        self.tests[key] = t
+        if key not in self.tests:
+            self.tests[key] = Test(name=test, hit=hit, user=user)
 
     def stopTest(self, test, loads_status, agent_id=None):
         hit, user, current_hit, current_user = loads_status

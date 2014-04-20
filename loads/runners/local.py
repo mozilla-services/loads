@@ -66,7 +66,7 @@ class LocalRunner(object):
         self.slave = args.get('slave', False)
         self.run_id = None
         self.project_name = args.get('project_name', 'N/A')
-
+        self._test_result = None
         self.outputs = []
         self.stop = False
 
@@ -78,27 +78,24 @@ class LocalRunner(object):
         self.args['agents'] = self.agents
         self.args['total'] = self.total
 
-        # If we are in slave mode, set the test_result to a 0mq relay
-        if self.slave:
-            if args.get('batched', False):
-                self._test_result = ZMQSummarizedTestResult(self.args)
-            else:
-                self._test_result = ZMQTestResult(self.args)
-
-        # The normal behavior is to collect the results locally.
-        else:
-            self._test_result = TestResult(args=self.args)
-
-        if not self.slave:
-            for output in self.args.get('output', ['stdout']):
-                self.register_output(output)
-
     def _resolve_name(self):
         if self.fqn is not None:
             self.test = resolve_name(self.fqn)
 
     @property
     def test_result(self):
+        if self._test_result is None:
+            # If we are in slave mode, set the test_result to a 0mq relay
+            if self.slave:
+                if self.args.get('batched', False):
+                    self._test_result = ZMQSummarizedTestResult(self.args)
+                else:
+                    self._test_result = ZMQTestResult(self.args)
+
+            # The normal behavior is to collect the results locally.
+            else:
+                self._test_result = TestResult(args=self.args)
+
         return self._test_result
 
     def register_output(self, output_name):
@@ -135,6 +132,10 @@ class LocalRunner(object):
 
     def execute(self):
         """The method to start the load runner."""
+        if not self.slave:
+            for output in self.args.get('output', ['stdout']):
+                self.register_output(output)
+
         old_location = os.getcwd()
         self.running = True
         try:
@@ -147,6 +148,7 @@ class LocalRunner(object):
             self.test_result.addError('XXX', sys.exc_info(), (0, 0, 0, 0))
             raise
         finally:
+            self.test_result.close()
             self.running = False
             os.chdir(old_location)
 

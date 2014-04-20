@@ -1,6 +1,6 @@
 import gevent
 from collections import defaultdict
-from socket import error, SOL_SOCKET, SO_REUSEADDR
+from socket import error
 
 from ws4py.client.geventclient import WebSocketClient as _WS
 
@@ -53,7 +53,7 @@ def create_ws(url, test_result, callback=None, protocols=None,
     for i in range(_TENTATIVE):
         try:
             return _create_ws(url, test_result, callback, protocols,
-                            extensions, klass, test_case)
+                              extensions, klass, test_case)
         except error, e:
             gevent.sleep(0)
 
@@ -61,7 +61,7 @@ def create_ws(url, test_result, callback=None, protocols=None,
 
 
 def _create_ws(url, test_result, callback=None, protocols=None,
-              extensions=None, klass=None, test_case=None):
+               extensions=None, klass=None, test_case=None):
     custom_klass = klass is not None
     if klass is None:
         klass = WebSocketClient

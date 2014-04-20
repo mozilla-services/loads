@@ -117,6 +117,19 @@ class EchoWebSocketApplication(object):
 
         return self.webapp(environ, start_response)
 
+    def auth(self, environ, start_response):
+        headers = [('Content-type', 'text/plain')]
+
+        if 'HTTP_AUTHORIZATION' not in environ:
+            start_response('401 Unauthorized', headers)
+            return ['Unauthorized']
+
+        status = '200 OK'
+        start_response(status, headers)
+        _auth = environ['HTTP_AUTHORIZATION'][6:]
+        user, pwd = base64.b64decode(_auth).split(':')
+        return user
+
     def webapp(self, environ, start_response):
         """
         Our main webapp that'll display the chat form
@@ -146,4 +159,8 @@ if __name__ == '__main__':
             EchoWebSocketApplication(args.host, args.port),
             log=NoLog(),
             backlog=100000)
-    server.serve_forever()
+
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass

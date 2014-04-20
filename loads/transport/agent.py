@@ -120,9 +120,7 @@ class Agent(object):
         cmd = 'from loads.main import run;'
         cmd += 'run(%s)' % str(args)
         cmd = sys.executable + ' -c "%s"' % cmd
-
         cmd = shlex.split(cmd)
-
         try:
             proc = subprocess.Popen(cmd, cwd=args.get('test_dir'))
         except Exception, e:

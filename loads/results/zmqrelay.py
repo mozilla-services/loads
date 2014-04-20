@@ -1,7 +1,6 @@
 from cStringIO import StringIO
 import traceback
 import errno
-import time
 from collections import defaultdict
 
 import zmq.green as zmq
@@ -121,11 +120,11 @@ class ZMQSummarizedTestResult(ZMQTestResult):
 
     def close(self):
         while not self._data.empty():
-            self._dump_data()
+            self._dump_data(loop=False)
         self.context.destroy()
 
-    def _dump_data(self):
-        if self._data.empty():
+    def _dump_data(self, loop=True):
+        if self._data.empty() and loop:
             gevent.spawn_later(self.interval, self._dump_data)
             return
 
@@ -148,4 +147,5 @@ class ZMQSummarizedTestResult(ZMQTestResult):
                     continue
                 else:
                     raise
-        gevent.spawn_later(self.interval, self._dump_data)
+        if loop:
+            gevent.spawn_later(self.interval, self._dump_data)

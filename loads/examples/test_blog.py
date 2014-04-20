@@ -27,8 +27,6 @@ class TestWebSite(TestCase):
         self.session.get('http://localhost:9200')
 
     def test_hold_ws(self):
-        #res = self.session.get('http://localhost:9000')
-        #self.assertTrue('chatform' in res.content)
         results = []
 
         def callback(m):
@@ -37,7 +35,6 @@ class TestWebSite(TestCase):
 
         self.incr_counter('socket-created')
         ws = self.create_ws('ws://localhost:9000/ws',
-                            #protocols=['chat', 'http-only'],
                             callback=callback)
 
         start = time.time()
@@ -98,25 +95,6 @@ class TestWebSite(TestCase):
             gevent.sleep(0)
             if time.time() - start > 1:
                 raise AssertionError('Too slow')
-
-    def test_from_doc(self):
-        results = []
-
-        def callback(m):
-            results.append(m.data)
-
-        ws = self.create_ws('ws://localhost:9000/ws',
-                            protocols=['chat', 'http-only'],
-                            callback=callback)
-        ws.send('something')
-        ws.receive()
-        ws.send('happened')
-        ws.receive()
-
-        while len(results) < 2:
-            time.sleep(.1)
-
-        self.assertEqual(results, ['something', 'happened'])
 
     def _test_will_fail(self):
         res = self.session.get('http://localhost:9200')

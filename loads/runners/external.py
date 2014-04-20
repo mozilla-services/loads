@@ -7,7 +7,7 @@ import zmq
 from zmq.eventloop import ioloop, zmqstream
 
 from loads.runners.local import LocalRunner
-from loads.util import null_streams, json
+from loads.util import null_streams, json, logger
 
 
 DEFAULT_EXTERNAL_RUNNER_RECEIVER = "ipc:///tmp/loads-external-receiver.ipc"
@@ -104,6 +104,9 @@ class ExternalRunner(LocalRunner):
             if proc.poll() is None:
                 active.append(proc)
             else:
+                if proc.returncode != 0:
+                    logger.warning('Process terminated with code %r' %
+                                   proc.returncode)
                 terminated.append(proc)
         self._processes = active
 
@@ -229,7 +232,8 @@ class ExternalRunner(LocalRunner):
             'cwd': self.args.get('test_dir'),
         }
 
-        self._processes.append(subprocess.Popen(cmd.split(' '), **cmd_args))
+        process = subprocess.Popen(cmd.split(' '), **cmd_args)
+        self._processes.append(process)
 
     def stop_run(self):
         self.test_result.stopTestRun(self.args.get('agent_id'))

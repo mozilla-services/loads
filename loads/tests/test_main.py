@@ -53,7 +53,8 @@ class TestRunner(unittest2.TestCase):
         with self.capture_stdout() as output:
             main(args)
 
-        self.assertTrue('Success: 3' in output.read().strip())
+        output = output.read().strip()
+        self.assertTrue('Success: 3' in output, output)
 
     def test_help(self):
         args = []
