@@ -197,7 +197,7 @@ class Broker(object):
         except ValueError:
             logger.error("Could not load the received message")
             logger.error(str(msg))
-            return 
+            return
 
         if 'error' in data:
             result = data['error']
