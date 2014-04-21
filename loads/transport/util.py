@@ -5,6 +5,7 @@ import threading
 import atexit
 import time
 import os
+import socket
 
 import zmq.green as zmq
 
@@ -170,3 +171,7 @@ def verify_broker(broker_endpoint=DEFAULT_FRONTEND, timeout=1.):
         return None
     finally:
         client.close()
+
+
+def get_hostname():
+    return socket.gethostname()

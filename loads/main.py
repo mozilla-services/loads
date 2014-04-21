@@ -303,7 +303,12 @@ def main(sysargs=None):
 
         elif args.ping_broker:
             print('Broker running on pid %d' % ping['pid'])
-            print('%d agents registered' % len(ping['agents']))
+            agents = ping['agents']
+            print('%d agents registered' % len(agents))
+
+            for pid, agent_info in agents.items():
+                print('  - %s on %s' % (pid, agent_info['hostname']))
+
             print('endpoints:')
             for name, location in ping['endpoints'].items():
                 print('  - %s: %s' % (name, location))

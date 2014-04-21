@@ -41,7 +41,7 @@ class BrokerController(object):
         self.loop = loop
 
         # agents registration and timers
-        self._agents = []
+        self._agents = {}
         self._agent_times = {}
         self.agent_timeout = agent_timeout * 4
         self._runs = {}
@@ -59,7 +59,7 @@ class BrokerController(object):
         logger.debug('%r removed. %s' % (agent_id, reason))
 
         if agent_id in self._agents:
-            self._agents.remove(agent_id)
+            del self._agents[agent_id]
 
         if agent_id in self._agent_times:
             del self._agent_times[agent_id]
@@ -67,13 +67,15 @@ class BrokerController(object):
         if agent_id in self._runs:
             del self._runs[agent_id]
 
-    def register_agent(self, agent_id):
+    def register_agent(self, agent_info):
+        agent_id = str(agent_info['pid'])
+
         if agent_id not in self._agents:
-            self._agents.append(agent_id)
+            self._agents[agent_id] = agent_info
 
     def unregister_agents(self, reason='unspecified'):
         logger.debug('All agents removed. %s' % reason)
-        self._agents[:] = []
+        self._agents.clear()
 
     def unregister_agent(self, agent_id, reason='unspecified'):
         if agent_id in self._agents:
@@ -89,7 +91,8 @@ class BrokerController(object):
         # we want to run the same command on several agents
         # provisionning them
         agents = []
-        available = [wid for wid in self._agents if wid not in self._runs]
+        available = [wid for wid in self._agents.keys()
+                     if wid not in self._runs]
 
         if num > len(available):
             raise NotEnoughWorkersError('Not Enough agents')

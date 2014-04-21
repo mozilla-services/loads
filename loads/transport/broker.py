@@ -125,7 +125,7 @@ class Broker(object):
 
     def _handle_reg(self, msg):
         if msg[0] == 'REGISTER':
-            self.ctrl.register_agent(msg[1])
+            self.ctrl.register_agent(json.loads(msg[1]))
         elif msg[0] == 'UNREGISTER':
             self.ctrl.unregister_agent(msg[1], 'asked via UNREGISTER')
 

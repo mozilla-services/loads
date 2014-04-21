@@ -3,6 +3,7 @@ import os
 from StringIO import StringIO
 import sys
 import contextlib
+import re
 
 import mock
 from unittest2 import skipIf
@@ -94,6 +95,9 @@ class TestRunner(unittest2.TestCase):
 
         wanted = ['Broker running on pid ',
                   '3 agents registered',
+                  '- [0-9]+ on tarek.lan',
+                  '- [0-9]+ on tarek.lan',
+                  '- [0-9]+ on tarek.lan',
                   'endpoints:',
                   '- backend: ipc:///tmp/loads-back.ipc',
                   '- publisher: ipc:///tmp/loads-publisher.ipc',
@@ -102,7 +106,7 @@ class TestRunner(unittest2.TestCase):
                   '- receiver: ipc:///tmp/loads-broker-receiver.ipc']
 
         for index, line in enumerate(wanted):
-            self.assertTrue(res[index].startswith(line))
+            self.assertTrue(re.search(line, res[index]) is not None)
 
     def test_add_options(self):
 

@@ -22,7 +22,8 @@ from zmq.eventloop import ioloop, zmqstream
 from loads.transport import util
 from loads.util import logger, set_logger, json, unpack_include_files
 from loads.transport.util import (DEFAULT_FRONTEND, DEFAULT_TIMEOUT_MOVF,
-                                  DEFAULT_MAX_AGE, DEFAULT_MAX_AGE_DELTA)
+                                  DEFAULT_MAX_AGE, DEFAULT_MAX_AGE_DELTA,
+                                  get_hostname)
 from loads.transport.message import Message
 from loads.transport.util import decode_params, timed
 from loads.transport.heartbeat import Stethoscope
@@ -217,6 +218,7 @@ class Agent(object):
             if self.debug:
                 duration, res = res
 
+            res['hostname'] = get_hostname()
             res = json.dumps(res)
             # we're working with strings
             if isinstance(res, unicode):
@@ -274,7 +276,8 @@ class Agent(object):
 
     def register(self):
         # telling the broker we are ready
-        self._reg.send_multipart(['REGISTER', str(self.pid)])
+        data = {'pid': self.pid, 'hostname': get_hostname()}
+        self._reg.send_multipart(['REGISTER', json.dumps(data)])
 
     def start(self):
         """Starts the agent
