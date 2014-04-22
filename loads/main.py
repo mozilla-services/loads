@@ -324,6 +324,10 @@ def main(sysargs=None):
 
         elif args.check_cluster:
             total_agents = len(ping['agents'])
+            if total_agents == 0:
+                print('No agents currently registered.')
+                sys.exit(0)
+
             runs = client.list_runs().items()
             busy_agents = sum([len(agents) for run_id, agents in runs])
             avail = total_agents - busy_agents
