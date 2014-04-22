@@ -75,8 +75,6 @@ class Stethoscope(object):
         elif self.onregister is not None:
             self.onregister()
 
-        logger.debug(msg)
-
     def start(self):
         """Starts the loop"""
         logger.debug('Starting the loop')
