@@ -143,6 +143,14 @@ class BrokerDB(BaseDB):
 
     def update_metadata(self, run_id, **metadata):
         existing = self._metadata.get(run_id, {})
+
+        # reload existing file if any
+        if existing == {}:
+            filename = os.path.join(self.directory, run_id + '-metadata.json')
+            if os.path.exists(filename):
+                with open(filename) as f:
+                    existing = json.load(f)
+
         existing.update(metadata)
         self._dirty = True
         self._metadata[run_id] = existing

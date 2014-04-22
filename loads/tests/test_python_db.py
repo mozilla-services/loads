@@ -227,3 +227,25 @@ class TestBrokerDB(unittest2.TestCase):
         # run-1 should have been wiped...
         self.db.flush()
         self.assertEqual(self.db.get_runs(), ['run_2', 'run_3', 'run_4'])
+
+    def test_reload(self):
+        self.assertEqual(self.db.get_metadata('1'), {})
+        self.db.save_metadata('1', {'hey': 'ho'})
+        self.assertEqual(self.db.get_metadata('1'), {'hey': 'ho'})
+        self.db.update_metadata('1', one=2)
+        meta = self.db.get_metadata('1').items()
+        meta.sort()
+        self.assertEqual(meta, [('hey', 'ho'), ('one', 2)])
+        self.db.flush()
+
+        # make sure we don't lose existing data when
+        # the db client is started and writes before reads
+        dboptions = {'directory': self.tmp}
+        db2 = BrokerDB(self.loop, db='python', **dboptions)
+
+        # this used to overwrite any existing data
+        db2.update_metadata('1', has_data=1)
+        meta = db2.get_metadata('1').items()
+        meta.sort()
+        wanted = [(u'has_data', 1), (u'hey', u'ho'), (u'one', 2)]
+        self.assertEqual(meta, wanted)
