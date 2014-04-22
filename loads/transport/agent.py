@@ -95,6 +95,7 @@ class Agent(object):
         heartbeat = self.endpoints.get('heartbeat')
 
         if heartbeat is not None:
+            logger.info("Hearbeat activated")
             self.ping = Stethoscope(heartbeat, onbeatlost=self.lost,
                                     delay=ping_delay, retries=ping_retries,
                                     ctx=self.ctx, io_loop=self.loop,
@@ -250,6 +251,11 @@ class Agent(object):
             logging.error("Could not send back the result", exc_info=True)
 
     def lost(self):
+        if len(self._workers) > 0:
+            # if we're busy we won't quit!
+            logger.info("Broker lost ! But we're busy...")
+            return False
+
         logger.info('Broker lost ! Quitting..')
         self.running = False
         self.loop.stop()
