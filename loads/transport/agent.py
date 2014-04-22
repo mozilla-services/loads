@@ -70,16 +70,17 @@ class Agent(object):
         self._workers = {}
         self._max_id = defaultdict(int)
 
-        self.loop = ioloop.IOLoop()
-        self.ctx = zmq.Context()
-
-        # Setup the zmq sockets
-
         # Let's ask the broker its options
         self.broker = broker
         client = Client(self.broker)
+
+        # this will timeout in case the broker is unreachable
         result = client.ping()
         self.endpoints = result['endpoints']
+
+        # Setup the zmq sockets
+        self.loop = ioloop.IOLoop()
+        self.ctx = zmq.Context()
 
         # backend socket - used to receive work from the broker
         self._backend = self.ctx.socket(zmq.REP)
