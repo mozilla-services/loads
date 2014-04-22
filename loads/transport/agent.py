@@ -131,7 +131,17 @@ class Agent(object):
             raise ExecutionError(msg)
 
         self._workers[proc.pid] = proc, run_id
+        self._sync_hb()
         return proc.pid
+
+    def _sync_hb(self):
+        if self.ping is None:
+            return
+
+        if len(self._workers) > 0 and self.ping.running:
+            self.ping.stop()
+        elif len(self._workers) == 0 and not self.ping.running:
+            self.ping.start()
 
     def _handle_commands(self, message):
         # we get the messages from the broker here
@@ -197,6 +207,7 @@ class Agent(object):
                 del self._workers[pid]
             status[pid] = 'terminated'
 
+        self._sync_hb()
         return {'result': {'status': status,
                            'command': command}}
 
@@ -204,6 +215,7 @@ class Agent(object):
         for pid, (proc, run_id) in self._workers.items():
             if not proc.poll() is None:
                 del self._workers[pid]
+        self._sync_hb()
 
     def _handle_recv_back(self, msg):
         # do the message and send the result

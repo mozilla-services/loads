@@ -74,8 +74,10 @@ class BrokerController(object):
             self._agents[agent_id] = agent_info
 
     def unregister_agents(self, reason='unspecified'):
-        logger.debug('All agents removed. %s' % reason)
-        self._agents.clear()
+        logger.debug('All idling agents removed. %s' % reason)
+        for agent_id in self._agents.keys():
+            if agent_id not in self._runs:
+                self._remove_agent(agent_id)
 
     def unregister_agent(self, agent_id, reason='unspecified'):
         if agent_id in self._agents:

@@ -172,6 +172,13 @@ def verify_broker(broker_endpoint=DEFAULT_FRONTEND, timeout=1.):
     finally:
         client.close()
 
+# let's just make the assumption it won't change
+# once loads is started
+_HOST = None
+
 
 def get_hostname():
-    return socket.gethostname()
+    global _HOST
+    if _HOST is None:
+        _HOST = socket.gethostname()
+    return _HOST

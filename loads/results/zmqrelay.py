@@ -8,6 +8,7 @@ import gevent
 from gevent.queue import Queue
 
 from loads.util import DateTimeJSONEncoder
+from loads.transport.util import get_hostname
 
 
 class ZMQTestResult(object):
@@ -90,6 +91,7 @@ class ZMQTestResult(object):
     def push(self, data_type, **data):
         data.update({'data_type': data_type,
                      'agent_id': self.agent_id,
+                     'hostname': get_hostname(),
                      'run_id': self.run_id})
         while True:
             try:
@@ -130,6 +132,7 @@ class ZMQSummarizedTestResult(ZMQTestResult):
 
         data = {'data_type': 'batch',
                 'agent_id': self.agent_id,
+                'hostname': get_hostname(),
                 'run_id': self.run_id,
                 'counts': defaultdict(list)}
 
