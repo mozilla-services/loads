@@ -13,6 +13,10 @@ class TestWebSite(TestCase):
     def test_health(self):
         self.incr_counter('health-check')
 
+    def test_hold_health(self):
+        self.incr_counter('health-check')
+        gevent.sleep(1.)
+
     def test_public(self):
         self.session.get('http://google.com')
 
