@@ -106,3 +106,65 @@ class TestHeartbeat(unittest2.TestCase):
         self.assertTrue(len(beats) > 0)
         self.assertEqual(beats[:2], ['o', '+'])
         self.assertTrue(len(lost) > 0)
+
+    def test_restart(self):
+        # we want to make sure the Stethoscope can be restarted
+        beats = []
+        lost = []
+        loop = ioloop.IOLoop()
+
+        def _hbreg():
+            beats.append('o')
+
+        def _onregister():
+            beats.append('+')
+
+        def _onbeat():
+            beats.append('.')
+
+        def _onbeatlost():
+            lost.append('.')
+
+        hb = Heartbeat('ipc:///tmp/stetho.ipc', interval=0.1,
+                       io_loop=loop, onregister=_hbreg)
+
+        stetho = Stethoscope('ipc:///tmp/stetho.ipc', onbeat=_onbeat,
+                             onbeatlost=_onbeatlost, delay=0.1,
+                             io_loop=loop, onregister=_onregister,
+                             warmup_delay=0)
+
+        # scenario
+        def start():
+            hb.start()
+            stetho.start()
+
+        def stop_st():
+            stetho.stop()
+
+        def restart_st():
+            stetho.start()
+            beats.append('RESTARTED')
+
+        def stop():
+            stetho.stop()
+            loop.stop()
+
+        # that starts the heartbeat and the client
+        loop.add_callback(start)
+
+        # the st stops after 500ms
+        loop.add_timeout(time.time() + .5, stop_st)
+
+        # the st starts again after 500ms
+        loop.add_timeout(time.time() + .5, restart_st)
+
+        # the st stops after 1 second, then the loop
+        loop.add_timeout(time.time() + 1., stop)
+        loop.start()
+
+        self.assertTrue(len(beats) > 0)
+        self.assertTrue('RESTARTED' in beats)
+
+        # make sure the st gets the beats after a restart
+        rest = beats.index('RESTARTED')
+        self.assertEqual(beats[rest+1:rest+3], ['o', '+'])

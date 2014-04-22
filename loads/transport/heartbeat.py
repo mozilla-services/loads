@@ -47,14 +47,17 @@ class Stethoscope(object):
         self._timer = None
         self.tries = 0
         self.onregister = onregister
+        self._endpoint = None
 
     def _initialize(self):
         logger.debug('Subscribing to ' + self.endpoint)
-        self._endpoint = self.context.socket(zmq.SUB)
-        self._endpoint.setsockopt(zmq.SUBSCRIBE, '')
-        self._endpoint.linger = 0
+        if self._endpoint is None:
+            self._endpoint = self.context.socket(zmq.SUB)
+            self._endpoint.setsockopt(zmq.SUBSCRIBE, '')
+            self._endpoint.linger = 0
+            self._stream = zmqstream.ZMQStream(self._endpoint, self.loop)
+
         self._endpoint.connect(self.endpoint)
-        self._stream = zmqstream.ZMQStream(self._endpoint, self.loop)
         self._stream.on_recv(self._handle_recv)
         self._timer = ioloop.PeriodicCallback(self._delayed,
                                               self.delay * 1000,
@@ -93,8 +96,10 @@ class Stethoscope(object):
             self._stream.flush()
         except zmq.ZMQError:
             pass
-
+        self.tries = 0
+        self._stream.stop_on_recv()
         self._timer.stop()
+        self._endpoint.disconnect(self.endpoint)
 
 
 class Heartbeat(object):

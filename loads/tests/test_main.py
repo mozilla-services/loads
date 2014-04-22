@@ -95,9 +95,9 @@ class TestRunner(unittest2.TestCase):
 
         wanted = ['Broker running on pid ',
                   '3 agents registered',
-                  '- [0-9]+ on tarek.lan',
-                  '- [0-9]+ on tarek.lan',
-                  '- [0-9]+ on tarek.lan',
+                  '- [0-9]+ on .*',
+                  '- [0-9]+ on .*',
+                  '- [0-9]+ on .*',
                   'endpoints:',
                   '- backend: ipc:///tmp/loads-back.ipc',
                   '- publisher: ipc:///tmp/loads-publisher.ipc',
@@ -106,7 +106,8 @@ class TestRunner(unittest2.TestCase):
                   '- receiver: ipc:///tmp/loads-broker-receiver.ipc']
 
         for index, line in enumerate(wanted):
-            self.assertTrue(re.search(line, res[index]) is not None)
+            self.assertTrue(re.search(line, res[index]) is not None,
+                            (line, res[index]))
 
     def test_add_options(self):
 
