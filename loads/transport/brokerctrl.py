@@ -210,7 +210,8 @@ class BrokerController(object):
         if data.get('data_type') == 'batch':
             for data_type, message in unbatch(data):
                 message['data_type'] = data_type
-                self._db.add(message)
+                callback = functools.partial(self._db.add, message)
+                self.loop.add_callback(callback)
         else:
             self._db.add(data)
 
