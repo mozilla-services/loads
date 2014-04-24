@@ -16,6 +16,7 @@ class TestWebSite(TestCase):
     def test_hold_health(self):
         self.incr_counter('health-check')
         gevent.sleep(1.)
+        raise Exception('BOUH')
 
     def test_public(self):
         self.session.get('http://google.com')

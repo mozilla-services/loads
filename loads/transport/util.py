@@ -21,6 +21,8 @@ DEFAULT_PUBLISHER = "ipc:///tmp/loads-publisher.ipc"
 DEFAULT_SSH_PUBLISHER = "tcp://127.0.0.1:7776"
 DEFAULT_BROKER_RECEIVER = "ipc:///tmp/loads-broker-receiver.ipc"
 
+
+DEFAULT_AGENT_TIMEOUT = 60.
 DEFAULT_TIMEOUT = 5.
 DEFAULT_TIMEOUT_MOVF = 7.5
 DEFAULT_TIMEOUT_OVF = 1

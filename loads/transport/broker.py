@@ -14,10 +14,10 @@ from loads.transport.util import (register_ipc_file, DEFAULT_FRONTEND,
                                   DEFAULT_BACKEND,
                                   DEFAULT_REG, verify_broker,
                                   DEFAULT_BROKER_RECEIVER,
-                                  DEFAULT_PUBLISHER)
+                                  DEFAULT_PUBLISHER,
+                                  DEFAULT_AGENT_TIMEOUT)
 from loads.transport.heartbeat import Heartbeat
 from loads.transport.exc import DuplicateBrokerError
-from loads.transport.client import DEFAULT_TIMEOUT_MOVF
 from loads.db import get_backends
 from loads.transport.brokerctrl import BrokerController
 
@@ -40,7 +40,7 @@ class Broker(object):
     def __init__(self, frontend=DEFAULT_FRONTEND, backend=DEFAULT_BACKEND,
                  heartbeat=None, register=DEFAULT_REG,
                  io_threads=DEFAULT_IOTHREADS,
-                 agent_timeout=DEFAULT_TIMEOUT_MOVF,
+                 agent_timeout=DEFAULT_AGENT_TIMEOUT,
                  receiver=DEFAULT_BROKER_RECEIVER, publisher=DEFAULT_PUBLISHER,
                  db='python', dboptions=None, web_root=None):
         # before doing anything, we verify if a broker is already up and
@@ -73,6 +73,8 @@ class Broker(object):
         self._frontend.identity = 'broker-' + frontend
         self._frontend.bind(frontend)
         self._backend = self.context.socket(zmq.ROUTER)
+        self.pid = str(os.getpid())
+        self._backend.identity = self.pid
         self._backend.bind(backend)
         self._registration = self.context.socket(zmq.PULL)
         self._registration.bind(register)
@@ -135,8 +137,10 @@ class Broker(object):
             self.ctrl.unregister_agent(msg[1], 'asked via UNREGISTER')
 
     def send_json(self, target, data):
+        assert isinstance(target, basestring), target
+        msg = [target, '', json.dumps(data)]
         try:
-            self._frontstream.send_multipart(target + [json.dumps(data)])
+            self._frontstream.send_multipart(msg)
         except ValueError:
             logger.error('Could not dump %s' % str(data))
             raise
@@ -146,10 +150,10 @@ class Broker(object):
 
         All commands starting with CTRL_ are sent to the controller.
         """
-        target = msg[:-1]
+        target = msg[0]
 
         try:
-            data = json.loads(msg[2])
+            data = json.loads(msg[-1])
         except ValueError:
             exc = 'Invalid JSON received.'
             logger.exception(exc)
@@ -194,7 +198,10 @@ class Broker(object):
     def _handle_recv_back(self, msg):
         # let's remove the agent id and track the time it took
         agent_id = msg[0]
-        msg = msg[1:]
+        if len(msg) == 7:
+            client_id = msg[4]
+        else:
+            client_id = None
 
         # grabbing the data to update the agents statuses if needed
         try:
@@ -210,7 +217,13 @@ class Broker(object):
             result = data['result']
 
         if result.get('command') in ('_STATUS', 'STOP', 'QUIT'):
-            statuses = result['status'].values()
+            def _extract_status(st):
+                if isinstance(st, basestring):
+                    return st
+                return st['status']
+
+            statuses = [_extract_status(st)
+                        for st in result['status'].values()]
             run_id = self.ctrl.update_status(agent_id, statuses)
             if run_id is not None:
                 # if the tests are finished, publish this on the pubsub.
@@ -219,8 +232,11 @@ class Broker(object):
             return
 
         # other things are pass-through
+        if client_id is None:
+            return
+
         try:
-            self._frontstream.send_multipart(msg)
+            self._frontstream.send_multipart([client_id, '', msg[-1]])
         except Exception, e:
             logger.error('Could not send to front')
             logger.error(msg)

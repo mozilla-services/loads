@@ -47,15 +47,19 @@ class ObserverFail(Observer):
         raise ValueError("Boom")
 
 
-def start_servers():
-    procs = []
+_PROCS = []
 
-    procs.append(start_process('loads.transport.broker'))
+
+def start_servers():
+    if len(_PROCS) != 0:
+        return _PROCS
+
+    _PROCS.append(start_process('loads.transport.broker'))
 
     for x in range(3):
-        procs.append(start_process('loads.transport.agent'))
+        _PROCS.append(start_process('loads.transport.agent'))
 
-    procs.append(start_process('loads.examples.echo_server'))
+    _PROCS.append(start_process('loads.examples.echo_server'))
 
     # wait for the echo server to be started
     tries = 0
@@ -85,7 +89,13 @@ def start_servers():
     if verify_broker() is None:
         raise ValueError('Broker seem down')
 
-    return procs
+    return _PROCS
+
+
+def stop_servers():
+    for proc in _PROCS:
+        stop_process(proc)
+    _PROCS[:] = []
 
 
 @skipIf('TRAVIS' in os.environ, 'deactivated in Travis')
@@ -95,7 +105,7 @@ class FunctionalTest(TestCase):
     def setUpClass(cls):
         if 'TRAVIS' in os.environ:
             return
-        cls.procs = start_servers()
+        start_servers()
         cls.client = Client()
         cls.location = os.getcwd()
         cls.dirs = []
@@ -104,8 +114,7 @@ class FunctionalTest(TestCase):
     def tearDownClass(cls):
         if 'TRAVIS' in os.environ:
             return
-        for proc in cls.procs:
-            stop_process(proc)
+        stop_servers()
         os.chdir(cls.location)
         for dir in cls.dirs:
             shutil.rmtree(dir)

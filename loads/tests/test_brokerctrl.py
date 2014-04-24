@@ -22,8 +22,9 @@ class Stream(object):
 
 
 class FakeBroker(object):
-    _backstream = Stream()
+    _backend = _backstream = Stream()
     _publisher = Stream()
+    pid = '123456'
 
     msgs = defaultdict(list)
     endpoints = {'receiver': 'xxx'}
@@ -146,7 +147,7 @@ class TestBrokerController(unittest2.TestCase):
 
         self.assertTrue(len(self.broker._backstream.msgs), 1)
         self.assertTrue(len(self.broker._backstream.msgs[0]), 1)
-        got = self.broker._backstream.msgs[0][3]
+        got = self.broker._backstream.msgs[0][-1]
         got = json.loads(got)
         got = got.items()
         got.sort()

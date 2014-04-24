@@ -183,7 +183,7 @@ class BrokerDB(BaseDB):
 
         self._dirty = True
 
-    def _dump_queue(self, run_id, queue, filename):
+    def _dump_queue(self, run_id, queue, filename, compress=True):
         # lines
         qsize = queue.qsize()
         if qsize == 0:
@@ -198,7 +198,10 @@ class BrokerDB(BaseDB):
                 if 'run_id' not in line:
                     line['run_id'] = run_id
                 line = self._compress_headers(run_id, line)
-                f.write(zlib.compress(json.dumps(line)) + ZLIB_END)
+                if compress:
+                    f.write(zlib.compress(json.dumps(line)) + ZLIB_END)
+                else:
+                    f.write(json.dumps(line) + '\n')
 
     def prepare_run(self):
         if self.max_size == -1:
@@ -257,7 +260,7 @@ class BrokerDB(BaseDB):
         for run_id, queue in self._errors.items():
             # error lines
             filename = os.path.join(self.directory, run_id + '-errors.json')
-            self._dump_queue(run_id, queue, filename)
+            self._dump_queue(run_id, queue, filename, compress=False)
 
         for run_id, queue in self._buffer.items():
             # all lines
@@ -317,7 +320,7 @@ class BrokerDB(BaseDB):
         return [path[:-len('-metadata.json')] for created, path in runs]
 
     def _batch(self, filename, start=None, size=None, filter=None,
-               run_id=None):
+               run_id=None, decompress=True):
         if start is not None and size is not None:
             end = start + size
         else:
@@ -327,7 +330,16 @@ class BrokerDB(BaseDB):
         sent = 0
         current = 0
 
-        for current, (record, line) in enumerate(read_zfile(filename)):
+        def _reader():
+            if decompress:
+                for record, line in read_zfile(filename):
+                    yield record, line
+            else:
+                with open(filename, 'rb') as f:
+                    for line in f:
+                        yield json.loads(line), line
+
+        for current, (record, line) in enumerate(_reader()):
             record = self._uncompress_headers(run_id, record)
 
             # filtering
@@ -354,7 +366,8 @@ class BrokerDB(BaseDB):
 
         self._update_headers(run_id)
 
-        for data in self._batch(filename, start, size, run_id=run_id):
+        for data in self._batch(filename, start, size, run_id=run_id,
+                                decompress=False):
             yield data
 
     def get_data(self, run_id, data_type=None, groupby=False, start=None,

@@ -9,7 +9,7 @@ import mock
 from unittest2 import skipIf
 
 from loads.main import main, add_options
-from loads.tests.test_functional import start_servers
+from loads.tests.test_functional import start_servers, stop_servers
 from loads.tests.support import hush
 from loads import __version__
 
@@ -25,6 +25,12 @@ class TestRunner(unittest2.TestCase):
         if 'TRAVIS' in os.environ:
             return
         start_servers()
+
+    @classmethod
+    def tearDownClass(cls):
+        if 'TRAVIS' in os.environ:
+            return
+        stop_servers()
 
     @hush
     def test_config(self):

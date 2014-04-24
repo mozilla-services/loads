@@ -83,7 +83,7 @@ class Agent(object):
         self.ctx = zmq.Context()
 
         # backend socket - used to receive work from the broker
-        self._backend = self.ctx.socket(zmq.REP)
+        self._backend = self.ctx.socket(zmq.ROUTER)
         self._backend.identity = str(self.pid)
         self._backend.connect(self.endpoints['backend'])
 
@@ -144,6 +144,26 @@ class Agent(object):
         elif len(self._workers) == 0 and not self.ping.running:
             self.ping.start()
 
+    def _status(self, command, data):
+        status = {}
+        run_id = data.get('run_id')
+        if run_id is not None:
+            status['run_id'] = run_id
+
+        for pid, (proc, _run_id) in self._workers.items():
+            if run_id is not None and run_id != _run_id:
+                continue
+
+            if proc.poll() is None:
+                status[pid] = {'status': 'running', 'run_id': _run_id}
+            else:
+                status[pid] = {'status': 'terminated', 'run_id': _run_id}
+
+        res = {'result': {'status': status,
+                          'command': command}}
+
+        return res
+
     def _handle_commands(self, message):
         # we get the messages from the broker here
         data = message.data
@@ -169,28 +189,19 @@ class Agent(object):
                                'command': command}}
 
         elif command in ('STATUS', '_STATUS'):
-            status = {}
-            run_id = data.get('run_id')
-            if run_id is not None:
-                status['run_id'] = run_id
+            return self._status(command, data)
 
-            for pid, (proc, _run_id) in self._workers.items():
-                if run_id is not None and run_id != _run_id:
-                    continue
-
-                if proc.poll() is None:
-                    status[pid] = 'running'
-                else:
-                    status[pid] = 'terminated'
-
-            res = {'result': {'status': status,
-                              'command': command}}
-
-            return res
         elif command == 'STOP':
             logger.debug('asked to STOP all runs')
             return self._stop_runs(command)
+
         elif command == 'QUIT':
+            if len(self._workers) > 0 and not data.get('force', False):
+                # if we're busy we won't quit - unless forced !
+                logger.info("Broker asked us to quit ! But we're busy...")
+                logger.info("Cowardly refusing to die")
+                return self._status(command, data)
+
             logger.debug('asked to QUIT')
             try:
                 return self._stop_runs(command)
@@ -206,7 +217,7 @@ class Agent(object):
             if proc.poll() is None:
                 proc.terminate()
                 del self._workers[pid]
-            status[pid] = 'terminated'
+            status[pid] = {'status': 'terminated', 'run_id': run_id}
 
         self._sync_hb()
         return {'result': {'status': status,
@@ -226,9 +237,16 @@ class Agent(object):
             target = self._handle_commands
 
         duration = -1
+        broker_id = msg[2]
 
+        if len(msg) == 7:
+            client_id = msg[4]
+        else:
+            client_id = None
+
+        data = msg[-1]
         try:
-            res = target(Message.load_from_string(msg[0]))
+            res = target(Message.load_from_string(data))
             if self.debug:
                 duration, res = res
 
@@ -245,8 +263,15 @@ class Agent(object):
             res = {'error': {'agent_id': self.pid, 'error': '\n'.join(exc)}}
             logger.error(res)
 
+        data = [broker_id, '', str(self.pid), '']
+
+        if client_id is not None:
+            data += [client_id, '']
+
+        data.append(res)
+        print 'send ' + str(data)
         try:
-            self._backstream.send(res)
+            self._backend.send_multipart(data)
         except Exception:
             logging.error("Could not send back the result", exc_info=True)
 

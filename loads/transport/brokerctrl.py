@@ -8,7 +8,7 @@ import datetime
 from uuid import uuid4
 
 from loads.db import get_database
-from loads.transport.client import DEFAULT_TIMEOUT_MOVF
+from loads.transport.util import DEFAULT_AGENT_TIMEOUT
 from loads.util import logger, resolve_name, json, unbatch
 from loads.results import RemoteTestResult
 
@@ -37,14 +37,14 @@ def _compute_observers(observers):
 
 class BrokerController(object):
     def __init__(self, broker, loop, db='python', dboptions=None,
-                 agent_timeout=DEFAULT_TIMEOUT_MOVF):
+                 agent_timeout=DEFAULT_AGENT_TIMEOUT):
         self.broker = broker
         self.loop = loop
 
         # agents registration and timers
         self._agents = {}
         self._agent_times = {}
-        self.agent_timeout = agent_timeout * 4
+        self.agent_timeout = agent_timeout
         self._runs = {}
 
         # local DB
@@ -109,13 +109,15 @@ class BrokerController(object):
         self._associate(run_id, agents)
         return agents
 
-    def send_to_agent(self, agent_id, msg):
-        msg = list(msg)
-
+    def send_to_agent(self, agent_id, msg, target=None):
         # now we can send to the right guy
-        msg.insert(0, agent_id)
+        data = [agent_id, '', self.broker.pid, '']
+        if target is not None:
+            data += [target, '']
+
+        data.append(msg)
         try:
-            self.broker._backstream.send_multipart(msg)
+            self.broker._backend.send_multipart(data)
         except Exception, e:
             logger.debug('Failed to send %s' % str(msg))
             # we don't want to die on error. we just log it
@@ -139,12 +141,14 @@ class BrokerController(object):
             # when was the last time we've got a response ?
             last_contact = self._agent_times.get(agent_id)
 
-            # is the agent not responding since 10 seconds ?
+            # is the agent not responding since a while ?
             if (last_contact is not None and
                now - last_contact > self.agent_timeout):
                 # let's kill the agent...
+                lag = now - last_contact
+                logger.debug('No response from agent since %d s.' % lag)
                 logger.debug('Killing agent %s' % str(agent_id))
-                quit = ['', json.dumps({'command': 'QUIT'})]
+                quit = json.dumps({'command': 'QUIT'})
                 self.send_to_agent(agent_id, quit)
 
                 # and remove it from the run
@@ -162,8 +166,8 @@ class BrokerController(object):
                     self._agent_times[agent_id] = now
 
                 # sending a _STATUS call to on each active agent
-                status_msg = ['', json.dumps({'command': '_STATUS',
-                                              'run_id': run_id})]
+                status_msg = json.dumps({'command': '_STATUS',
+                                         'run_id': run_id})
                 self.send_to_agent(agent_id, status_msg)
 
     def update_status(self, agent_id, processes_status):
@@ -270,13 +274,13 @@ class BrokerController(object):
 
     def run_command(self, cmd, msg, data):
         cmd = cmd.lower()
-        target = msg[:-1]
+        target = msg[0]
 
         # command for agents
         if cmd.startswith('agent_'):
             data['command'] = cmd[len('agent_'):].upper()
-            msg = msg[:2] + [json.dumps(data)] + msg[2:]
-            self.send_to_agent(str(data['agent_id']), msg)
+            self.send_to_agent(str(data['agent_id']), json.dumps(data),
+                               target=target)
             return    # returning None because it's async
 
         if not hasattr(self, cmd):
@@ -321,7 +325,7 @@ class BrokerController(object):
             return []
 
         # now we have a list of agents to stop
-        stop_msg = msg[:-1] + [json.dumps({'command': 'STOP'})]
+        stop_msg = json.dumps({'command': 'STOP'})
 
         for agent_id in agents:
             self.send_to_agent(agent_id, stop_msg)
@@ -382,7 +386,7 @@ class BrokerController(object):
     # The run apis
     #
     def run(self, msg, data):
-        target = msg[:-1]
+        target = msg[0]
 
         # create a unique id for this run
         run_id = str(uuid4())
@@ -405,7 +409,7 @@ class BrokerController(object):
         data['command'] = 'RUN'
 
         # rebuild the ZMQ message to pass to agents
-        msg[2] = json.dumps(data)
+        msg = json.dumps(data)
 
         # notice when the test was started
         data['args']['started'] = time.time()
