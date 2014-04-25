@@ -4,6 +4,7 @@
 - gets load testing orders & performs them
 - sends back the results in real time.
 """
+import tempfile
 import argparse
 import errno
 import logging
@@ -169,15 +170,22 @@ class Agent(object):
         data = message.data
         command = data['command']
         logger.debug('Received command %s' % command)
+
         if command == 'RUN':
+            test_dir = data['args'].get('test_dir')
+            if test_dir is None:
+                test_dir = tempfile.mkdtemp()
+            else:
+                test_dir += str(os.getpid())
+
+            if not os.path.exists(test_dir):
+                os.makedirs(test_dir)
+
+            data['args']['test_dir'] = test_dir
+
             # XXX should be done in _run or at least asynchronously
             filedata = data.get('filedata')
             if filedata:
-                test_dir = data['args'].get('test_dir')
-                if test_dir is None:
-                    test_dir = '.'
-                if not os.path.exists(test_dir):
-                    os.makedirs(test_dir)
                 unpack_include_files(filedata, test_dir)
 
             args = data['args']

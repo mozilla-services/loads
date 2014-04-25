@@ -318,7 +318,10 @@ class FunctionalTest(TestCase):
             time.sleep(.1)
 
         # check that we got in the dir
-        content = os.listdir(test_dir)
+        pid = runs.values()[0][0][0]
+        real_test_dir = test_dir + str(pid)
+        self.dirs.append(real_test_dir)
+        content = os.listdir(real_test_dir)
         self.assertTrue('test_here.py' in content, content)
 
         if data == []:

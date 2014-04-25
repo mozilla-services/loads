@@ -5,9 +5,12 @@ import sys
 import gevent
 
 from loads.util import (resolve_name, logger, pack_include_files,
-                        unpack_include_files)
+                        unpack_include_files, set_logger)
 from loads.results import ZMQTestResult, TestResult, ZMQSummarizedTestResult
 from loads.output import create_output
+
+
+DEFAULT_LOGFILE = os.path.join('/tmp', 'loads-worker.log')
 
 
 def _compute_arguments(args):
@@ -64,6 +67,9 @@ class LocalRunner(object):
         self.fqn = args.get('fqn')
         self.test = None
         self.slave = args.get('slave', False)
+        if self.slave:
+            set_logger(True, logfile=args.get('logfile', DEFAULT_LOGFILE))
+
         self.run_id = None
         self.project_name = args.get('project_name', 'N/A')
         self._test_result = None
@@ -110,6 +116,8 @@ class LocalRunner(object):
         if deps == []:
             return
 
+        build_dir = os.path.join(self.args['test_dir'],
+                                 'build-', str(os.getpid()))
         nil = "lambda *args, **kw: None"
         code = ["from pip.req import InstallRequirement",
                 "InstallRequirement.uninstall = %s" % nil,
@@ -117,7 +125,7 @@ class LocalRunner(object):
                 "import pip", "pip.main()"]
 
         cmd = [sys.executable, '-c', '"%s"' % ';'.join(code),
-               'install', '-t', 'deps', '-I']
+               'install', '-t', 'deps', '-I', '-b', build_dir]
 
         for dep in deps:
             logger.debug('Deploying %r in %r' % (dep, os.getcwd()))
@@ -125,8 +133,17 @@ class LocalRunner(object):
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE)
             stdout, stderr = process.communicate()
-            if process.returncode != 0:
+
+            # XXX see https://github.com/mozilla-services/loads/issues/253
+            if 'Successfully installed' not in stdout:
+            #if process.returncode != 0:
+                logger.debug('Failed to deploy %r' % dep)
+                logger.debug('Error: %s' % str(stderr))
+                logger.debug('Stdout: %s' % str(stdout))
+                logger.debug("Command used: %s" % str(' '.join(cmd + [dep])))
                 raise Exception(stderr)
+            else:
+                logger.debug('Successfully deployed %r' % dep)
 
         sys.path.insert(0, 'deps')
 
@@ -206,6 +223,7 @@ class LocalRunner(object):
                 # unpackage them, but this has the advantage of ensuring
                 # consistency with how it's done in the distributed case.
                 includes = self.args.get('include_file', [])
+                logger.debug("unpacking %s" % str(includes))
                 filedata = pack_include_files(includes)
                 unpack_include_files(filedata, test_dir)
 
@@ -222,12 +240,15 @@ class LocalRunner(object):
 
     def _run_python_tests(self):
         # resolve the name now
+        logger.debug('Resolving the test fqn')
         self._resolve_name()
 
+        logger.debug('Ready to spawn greenlets for testing.')
         agent_id = self.args.get('agent_id')
         exception = None
         try:
             if not self.args.get('no_patching', False):
+                logger.debug('Gevent monkey patches the stdlib')
                 from gevent import monkey
                 monkey.patch_all()
 
@@ -260,6 +281,7 @@ class LocalRunner(object):
         except Exception as e:
             exception = e
         finally:
+            logger.debug('Test over - cleaning up')
             # be sure we flush the outputs that need it.
             # but do it only if we are in "normal" mode
             try:
@@ -269,6 +291,7 @@ class LocalRunner(object):
                     # in slave mode, be sure to close the zmq relay.
                     self.test_result.close()
             finally:
+                logger.debug('We had an exception, re-raising it')
                 if exception:
                     raise exception
 
