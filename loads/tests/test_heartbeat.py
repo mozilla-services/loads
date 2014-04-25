@@ -167,4 +167,4 @@ class TestHeartbeat(unittest2.TestCase):
 
         # make sure the st gets the beats after a restart
         rest = beats.index('RESTARTED')
-        self.assertEqual('o+' in ''.join(beats[rest:]), beats)
+        self.assertTrue('o+' in ''.join(beats[rest:]), beats)
