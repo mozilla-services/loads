@@ -120,9 +120,10 @@ class LocalRunner(object):
         pydeps = []
         for dep in deps:
             dep = [d.strip() for d in dep.split(',')]
-            if dep == '':
-                continue
-            pydeps.append(dep)
+            for d in dep:
+                if d == '':
+                    continue
+                pydeps.append(d)
 
         build_dir = os.path.join(self.args['test_dir'],
                                  'build-', str(os.getpid()))
