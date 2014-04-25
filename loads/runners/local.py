@@ -116,6 +116,14 @@ class LocalRunner(object):
         if deps == []:
             return
 
+        # accepting lists and list of comma-separated values
+        pydeps = []
+        for dep in deps:
+            dep = [d.strip() for d in dep.split(',')]
+            if dep == '':
+                continue
+            pydeps.append(dep)
+
         build_dir = os.path.join(self.args['test_dir'],
                                  'build-', str(os.getpid()))
         nil = "lambda *args, **kw: None"
@@ -127,7 +135,7 @@ class LocalRunner(object):
         cmd = [sys.executable, '-c', '"%s"' % ';'.join(code),
                'install', '-t', 'deps', '-I', '-b', build_dir]
 
-        for dep in deps:
+        for dep in pydeps:
             logger.debug('Deploying %r in %r' % (dep, os.getcwd()))
             process = subprocess.Popen(' '.join(cmd + [dep]), shell=True,
                                        stdout=subprocess.PIPE,
@@ -136,7 +144,6 @@ class LocalRunner(object):
 
             # XXX see https://github.com/mozilla-services/loads/issues/253
             if 'Successfully installed' not in stdout:
-            #if process.returncode != 0:
                 logger.debug('Failed to deploy %r' % dep)
                 logger.debug('Error: %s' % str(stderr))
                 logger.debug('Stdout: %s' % str(stdout))
