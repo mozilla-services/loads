@@ -299,8 +299,8 @@ class LocalRunner(object):
                     # in slave mode, be sure to close the zmq relay.
                     self.test_result.close()
             finally:
-                logger.debug('We had an exception, re-raising it')
                 if exception:
+                    logger.debug('We had an exception, re-raising it')
                     raise exception
 
     def flush(self):
