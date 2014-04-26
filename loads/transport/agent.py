@@ -288,8 +288,12 @@ class Agent(object):
             return False
 
         logger.info('Broker lost ! Quitting..')
-        self.running = False
-        self.loop.stop()
+
+        def _stop():
+            self._stop()
+            sys.exit(0)
+
+        self.loop.add_callback(_stop)
         return True
 
     def stop(self):
