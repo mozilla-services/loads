@@ -148,8 +148,6 @@ class Agent(object):
     def _status(self, command, data):
         status = {}
         run_id = data.get('run_id')
-        if run_id is not None:
-            status['run_id'] = run_id
 
         for pid, (proc, _run_id) in self._workers.items():
             if run_id is not None and run_id != _run_id:

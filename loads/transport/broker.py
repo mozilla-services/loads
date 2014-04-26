@@ -216,22 +216,19 @@ class Broker(object):
         else:
             result = data['result']
 
-        if result.get('command') in ('_STATUS', 'STOP', 'QUIT'):
-            def _extract_status(st):
-                if isinstance(st, basestring):
-                    return st
-                return st['status']
+        command = result.get('command')
 
-            statuses = [_extract_status(st)
-                        for st in result['status'].values()]
-            run_id = self.ctrl.update_status(agent_id, statuses)
+        # results from commands sent by the broker
+        if command in ('_STATUS', 'STOP', 'QUIT'):
+            run_id = self.ctrl.update_status(agent_id, result)
+
             if run_id is not None:
                 # if the tests are finished, publish this on the pubsub.
                 self._publisher.send(json.dumps({'data_type': 'run-finished',
                                                  'run_id': run_id}))
             return
 
-        # other things are pass-through
+        # other things are pass-through (asked by a client)
         if client_id is None:
             return
 

@@ -52,6 +52,12 @@ class BrokerController(object):
             dboptions = {}
         self._db = get_database(db, self.loop, **dboptions)
 
+        # cached agents results
+        def default_status():
+            return {"result": {"status": {},
+                               "command": "STATUS"}}
+        self._cached_status = defaultdict(default_status)
+
     @property
     def agents(self):
         return self._agents
@@ -74,10 +80,17 @@ class BrokerController(object):
         if agent_id not in self._agents:
             self._agents[agent_id] = agent_info
 
-    def unregister_agents(self, reason='unspecified'):
-        logger.debug('All idling agents removed. %s' % reason)
+    def unregister_agents(self, reason='unspecified', keep_fresh=True):
+        now = time.time()
+
         for agent_id in self._agents.keys():
-            if agent_id not in self._runs:
+            # freshness
+            last_contact = self._agent_times.get(agent_id)
+            old = (last_contact is not None and
+                   now - last_contact > self.agent_timeout)
+
+            # discarded if not running something or old
+            if agent_id not in self._runs and (keep_fresh and old):
                 self._remove_agent(agent_id)
 
     def unregister_agent(self, agent_id, reason='unspecified'):
@@ -152,7 +165,7 @@ class BrokerController(object):
                 self.send_to_agent(agent_id, quit)
 
                 # and remove it from the run
-                run_id = self.update_status(agent_id, ['terminated'])
+                run_id = self._terminate_run(agent_id)
 
                 if run_id is not None:
                     logger.debug('publishing end of run')
@@ -170,31 +183,45 @@ class BrokerController(object):
                                          'run_id': run_id})
                 self.send_to_agent(agent_id, status_msg)
 
-    def update_status(self, agent_id, processes_status):
+    def update_status(self, agent_id, result):
         """Checks the status of the processes. If all the processes are done,
            call self.test_ended() and return the run_id. Returns None
            otherwise.
         """
+        if result.get('command') == '_STATUS':
+            self._cached_status[agent_id] = {'result': result}
+
+        def _extract_status(st):
+            if isinstance(st, basestring):
+                return st
+            return st['status']
+
+        statuses = [_extract_status(st)
+                    for st in result['status'].values()]
+
+        if 'running' not in statuses:
+            return self._terminate_run(agent_id)
+
         self._agent_times[agent_id] = time.time()
 
-        if 'running' not in processes_status:
-            # ended
-            if agent_id in self._agent_times:
-                del self._agent_times[agent_id]
+    def _terminate_run(self, agent_id):
+        # ended
+        if agent_id in self._agent_times:
+            del self._agent_times[agent_id]
 
-            if agent_id not in self._runs:
-                return
+        if agent_id not in self._runs:
+            return
 
-            run_id, when = self._runs[agent_id]
-            del self._runs[agent_id]
+        run_id, when = self._runs[agent_id]
+        del self._runs[agent_id]
 
-            # is the whole run over ?
-            running = [run_id_ for (run_id_, when_) in self._runs.values()]
+        # is the whole run over ?
+        running = [run_id_ for (run_id_, when_) in self._runs.values()]
 
-            # we want to tell the world if the run has ended
-            if run_id not in running:
-                self.test_ended(run_id)
-                return run_id
+        # we want to tell the world if the run has ended
+        if run_id not in running:
+            self.test_ended(run_id)
+            return run_id
 
     #
     # DB APIs
@@ -278,10 +305,21 @@ class BrokerController(object):
 
         # command for agents
         if cmd.startswith('agent_'):
-            data['command'] = cmd[len('agent_'):].upper()
-            self.send_to_agent(str(data['agent_id']), json.dumps(data),
-                               target=target)
-            return    # returning None because it's async
+            command = cmd[len('agent_'):].upper()
+
+            # when a STATUS call is made, we make it
+            # an indirect call
+            if command == 'STATUS':
+                command = '_STATUS'
+
+            data['command'] = command
+            agent_id = str(data['agent_id'])
+            self.send_to_agent(agent_id, json.dumps(data), target=target)
+
+            if command == '_STATUS':
+                return self._cached_status[agent_id]
+
+            return
 
         if not hasattr(self, cmd):
             raise AttributeError(cmd)

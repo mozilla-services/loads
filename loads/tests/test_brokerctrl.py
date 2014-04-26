@@ -141,7 +141,7 @@ class TestBrokerController(unittest2.TestCase):
         runs = self.broker.msgs.values()[0][-1]
         self.assertEqual(runs['result']['agents'], ['agent1'])
 
-        msg = {"command": "STATUS", "args": {}, "agents": 1, "agent_id": "1"}
+        msg = {"command": "_STATUS", "args": {}, "agents": 1, "agent_id": "1"}
         msg = msg.items()
         msg.sort()
 
