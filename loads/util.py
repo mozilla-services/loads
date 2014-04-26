@@ -42,6 +42,7 @@ def set_logger(debug=False, name='loads', logfile='stdout'):
     if 'TESTING' in os.environ:
         fh = logging.FileHandler('/tmp/loads.log')
         fh.setLevel(logging.DEBUG)
+        fh.setFormatter(formatter)
         logger.addHandler(fh)
 
 
