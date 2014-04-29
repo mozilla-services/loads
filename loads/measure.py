@@ -1,7 +1,7 @@
 import datetime
 import urlparse
 
-from requests.sessions import Session as _Session
+from requests.sessions import Session as _Session, REDIRECT_STATI
 from webtest.app import TestApp as _TestApp
 from wsgiproxy.proxies import HostProxy as _HostProxy
 from wsgiproxy.requests_client import HttpClient
@@ -78,16 +78,36 @@ class Session(_Session):
         return super(Session, self).request(
             method, url, headers=headers, **kwargs)
 
+    def resolve_redirects(self, resp, req, stream=False, timeout=None,
+                               verify=True, cert=None, proxies=None):
+        """If there is a redirect, need to record information about the hit before
+        it is obliterated by the next request."""
+        # Future version of requests (some time > 2.2.1) has Response.is_redirect
+        if ('location' in resp.headers) and resp.status_code in REDIRECT_STATI:
+            resp.started = self._started
+            resp.method = req.method
+            self._analyse_request(resp)
+        return _Session.resolve_redirects(self, resp, req, stream=stream, timeout=timeout,
+                                          verify=verify,cert=cert,proxies=proxies)
+
     def send(self, request, **kwargs):
         """Do the actual request from within the session, doing some
         measures at the same time about the request (duration, status, etc).
         """
+        # Recording information about a hit may or may not take place here.
+        # If the hit is a redirect, it will clear the following flag when
+        # it records, so that we know not to do it twice.
+        self._need_to_analyse = True
         # attach some information to the request object for later use.
-        start = datetime.datetime.utcnow()
+        self._started = datetime.datetime.utcnow()
         res = _Session.send(self, request, **kwargs)
-        res.started = start
-        res.method = request.method
-        self._analyse_request(res)
+        if hasattr(self, '_need_to_analyse'):
+            # Reaching this code means the url was not a redirect, and so still
+            # needs analysing.
+            res.started = self._started
+            res.method = request.method
+            self._analyse_request(res)
+            delattr(self, '_need_to_analyse')
         return res
 
     def _analyse_request(self, req):
