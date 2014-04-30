@@ -303,14 +303,18 @@ def main(sysargs=None):
 
         elif args.ping_broker:
             print('Broker running on pid %d' % ping['pid'])
+
             agents = ping['agents']
             print('%d agents registered' % len(agents))
-
-            for pid, agent_info in agents.items():
+            agents = agents.items()
+            agents.sort()
+            for pid, agent_info in agents:
                 print('  - %s on %s' % (pid, agent_info['hostname']))
 
             print('endpoints:')
-            for name, location in ping['endpoints'].items():
+            endpoints = ping['endpoints'].items()
+            endpoints.sort()
+            for name, location in endpoints:
                 print('  - %s: %s' % (name, location))
 
             runs = client.list_runs()

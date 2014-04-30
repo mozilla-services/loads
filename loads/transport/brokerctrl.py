@@ -232,8 +232,17 @@ class BrokerController(object):
         return self._db.get_metadata(data['run_id'])
 
     def save_data(self, agent_id, data):
+        # registering the agent as alive
+        hostname = data.get('hostname', '?')
+        self.register_agent({'pid': agent_id, 'hostname': hostname})
+
         if agent_id in self._runs:
             data['run_id'], data['started'] = self._runs[agent_id]
+        else:
+            # this means we are receiving data from an agent that's
+            # no longer associated with the run, so
+            # we want to associate it back
+            self._associate(data.get('run_id'), [agent_id])
 
         if data.get('data_type') == 'batch':
             for data_type, message in unbatch(data):

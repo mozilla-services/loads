@@ -6,14 +6,16 @@ import subprocess
 import atexit
 
 from loads.transport.util import DEFAULT_FRONTEND
+from loads.util import logger
 
 
 _processes = []
 
 
-def start_process(cmd):
+def start_process(cmd, *args):
     devnull = open('/dev/null', 'w')
-    process = subprocess.Popen([sys.executable, '-m', cmd],
+    args = list(args)
+    process = subprocess.Popen([sys.executable, '-m', cmd] + args,
                                stdout=devnull, stderr=devnull)
     _processes.append(process)
     return process
@@ -108,11 +110,26 @@ def hush(func):
         old_stderr = sys.stderr
         sys.stdout = StringIO.StringIO()
         sys.stderr = StringIO.StringIO()
+        debug = []
+
+        def _debug(msg):
+            debug.append(str(msg))
+
+        old_debug = logger.debug
+        logger.debug = _debug
         try:
             return func(*args, **kw)
+        except:
+            sys.stdout.seek(0)
+            print(sys.stdout.read())
+            sys.stderr.seek(0)
+            print(sys.stderr.read())
+            print('\n'.join(debug))
+            raise
         finally:
             sys.stdout = old_stdout
             sys.stderr = old_stderr
+            logger.debug = old_debug
     return _silent
 
 

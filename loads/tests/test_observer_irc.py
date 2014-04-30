@@ -4,6 +4,7 @@ import select
 import os
 
 from loads.observers import irc
+from loads.tests.support import hush
 
 
 _SOCKETS = []
@@ -49,6 +50,7 @@ class TestIRC(unittest2.TestCase):
         socket.socket = self.old
         select.select = self.old_select
 
+    @hush
     def test_send(self):
         results = 'yeah'
         client = irc(ssl=False)

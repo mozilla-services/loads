@@ -105,9 +105,8 @@ class TestWebSite(TestCase):
         res = self.session.get('http://localhost:9200')
         self.assertTrue('xFsj' in res.content)
 
-    def _test_will_error(self):
-        res = self.session.get('http://localhost:9200')
-        raise ValueError(res)
+    def test_will_error(self):
+        raise ValueError("boom")
 
     def test_concurrency(self):
         self.incr_counter('beau')

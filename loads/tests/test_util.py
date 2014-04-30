@@ -11,6 +11,7 @@ import zmq
 import gevent
 
 import loads
+from loads.tests.support import hush
 from loads import util
 from loads.util import (resolve_name, set_logger, logger, dns_resolve,
                         DateTimeJSONEncoder, try_import, split_endpoint,
@@ -158,6 +159,7 @@ class TestUtil(unittest2.TestCase):
             self.assertEqual(addrs, set(('0.0.0.0', '1.1.1.1')))
             self.assertEqual(mocked.call_count, 1)
 
+    @hush
     @mock.patch('loads.util.gevent_socket.gethostbyname_ex')
     @mock.patch('loads.util.gevent_socket.gethostbyname')
     def test_dns_resolve_fallbacks_on_gethostbyname(self, hostbyname,

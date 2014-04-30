@@ -17,6 +17,9 @@ from cStringIO import StringIO
 
 from unittest2 import TestCase, skipIf
 
+from zmq.green.eventloop import ioloop
+
+from loads.db._python import BrokerDB
 from loads.main import run as start_runner
 from loads.runners import LocalRunner, DistributedRunner
 from loads.tests.support import (get_runner_args, start_process, stop_process,
@@ -54,9 +57,10 @@ def start_servers():
     if len(_PROCS) != 0:
         return _PROCS
 
-    _PROCS.append(start_process('loads.transport.broker'))
+    _PROCS.append(start_process('loads.transport.broker', '--db', 'python',
+                                '--heartbeat', 'tcp://0.0.0.0:9876'))
 
-    for x in range(3):
+    for x in range(10):
         _PROCS.append(start_process('loads.transport.agent'))
 
     _PROCS.append(start_process('loads.examples.echo_server'))
@@ -75,7 +79,7 @@ def start_servers():
 
     # wait for the broker to be up with 3 slaves.
     client = Pool()
-    while len(client.list()) != 3:
+    while len(client.list()) != 10:
         time.sleep(.1)
 
     # control that the broker is responsive
@@ -108,7 +112,9 @@ class FunctionalTest(TestCase):
         start_servers()
         cls.client = Client()
         cls.location = os.getcwd()
+        cls.loop = ioloop.IOLoop()
         cls.dirs = []
+        cls.db = BrokerDB(cls.loop, db='python')
 
     @classmethod
     def tearDownClass(cls):
@@ -117,7 +123,9 @@ class FunctionalTest(TestCase):
         stop_servers()
         os.chdir(cls.location)
         for dir in cls.dirs:
-            shutil.rmtree(dir)
+            if os.path.exists(dir):
+                shutil.rmtree(dir)
+
         if os.path.exists(_RESULTS):
             os.remove(_RESULTS)
 
@@ -127,6 +135,25 @@ class FunctionalTest(TestCase):
             if not isinstance(run_id, basestring):
                 continue
             self.client.stop_run(run_id)
+
+    def _get_client(self):
+        client = Pool()
+        while len(client.list_runs()) > 0:
+            time.sleep(.2)
+        return client
+
+    def _wait_run_started(self, client=None):
+        if client is None:
+            client = self.client
+        while len(client.list_runs()) == 0:
+            time.sleep(.2)
+        return client.list_runs().items()[0]
+
+    def _wait_run_over(self, client=None):
+        if client is None:
+            client = self.client
+        while len(client.list_runs()) > 0:
+            time.sleep(.2)
 
     def test_normal_run(self):
         start_runner(get_runner_args(
@@ -169,6 +196,8 @@ class FunctionalTest(TestCase):
         assert nb_success > 2, nb_success
 
     def test_distributed_run(self):
+        client = self._get_client()
+
         start_runner(get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_something',
             agents=2,
@@ -178,7 +207,6 @@ class FunctionalTest(TestCase):
                       'loads.tests.test_functional.ObserverFail'],
             users=1, hits=5))
 
-        client = Pool()
         runs = client.list_runs()
         run_id = runs.keys()[0]
         client.stop_run(run_id)
@@ -186,6 +214,9 @@ class FunctionalTest(TestCase):
         # checking the metadata
         metadata = client.get_metadata(run_id)
         self.assertEqual(metadata['project_name'], 'test_distributed_run')
+
+        # wait for the run to end
+        self._wait_run_over(client)
 
         # checking the data
         # the run is over so the detailed lines where pruned
@@ -203,6 +234,8 @@ class FunctionalTest(TestCase):
         assert len(data) > 0, data
 
     def test_distributed_run_duration(self):
+        client = self._get_client()
+
         args = get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_something',
             agents=1,
@@ -211,8 +244,6 @@ class FunctionalTest(TestCase):
             duration=2)
 
         start_runner(args)
-
-        client = Pool()
 
         for i in range(10):
             runs = client.list_runs()
@@ -224,6 +255,8 @@ class FunctionalTest(TestCase):
         raise AssertionError('No data back')
 
     def test_distributed_run_external_runner(self):
+        client = self._get_client()
+
         args = get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_something',
             agents=1,
@@ -231,13 +264,18 @@ class FunctionalTest(TestCase):
             test_runner='%s -m loads.tests.runner {test}' % sys.executable)
 
         start_runner(args)
-        client = Pool()
-        runs = client.list_runs()
-        data = client.get_metadata(runs.keys()[0])
+
+        # getting the run_id
+        runs = self.client.list_runs()
+        while runs == []:
+            runs = self.client.list_runs()
+        run_id = runs.keys()[0]
+
+        data = client.get_metadata(run_id)
         self.assertTrue(len(data) > 5, len(data))
 
     def test_distributed_detach(self):
-        time.sleep(.5)
+        client = self._get_client()
 
         args = get_runner_args(
             fqn='loads.examples.test_blog.TestWebSite.test_something',
@@ -262,6 +300,10 @@ class FunctionalTest(TestCase):
 
         # start the runner
         start_runner(args)
+
+        # getting the run_id
+        run_id, _ = self._wait_run_started()
+
         # we detached.
         time.sleep(.2)
 
@@ -270,16 +312,12 @@ class FunctionalTest(TestCase):
         start_runner({'attach': True, 'broker': DEFAULT_FRONTEND,
                       'output': ['null']})
 
-        # the test is over
-        for i in range(5):
-            time.sleep(.1)
-            runs = self.client.list_runs()
-            if len(runs) == 0:
-                continue
-            data = self.client.get_data(runs.keys()[0])
-            if len(data) > 0:
-                return
-        raise AssertionError('No data back')
+        # now waiting for the test to be over
+        self._wait_run_over(client)
+
+        # now let's see the metadata
+        data = client.get_metadata(run_id)
+        self.assertTrue(len(data) > 5, len(data))
 
     @classmethod
     def _get_dir(self):
@@ -289,6 +327,7 @@ class FunctionalTest(TestCase):
 
     @hush
     def test_file_copy_test_file(self):
+        client = self._get_client()
         test_dir = self._get_dir()
         os.chdir(os.path.dirname(__file__))
 
@@ -303,23 +342,12 @@ class FunctionalTest(TestCase):
         start_runner(args)
         data = []
 
-        for i in range(20):
-            runs = self.client.list_runs()
-            if len(runs) == 0:
-                time.sleep(.1)
-                continue
-            try:
-                data = self.client.get_metadata(runs.keys()[-1])
-            except Exception:
-                raise AssertionError(str(runs))
-
-            if len(data) > 0:
-                break
-            time.sleep(.1)
+        run_id, agents = self._wait_run_started(client)
+        self._wait_run_over(client)
+        data = self.client.get_metadata(run_id)
 
         # check that we got in the dir
-        pid = runs.values()[0][0][0]
-        real_test_dir = test_dir + str(pid)
+        real_test_dir = test_dir + agents[0][0]
         self.dirs.append(real_test_dir)
         content = os.listdir(real_test_dir)
         self.assertTrue('test_here.py' in content, content)
@@ -353,3 +381,28 @@ class FunctionalTest(TestCase):
 
         args['crap'] = data
         self.assertRaises(ValueError, start_runner, args)
+
+    def test_errors(self):
+        client = self._get_client()
+
+        start_runner(get_runner_args(
+            fqn='loads.examples.test_blog.TestWebSite.test_will_error',
+            agents=1,
+            project_name='test_distributed_run',
+            output=['null'],
+            observer=['loads.tests.test_functional.Observer',
+                      'loads.tests.test_functional.ObserverFail'],
+            users=1, hits=5))
+
+        run_id, _ = self._wait_run_started(client)
+        client.stop_run(run_id)
+
+        # checking the metadata
+        metadata = client.get_metadata(run_id)
+        self.assertEqual(metadata['project_name'], 'test_distributed_run')
+
+        # checking the data
+        # the run is over so the detailed lines where pruned
+        # but we have all errors
+        errors = list(self.db.get_errors(run_id))
+        self.assertTrue(len(errors) > 0)

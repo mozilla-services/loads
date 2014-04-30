@@ -4,6 +4,7 @@ import mock
 
 from loads.measure import Session
 from loads import measure
+from loads.tests.support import hush
 
 from requests.adapters import HTTPAdapter
 
@@ -70,6 +71,7 @@ class TestMeasure(unittest2.TestCase):
     def _dns(self, url):
         return url, url, 'meh'
 
+    @hush
     def test_session(self):
         test = _FakeTest()
         test_result = _TestResult()

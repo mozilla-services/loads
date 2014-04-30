@@ -17,6 +17,30 @@ from loads import __version__
 config = os.path.join(os.path.dirname(__file__), 'config.ini')
 
 
+_WANTED = """\
+Broker running on pid [0-9]+
+10 agents registered
+  - [0-9]+ on .*
+  - [0-9]+ on .*
+  - [0-9]+ on .*
+  - [0-9]+ on .*
+  - [0-9]+ on .*
+  - [0-9]+ on .*
+  - [0-9]+ on .*
+  - [0-9]+ on .*
+  - [0-9]+ on .*
+  - [0-9]+ on .*
+endpoints:
+  - backend: ipc:///tmp/loads-back.ipc
+  - frontend: ipc:///tmp/loads-front.ipc
+  - heartbeat: tcp://0.0.0.0:9876
+  - publisher: ipc:///tmp/loads-publisher.ipc
+  - receiver: ipc:///tmp/loads-broker-receiver.ipc
+  - register: ipc:///tmp/loads-reg.ipc
+We have 1 run\(s\) right now:
+  - .* with 10 agent\(s\)"""
+
+
 @skipIf('TRAVIS' in os.environ, 'not running this on Travis')
 class TestRunner(unittest2.TestCase):
 
@@ -61,7 +85,7 @@ class TestRunner(unittest2.TestCase):
             main(args)
 
         output = output.read().strip()
-        self.assertTrue('Success: 3' in output, output)
+        self.assertTrue('Success: 10' in output, output)
 
     def test_help(self):
         args = []
@@ -96,24 +120,8 @@ class TestRunner(unittest2.TestCase):
         with self.capture_stdout() as output:
             main(args)
 
-        res = [line.strip() for line in output.read().strip().split('\n')
-               if line.strip() != '']
-
-        wanted = ['Broker running on pid ',
-                  '3 agents registered',
-                  '- [0-9]+ on .*',
-                  '- [0-9]+ on .*',
-                  '- [0-9]+ on .*',
-                  'endpoints:',
-                  '- backend: ipc:///tmp/loads-back.ipc',
-                  '- publisher: ipc:///tmp/loads-publisher.ipc',
-                  '- register: ipc:///tmp/loads-reg.ipc',
-                  '- frontend: ipc:///tmp/loads-front.ipc',
-                  '- receiver: ipc:///tmp/loads-broker-receiver.ipc']
-
-        for index, line in enumerate(wanted):
-            self.assertTrue(re.search(line, res[index]) is not None,
-                            (line, res[index]))
+        output = output.read().strip()
+        self.assertTrue(re.search(_WANTED, output) is not None, output)
 
     def test_add_options(self):
 

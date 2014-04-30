@@ -116,13 +116,8 @@ class Broker(object):
     def _handle_recv(self, msg):
         # publishing all the data received from agents
         self._publisher.send(msg[0])
-
         data = json.loads(msg[0])
         agent_id = str(data.get('agent_id'))
-        hostname = data.get('hostname', '?')
-
-        # telling the controller that the agent is alive
-        self.ctrl.register_agent({'pid': agent_id, 'hostname': hostname})
 
         # saving the data locally
         self.ctrl.save_data(agent_id, data)
