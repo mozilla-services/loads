@@ -83,6 +83,7 @@ class Client(object):
             # logged, connector replaced.
             if log_exceptions:
                 logger.exception('Failed to execute the job.')
+            logger.debug(str(job))
             raise
 
         if 'error' in res:

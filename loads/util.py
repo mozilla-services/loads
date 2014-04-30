@@ -34,7 +34,7 @@ def set_logger(debug=False, name='loads', logfile='stdout'):
     else:
         ch.setLevel(logging.INFO)
 
-    formatter = logging.Formatter('[%(asctime)s][%(name)s] %(message)s')
+    formatter = logging.Formatter('[%(asctime)s][%(process)d] %(message)s')
     ch.setFormatter(formatter)
     logger_.addHandler(ch)
 
