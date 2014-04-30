@@ -74,24 +74,20 @@ class BrokerController(object):
         if agent_id in self._runs:
             del self._runs[agent_id]
 
+        if agent_id in self._cached_status:
+            del self._cached_status[agent_id]
+
     def register_agent(self, agent_info):
         agent_id = str(agent_info['pid'])
 
         if agent_id not in self._agents:
+            logger.debug('registring agent %s' % str(agent_info))
             self._agents[agent_id] = agent_info
 
     def unregister_agents(self, reason='unspecified', keep_fresh=True):
-        now = time.time()
-
+        logger.debug('unregistring some agents')
         for agent_id in self._agents.keys():
-            # freshness
-            last_contact = self._agent_times.get(agent_id)
-            old = (last_contact is not None and
-                   now - last_contact > self.agent_timeout)
-
-            # discarded if not running something or old
-            if agent_id not in self._runs and (keep_fresh and old):
-                self._remove_agent(agent_id)
+            self.unregister_agent(agent_id, reason)
 
     def unregister_agent(self, agent_id, reason='unspecified'):
         if agent_id in self._agents:
@@ -317,6 +313,7 @@ class BrokerController(object):
             self.send_to_agent(agent_id, json.dumps(data), target=target)
 
             if command == '_STATUS':
+                logger.debug('current cache %s' % str(self._cached_status))
                 return self._cached_status[agent_id]
 
             return
