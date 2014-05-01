@@ -18,6 +18,16 @@ class TestWebSite(TestCase):
         gevent.sleep(1.)
         raise Exception('BOUH')
 
+    def test_wontdie(self):
+
+        def _spin(*args):
+            while True:
+                print('WWWWWwwwwwwoooo')
+
+        import signal
+        signal.signal(signal.SIGTERM, _spin)
+        gevent.sleep(1.)
+
     def test_public(self):
         self.session.get('http://google.com')
 

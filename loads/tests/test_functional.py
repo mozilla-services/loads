@@ -7,6 +7,7 @@
 # - run via nosetest
 # - run with hits / users
 import os
+import errno
 import time
 import requests
 import tempfile
@@ -393,7 +394,6 @@ class FunctionalTest(TestCase):
             observer=['loads.tests.test_functional.Observer',
                       'loads.tests.test_functional.ObserverFail'],
             users=1, hits=5))
-
         run_id, _ = self._wait_run_started(client)
         client.stop_run(run_id)
 
@@ -406,3 +406,49 @@ class FunctionalTest(TestCase):
         # but we have all errors
         errors = list(self.db.get_errors(run_id))
         self.assertTrue(len(errors) > 0)
+
+    def is_running(self, pid):
+        try:
+            os.kill(pid, 0)
+        except OSError as err:
+            if err.errno == errno.ESRCH:
+                return False
+        return True
+
+    @hush
+    def test_die(self):
+        # make sure a recalcitrant process gets eventually killed
+        client = self._get_client()
+
+        start_runner(get_runner_args(
+            fqn='loads.examples.test_blog.TestWebSite.test_wontdie',
+            agents=1,
+            project_name='test_distributed_run',
+            output=['null'],
+            users=1, duration=200,
+            detach=True))
+
+        run_id, agents = self._wait_run_started(client)
+
+        agent_id = agents[0][0]
+
+        # get the pid of the worker
+        status = client.status(agent_id)
+
+        while status['status'] == {}:
+            status = client.status(agent_id)
+            print status
+
+        worker_pid = int(status['status'].keys()[0])
+
+        # force a stop
+        client.stop_run(run_id)
+
+        # we want to make sure the pid is gone in a 6s frame
+        start = time.time()
+        dead = not self.is_running(worker_pid)
+        while not dead and time.time() - start < 6:
+            dead = not self.is_running(worker_pid)
+
+        self.assertTrue(dead)
+        self._wait_run_over(client)

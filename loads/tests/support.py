@@ -48,7 +48,7 @@ def get_runner_args(fqn, users=1, hits=1, duration=None,
                     test_dir=None, include_file=None, python_dep=None,
                     observer=None, slave=False, agent_id=None, run_id=None,
                     loads_status=None, externally_managed=False,
-                    project_name='N/A'):
+                    project_name='N/A', detach=False):
     if output is None:
         output = ['null']
 
@@ -75,7 +75,8 @@ def get_runner_args(fqn, users=1, hits=1, duration=None,
             'python_dep': python_dep,
             'slave': slave,
             'externally_managed': externally_managed,
-            'project_name': project_name}
+            'project_name': project_name,
+            'detach': detach}
 
     if duration is not None:
         args['duration'] = float(duration)

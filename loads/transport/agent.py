@@ -16,6 +16,7 @@ import sys
 import time
 import traceback
 from collections import defaultdict
+import functools
 
 import zmq
 from zmq.eventloop import ioloop, zmqstream
@@ -216,16 +217,34 @@ class Agent(object):
 
         raise NotImplementedError(command)
 
+    def _kill_worker(self, proc):
+        pid = proc.pid
+        logger.debug('%d final termination' % proc.pid)
+
+        if proc.poll() is None:
+            logger.debug('Calling kill on %d' % proc.pid)
+            try:
+                proc.kill()
+            except OSError:
+                logger.exception('Cannot kill %d' % pid)
+
     def _stop_runs(self, command):
         status = {}
         for pid, (proc, run_id) in self._workers.items():
             logger.debug('terminating proc for run %s' % str(run_id))
+
             if proc.poll() is None:
+                logger.debug('Starting the graceful period for the worker')
                 proc.terminate()
-                del self._workers[pid]
+                delay = time.time() + 5
+                kill = functools.partial(self._kill_worker, proc)
+                self.loop.add_timeout(delay, kill)
+                if pid in self._workers:
+                    del self._workers[pid]
+
             status[pid] = {'status': 'terminated', 'run_id': run_id}
 
-        self._sync_hb()
+        self.loop.add_callback(self._sync_hb)
         return {'result': {'status': status,
                            'command': command}}
 
