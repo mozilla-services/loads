@@ -307,12 +307,7 @@ class Agent(object):
             return False
 
         logger.info('Broker lost ! Quitting..')
-
-        def _stop():
-            self._stop()
-            sys.exit(0)
-
-        self.loop.add_callback(_stop)
+        self.loop.add_callback(self._stop)
         return True
 
     def stop(self):
@@ -339,13 +334,13 @@ class Agent(object):
             self._backstream.flush()
         except zmq.core.error.ZMQError:
             pass
-        self.loop.stop()
-        if self.ping is not None:
-            self.ping.stop()
-        self._check.stop()
-        time.sleep(.1)
-        self.ctx.destroy(0)
-        logger.debug('Agent is stopped')
+
+        try:
+            self.loop.stop()
+            logger.debug('Agent is stopped')
+        finally:
+            logger.debug('Exiting...')
+            sys.exit(0)
 
     def register(self):
         # telling the broker we are ready
