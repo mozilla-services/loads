@@ -213,7 +213,7 @@ class Agent(object):
             try:
                 return self._stop_runs(command)
             finally:
-                sys.exit(0)
+                os._exit(0)
 
         raise NotImplementedError(command)
 
@@ -340,7 +340,7 @@ class Agent(object):
             logger.debug('Agent is stopped')
         finally:
             logger.debug('Exiting...')
-            sys.exit(0)
+            os._exit(0)
 
     def register(self):
         # telling the broker we are ready
