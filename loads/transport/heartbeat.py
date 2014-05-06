@@ -27,7 +27,7 @@ class Stethoscope(object):
       Defaults to None.
     - **onregister**: a callable that will be called on a register ping.
     """
-    def __init__(self, endpoint=DEFAULT_HEARTBEAT, warmup_delay=.5, delay=10.,
+    def __init__(self, endpoint=DEFAULT_HEARTBEAT, warmup_delay=.5, delay=30.,
                  retries=3,
                  onbeatlost=None, onbeat=None, io_loop=None, ctx=None,
                  onregister=None):
