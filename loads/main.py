@@ -308,8 +308,9 @@ def main(sysargs=None):
             print('%d agents registered' % len(agents))
             agents = agents.items()
             agents.sort()
-            for pid, agent_info in agents:
-                print('  - %s on %s' % (pid, agent_info['hostname']))
+            for agent_id, agent_info in agents:
+                print('  - %s on %s' % (agent_info['pid'],
+                                        agent_info['hostname']))
 
             print('endpoints:')
             endpoints = ping['endpoints'].items()

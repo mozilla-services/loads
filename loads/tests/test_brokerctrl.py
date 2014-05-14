@@ -50,7 +50,7 @@ class TestBrokerController(unittest2.TestCase):
         shutil.rmtree(self.dbdir)
 
     def test_registration(self):
-        self.ctrl.register_agent({'pid': '1'})
+        self.ctrl.register_agent({'pid': '1', 'agent_id': '1'})
         self.assertTrue('1' in self.ctrl.agents)
 
         # make the agent busy before we unregister it
@@ -61,8 +61,8 @@ class TestBrokerController(unittest2.TestCase):
         self.assertFalse('1' in self.ctrl.agents)
 
     def test_reserve_agents(self):
-        self.ctrl.register_agent({'pid': '1'})
-        self.ctrl.register_agent({'pid': '2'})
+        self.ctrl.register_agent({'pid': '1', 'agent_id': '1'})
+        self.ctrl.register_agent({'pid': '2', 'agent_id': '2'})
 
         self.assertRaises(NotEnoughWorkersError, self.ctrl.reserve_agents,
                           10, 'run')
@@ -72,9 +72,9 @@ class TestBrokerController(unittest2.TestCase):
         self.assertEqual(agents, ['1', '2'])
 
     def test_run_and_stop(self):
-        self.ctrl.register_agent({'pid': '1'})
-        self.ctrl.register_agent({'pid': '2'})
-        self.ctrl.register_agent({'pid': '3'})
+        self.ctrl.register_agent({'pid': '1', 'agent_id': '1'})
+        self.ctrl.register_agent({'pid': '2', 'agent_id': '2'})
+        self.ctrl.register_agent({'pid': '3', 'agent_id': '3'})
 
         self.ctrl.reserve_agents(1, 'run')
         self.ctrl.reserve_agents(2, 'run2')
@@ -90,7 +90,7 @@ class TestBrokerController(unittest2.TestCase):
         self.assertEqual(len(msgs), 1)
 
     def test_db_access(self):
-        self.ctrl.register_agent({'pid': '1'})
+        self.ctrl.register_agent({'agent_id': '1', 'agent_id': '1'})
         self.ctrl.reserve_agents(1, 'run')
 
         # metadata

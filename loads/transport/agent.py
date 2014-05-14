@@ -64,6 +64,7 @@ class Agent(object):
         self.debug = logger.isEnabledFor(logging.DEBUG)
         self.params = params
         self.pid = os.getpid()
+        self.agent_id = '%s-%s' % (get_hostname(), self.pid)
         self.timeout = timeout
         self.max_age = max_age
         self.max_age_delta = max_age_delta
@@ -86,7 +87,7 @@ class Agent(object):
 
         # backend socket - used to receive work from the broker
         self._backend = self.ctx.socket(zmq.ROUTER)
-        self._backend.identity = str(self.pid)
+        self._backend.identity = self.agent_id
         self._backend.connect(self.endpoints['backend'])
 
         # register socket - used to register into the broker
@@ -118,7 +119,7 @@ class Agent(object):
 
         args['batched'] = True
         args['slave'] = True
-        args['agent_id'] = self.pid
+        args['agent_id'] = self.agent_id
         args['zmq_receiver'] = self.endpoints['receiver']
         args['run_id'] = run_id
 
@@ -175,7 +176,7 @@ class Agent(object):
             if test_dir is None:
                 test_dir = tempfile.mkdtemp()
             else:
-                test_dir += str(os.getpid())
+                test_dir += self.agent_id
 
             if not os.path.exists(test_dir):
                 os.makedirs(test_dir)
@@ -192,7 +193,7 @@ class Agent(object):
             pid = self._run(args, run_id)
 
             return {'result': {'pids': [pid],
-                               'agent_id': str(self.pid),
+                               'agent_id': self.agent_id,
                                'command': command}}
 
         elif command in ('STATUS', '_STATUS'):
@@ -276,6 +277,9 @@ class Agent(object):
                 duration, res = res
 
             res['hostname'] = get_hostname()
+            res['agent_id'] = self.agent_id
+            res['pid'] = self.pid
+
             res = json.dumps(res)
             # we're working with strings
             if isinstance(res, unicode):
@@ -285,10 +289,11 @@ class Agent(object):
             exc_type, exc_value, exc_traceback = sys.exc_info()
             exc = traceback.format_tb(exc_traceback)
             exc.insert(0, str(e))
-            res = {'error': {'agent_id': self.pid, 'error': '\n'.join(exc)}}
+            res = {'error': {'agent_id': self.agent_id,
+                             'error': '\n'.join(exc)}}
             logger.error(res)
 
-        data = [broker_id, '', str(self.pid), '']
+        data = [broker_id, '', str(self.agent_id), '']
 
         if client_id is not None:
             data += [client_id, '']
@@ -318,7 +323,7 @@ class Agent(object):
 
         # telling the broker we are stopping
         try:
-            self._reg.send_multipart(['UNREGISTER', str(self.pid)])
+            self._reg.send_multipart(['UNREGISTER', self.agent_id])
         except zmq.ZMQError:
             logger.debug('Could not unregister')
 
@@ -344,7 +349,8 @@ class Agent(object):
 
     def register(self):
         # telling the broker we are ready
-        data = {'pid': self.pid, 'hostname': get_hostname()}
+        data = {'pid': self.pid, 'hostname': get_hostname(),
+                'agent_id': self.agent_id}
         self._reg.send_multipart(['REGISTER', json.dumps(data)])
 
     def start(self):

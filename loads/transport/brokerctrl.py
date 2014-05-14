@@ -78,7 +78,7 @@ class BrokerController(object):
             del self._cached_status[agent_id]
 
     def register_agent(self, agent_info):
-        agent_id = str(agent_info['pid'])
+        agent_id = agent_info['agent_id']
 
         if agent_id not in self._agents:
             logger.debug('registring agent %s' % str(agent_info))
@@ -120,7 +120,7 @@ class BrokerController(object):
 
     def send_to_agent(self, agent_id, msg, target=None):
         # now we can send to the right guy
-        data = [agent_id, '', self.broker.pid, '']
+        data = [str(agent_id), '', self.broker.pid, '']
         if target is not None:
             data += [target, '']
 
@@ -196,6 +196,7 @@ class BrokerController(object):
                     for st in result['status'].values()]
 
         if 'running' not in statuses:
+            logger.debug('agent %s not running anything' % agent_id)
             return self._terminate_run(agent_id)
 
         self._agent_times[agent_id] = time.time()
@@ -209,6 +210,8 @@ class BrokerController(object):
             return
 
         run_id, when = self._runs[agent_id]
+        logger.debug('removing %s from run %s' % (agent_id, run_id))
+
         del self._runs[agent_id]
 
         # is the whole run over ?
@@ -216,6 +219,7 @@ class BrokerController(object):
 
         # we want to tell the world if the run has ended
         if run_id not in running:
+            logger.debug('the whole run %s is over, removing it' % run_id)
             self.test_ended(run_id)
             return run_id
 
@@ -234,7 +238,9 @@ class BrokerController(object):
     def save_data(self, agent_id, data):
         # registering the agent as alive
         hostname = data.get('hostname', '?')
-        self.register_agent({'pid': agent_id, 'hostname': hostname})
+        agent_pid = agent_id.split('-')[-1]
+        self.register_agent({'pid': agent_pid, 'hostname': hostname,
+                             'agent_id': agent_id})
 
         if agent_id in self._runs:
             data['run_id'], data['started'] = self._runs[agent_id]
@@ -381,6 +387,7 @@ class BrokerController(object):
     #
     def test_ended(self, run_id):
         # first of all, we want to mark it done in the DB
+        logger.debug('test %s ended marking the metadata' % run_id)
         self.update_metadata(run_id, stopped=True, active=False,
                              ended=time.time())
 
@@ -393,6 +400,8 @@ class BrokerController(object):
         if observers == []:
             self._db.summarize_run(run_id)
             return
+
+        logger.debug('test %s ended calling the observers' % run_id)
 
         # if we are using the web dashboard - we're just providing a link
         if self.broker.web_root is not None:
