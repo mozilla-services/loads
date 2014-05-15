@@ -15,6 +15,12 @@ class TestWebSite(TestCase):
 
     def test_volume(self):
         self.incr_counter('volume-check')
+
+        # eat the CPU a bit, and do a little bit of fd
+        for i in range(1000):
+            os.urandom(2048)
+            i * (i * i * i)
+
         for i in range(10):
             self.incr_counter('volume-check-%d' % i)
         gevent.sleep(.2)
