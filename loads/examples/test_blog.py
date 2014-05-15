@@ -13,6 +13,12 @@ class TestWebSite(TestCase):
     def test_health(self):
         self.incr_counter('health-check')
 
+    def test_volume(self):
+        self.incr_counter('volume-check')
+        for i in range(10):
+            self.incr_counter('volume-check-%d' % i)
+        gevent.sleep(.2)
+
     def test_hold_health(self):
         self.incr_counter('health-check')
         gevent.sleep(1.)
