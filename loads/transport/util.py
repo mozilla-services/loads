@@ -7,7 +7,10 @@ import time
 import os
 import socket
 
-import zmq.green as zmq
+try:
+    import zmq.green as zmq
+except ImportError:
+    import zmq
 
 from loads.transport.exc import TimeoutError
 from loads.util import logger

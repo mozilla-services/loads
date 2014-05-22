@@ -13,7 +13,10 @@ import zipfile
 from cStringIO import StringIO
 import hashlib
 
-from gevent import socket as gevent_socket
+try:
+    from gevent import socket as gevent_socket
+except ImportError:
+    gevent_socket = None
 
 
 logger = logging.getLogger('loads')

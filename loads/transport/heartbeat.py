@@ -1,7 +1,12 @@
 import time
 
-import zmq.green as zmq
-from zmq.green.eventloop import ioloop, zmqstream
+try:
+    import zmq.green as zmq
+    from zmq.green.eventloop import ioloop, zmqstream
+except ImportError:
+    import zmq
+    from zmq.eventloop import ioloop, zmqstream
+
 
 from loads.util import logger
 from loads.transport.util import DEFAULT_HEARTBEAT

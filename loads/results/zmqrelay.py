@@ -3,9 +3,16 @@ import traceback
 import errno
 from collections import defaultdict
 
-import zmq.green as zmq
-import gevent
-from gevent.queue import Queue
+try:
+    import zmq.green as zmq
+except ImportError:
+    import zmq
+
+try:
+    import gevent
+    from gevent.queue import Queue
+except ImportError:
+    from Queue import Queue
 
 from loads.util import DateTimeJSONEncoder
 from loads.transport.util import get_hostname
