@@ -35,6 +35,7 @@ class _FakeResponse(object):
     status_code = 200
     url = 'http://impossible.place'
     raw = _Response()
+    content = ''
 
 
 class _TestResult(object):
