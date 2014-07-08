@@ -72,6 +72,26 @@ class TestMeasure(unittest2.TestCase):
     def _dns(self, url):
         return url, url, 'meh'
 
+    def test_no_dns_resolve(self):
+        from loads import measure
+        old = measure.dns_resolve
+
+        def fail(*args, **kw):
+            raise AssertionError()
+
+        measure.dns_resolve = fail
+        test = _FakeTest()
+        test_result = _TestResult()
+
+        try:
+            session = Session(test, test_result)
+            self.assertRaises(AssertionError, session.get,
+                              'http://impossible.place')
+            session = Session(test, test_result, dns_resolve=False)
+            session.get('http://impossible.place')
+        finally:
+            measure.dns_resolve = old
+
     @hush
     def test_session(self):
         test = _FakeTest()

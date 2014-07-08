@@ -32,8 +32,9 @@ class TestCase(unittest.TestCase):
         if config.get('server_url') is not None:
             self.server_url = config['server_url']
         self._test_result = test_result
-
-        self.session = Session(test=self, test_result=test_result)
+        dns_resolve = not config.get('no_dns_resolve', False)
+        self.session = Session(test=self, test_result=test_result,
+                               dns_resolve=dns_resolve)
         http_adapter = HTTPAdapter(pool_maxsize=MAX_CON,
                                    pool_connections=MAX_CON)
         self.session.mount('http://', http_adapter)

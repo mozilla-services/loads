@@ -63,14 +63,15 @@ class Session(_Session):
     test_result.
     """
 
-    def __init__(self, test, test_result):
+    def __init__(self, test, test_result, dns_resolve=True):
         _Session.__init__(self)
         self.test = test
         self.test_result = test_result
         self.loads_status = None, None, None, None
+        self.dns_resolve = dns_resolve
 
     def request(self, method, url, headers=None, **kwargs):
-        if not url.startswith('https://'):
+        if not url.startswith('https://') and self.dns_resolve:
             url, original, resolved = dns_resolve(url)
             if headers is None:
                 headers = {}

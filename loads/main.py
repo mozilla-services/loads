@@ -241,6 +241,9 @@ def _parse(sysargs=None):
                                          'distributed run',
                         action='store_true', default=False)
 
+    parser.add_argument('--no-dns-resolve', help='Do not resolve the domain.',
+                        action='store_true', default=False)
+
     # Adds the per-output and per-runner options.
     add_options(RUNNERS, parser, fmt='--{name}-{option}')
     add_options(output_list(), parser, fmt='--output-{name}-{option}')
