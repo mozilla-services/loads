@@ -45,7 +45,7 @@ its documentation.
 
 Once Circus is installed, you can run it against
 the provided **loads.ini** configuration file that's
-located in the Loads source repository in the **con/**
+located in the Loads source repository in the **conf/**
 directory::
 
     $ bin/circusd --daemon conf/loads.ini
