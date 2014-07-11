@@ -178,7 +178,7 @@ class BrokerDB(BaseDB):
         if 'url' in data:
             self._urls[run_id][data['url']] += 1
 
-        if data_type == 'addError':
+        if data_type in ('addError', 'addFailure'):
             self._errors[run_id].put(dict(data))
 
         self._dirty = True

@@ -25,6 +25,9 @@ class TestWebSite(TestCase):
             self.incr_counter('volume-check-%d' % i)
         gevent.sleep(.2)
 
+    def test_failure(self):
+        assert 1 == 2
+
     def test_hold_health(self):
         self.incr_counter('health-check')
         gevent.sleep(1.)
