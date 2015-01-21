@@ -99,7 +99,8 @@ class StdOutput(object):
         counters = self.results.get_counters()
         if len(counters) > 0:
             write("\nCustom metrics:")
-            for name, value in counters.items():
+            for name in sorted(counters.keys()):
+                value = counters[name]
                 write("\n- %s : %s" % (name, value))
 
             write('\n')
