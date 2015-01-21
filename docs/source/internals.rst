@@ -15,6 +15,27 @@ to smoke test your service - or simply because you don't need
 to send a huge load. That's the *non-distributed* mode.
 
 
+.. _users-hits-section:
+
+About users and hits
+====================
+
+Loads will *instantiate* your test class as many times as *users* specified.
+Hence, any operations related to test suite initialization, such as
+:ref:`authenticating the session <authenticating-session-section>` or creating
+initial test data, shall be performed in the test ``__init__`` method.
+
+Loads will then *run* your test method as many times as *hits* specified.
+Unless your goal is to test the same specific usage scenario in parallel,
+:ref:`relying on randomness <randomness-section>` to execute various different
+actions might become relevant.
+
+.. note::
+
+   Loads test methods are executed using *gevent*. Therefore the order of
+   execution of each hit is basically asynchronous and not deterministic.
+
+
 What happens during a non-distributed run
 =========================================
 
@@ -24,7 +45,9 @@ What happens during a non-distributed run
 2. A `loads.case.TestResult` object is created. This object is a data
    collector, it is passed to the test suite (`TestCase`), the loads `Session`
    object and the websocket manager. Its very purpose is to collect the data
-   from these sources. You can read more in the section named `TestResult` below.
+   from these sources.
+
+   You can read more in the :ref:`TestResult section <testresult-section>`.
 
 3. We create any number of outputs (standard output, html output, etc.) in the
    runner and register them to the test_result object.
@@ -82,6 +105,8 @@ In more details:
 4. The broker publishes the results so the distributed runner
    can get them.
 
+
+.. _testresult-section:
 
 The TestResult object
 =====================

@@ -39,6 +39,7 @@ Glossary
      The agent isn't sending itself the queries, it creates a worker which does
      it instead.
 
+   users
    virtual users
      When running a test, you can chose the number of users you want to have in
      parallel. This is called the number of virtual users.

@@ -204,3 +204,60 @@ the test is successful::
 At the end of the test, you will be able to know how many times the counter
 was incremented.
 
+
+.. _randomness-section:
+
+Testing random actions
+----------------------
+
+Since your test method will be called several times per :term:`user`s
+(See :ref:`users and hits <users-hits-section>`), you may want to introduce
+some entropy in order to simulate the behaviour of a real user.
+
+A good practice is to rely on randomness to control the distribution of the
+test actions::
+
+    import random
+    from loads.case import TestCase
+
+    WRITE_PERCENTAGE = 30
+
+    class TestAction(TestCase):
+
+        def test_api(self):
+            if random.randint(0, 100) < WRITE_PERCENTAGE:
+                self.test_write()
+            else:
+                self.test_read()
+
+
+.. _authenticating-session-section:
+
+Authenticated sessions
+----------------------
+
+If you want to map :term:`virtual users` to actual users on your remote server,
+you shall perform authentication during the test initialization.
+
+For example, using *Requests*::
+
+    import uuid
+    from requests import auth as requests_auth
+    from loads.case import TestCase
+
+    class TestAuthenticatedAction(TestCase):
+
+        def __init__(self, *args, **kwargs):
+            super(TestAuthenticatedAction, self).__init__(*args, **kwargs)
+
+            random_user = uuid.uuid4().hex
+            random_pwd = uuid.uuid4().hex
+
+            # Create the user on your remote server
+            # ...
+
+            self.auth = requests_auth.HTTPBasicAuth(random_user, random_pwd)
+
+        def test_api(self):
+            res = self.session.get('http://localhost:8000', auth=self.auth)
+            self.assertEqual(res.status_code, 200)
