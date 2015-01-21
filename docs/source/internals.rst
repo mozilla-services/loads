@@ -37,11 +37,11 @@ What happens during a non-distributed run
 
 6. During the tests, both the requests' `Session`, the test case itself and the
    websocket objects report their progress in real time to test_result. When
-   there is a need to disambiguate the calls, a loads_status object is passed
-   along.
+   there is a need to disambiguate the calls, a ``loads_status`` attribute is
+   available on the session object.
 
-   It contains data about the hits, the total number of users, the current
-   user and the current hit.
+   It is a tuple containing respectively the hits, the total number of users,
+   the current user and the current hit.
 
 7. Each time a call is made to the test_result object to add data, it notifies
    its list of observers to be sure they are up to date. This is helpful to
