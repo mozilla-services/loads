@@ -35,9 +35,10 @@ setup(name='loads',
       url='https://github.com/mozilla-services/loads',
       tests_require=['nose', 'mock', 'unittest2'],
       test_suite='nose.collector',
-      entry_points="""
-      [console_scripts]
-      loads-broker = loads.transport.broker:main
-      loads-agent  = loads.transport.agent:main
-      loads-runner  = loads.main:main
-      """)
+      entry_points={
+          'console_scripts': [
+              'loads-broker = loads.transport.broker:main',
+              'loads-agent = loads.transport.agent:main',
+              'loads-runner = loads.main:main'
+          ]
+      })
