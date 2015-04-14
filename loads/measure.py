@@ -1,5 +1,6 @@
 import datetime
 import urlparse
+import os
 
 from requests.sessions import Session as _Session
 from webtest.app import TestApp as _TestApp
@@ -65,6 +66,7 @@ class Session(_Session):
 
     def __init__(self, test, test_result, dns_resolve=True):
         _Session.__init__(self)
+        self.verify = not os.getenv('BYPASS_SSL_CHECK')
         self.test = test
         self.test_result = test_result
         self.loads_status = None, None, None, None
