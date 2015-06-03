@@ -4,7 +4,8 @@ Loads
 
 .. warning::
 
-   Loads is under heavy development. Don't use it.
+   This is an old version of Loads. Don't use it.
+   To get started with the new version, you can look at https://github.com/loads
 
 
 **Loads** is a framework for load testing an HTTP service.
