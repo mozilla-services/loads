@@ -13,7 +13,7 @@ BUILD_DIRS = bin build include lib lib64 man share
 all: build
 
 $(PYTHON):
-	virtualenv $(VTENV_OPTS) .
+	virtualenv-2.7 $(VTENV_OPTS) .
 
 build: $(PYTHON)
 	CYTHON=`pwd`/bin/cython $(BIN)/pip install -r test-requirements.txt

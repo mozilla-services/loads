@@ -12,6 +12,8 @@ import random
 import zipfile
 from cStringIO import StringIO
 import hashlib
+import subprocess
+from tempfile import mkdtemp
 
 try:
     from gevent import socket as gevent_socket
@@ -376,3 +378,34 @@ def unbatch(data):
             if 'run_id' in data:
                 message['run_id'] = data['run_id']
             yield field, message
+
+
+def install_pkg(name, target_dir='deps', build_dir=None):
+    if build_dir is None:
+        build_dir = mkdtemp()
+
+    nil = "lambda *args, **kw: None"
+
+    code = ["from pip.req import InstallRequirement",
+            "InstallRequirement.uninstall = %s" % nil,
+            "InstallRequirement.commit_uninstall = %s" % nil,
+            "import pip", "pip.main()"]
+
+    cmd = [sys.executable, '-c', '"%s"' % ';'.join(code),
+            'install', '-t', target_dir, '-I', '-b', build_dir]
+
+    process = subprocess.Popen(' '.join(cmd + [name]),
+                               shell=True,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+
+    stdout, stderr = process.communicate()
+
+    if 'Successfully installed' not in stdout:
+        logger.debug('Failed to deploy %r' % name)
+        logger.debug('Error: %s' % str(stderr))
+        logger.debug('Stdout: %s' % str(stdout))
+        logger.debug("Command used: %s" % str(' '.join(cmd + [name])))
+        raise Exception(stderr)
+    else:
+        logger.debug('Successfully deployed %r' % name)

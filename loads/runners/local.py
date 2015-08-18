@@ -1,11 +1,10 @@
 import os
-import subprocess
 import sys
 
 import gevent
 
 from loads.util import (resolve_name, logger, pack_include_files,
-                        unpack_include_files, set_logger)
+                        unpack_include_files, set_logger, install_pkg)
 from loads.results import ZMQTestResult, TestResult, ZMQSummarizedTestResult
 from loads.output import create_output
 
@@ -116,43 +115,19 @@ class LocalRunner(object):
         if deps == []:
             return
 
+        build_dir = os.path.join(self.args['test_dir'],
+                                 'build-', str(os.getpid()))
+
         # accepting lists and list of comma-separated values
-        pydeps = []
         for dep in deps:
             dep = [d.strip() for d in dep.split(',')]
             for d in dep:
                 if d == '':
                     continue
-                pydeps.append(d)
+                # installing the package in 'deps'
+                install_pkg(d, 'deps', build_dir)
 
-        build_dir = os.path.join(self.args['test_dir'],
-                                 'build-', str(os.getpid()))
-        nil = "lambda *args, **kw: None"
-        code = ["from pip.req import InstallRequirement",
-                "InstallRequirement.uninstall = %s" % nil,
-                "InstallRequirement.commit_uninstall = %s" % nil,
-                "import pip", "pip.main()"]
-
-        cmd = [sys.executable, '-c', '"%s"' % ';'.join(code),
-               'install', '-t', 'deps', '-I', '-b', build_dir]
-
-        for dep in pydeps:
-            logger.debug('Deploying %r in %r' % (dep, os.getcwd()))
-            process = subprocess.Popen(' '.join(cmd + [dep]), shell=True,
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.PIPE)
-            stdout, stderr = process.communicate()
-
-            # XXX see https://github.com/mozilla-services/loads/issues/253
-            if 'Successfully installed' not in stdout:
-                logger.debug('Failed to deploy %r' % dep)
-                logger.debug('Error: %s' % str(stderr))
-                logger.debug('Stdout: %s' % str(stdout))
-                logger.debug("Command used: %s" % str(' '.join(cmd + [dep])))
-                raise Exception(stderr)
-            else:
-                logger.debug('Successfully deployed %r' % dep)
-
+        # making 'deps' part of the path lookup
         sys.path.insert(0, 'deps')
 
     def execute(self):

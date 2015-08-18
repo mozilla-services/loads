@@ -9,3 +9,6 @@ unittest2
 cython
 gevent
 https://github.com/Lawouach/WebSocket-for-Python/archive/v0.3.0-beta.tar.gz
+pyopenssl
+ndg-httpsclient
+pyasn1
