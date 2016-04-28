@@ -10,7 +10,7 @@ Loads
 
 **Loads** is a framework for load testing an HTTP service.
 
-.. figure:: https://loads.readthedocs.org/en/latest/_images/logo.jpg
+.. figure:: https://loads.readthedocs.io/en/latest/_images/logo.jpg
    :align: right
    :target: http://thenounproject.com/noun/riot/#icon-No15381
 
@@ -22,7 +22,7 @@ Installation::
 
     $ bin/pip install loads
 
-See the docs at http://loads.readthedocs.org
+See the docs at http://loads.readthedocs.io
 
 .. image:: https://secure.travis-ci.org/mozilla-services/loads.png?branch=master
    :alt: Build Status

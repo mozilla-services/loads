@@ -34,7 +34,7 @@ Setting up a Loads cluster
 --------------------------
 
 To run a broker and some agents, we can use
-`Circus <http://circus.readthedocs.org>`_ - a process supervisor.
+`Circus <http://circus.readthedocs.io>`_ - a process supervisor.
 
 To install Circus you can use Pip::
 

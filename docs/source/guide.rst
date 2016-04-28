@@ -138,7 +138,7 @@ write a test that uses a web socket against it::
 
             self.assertEqual(results, ['something', 'happened'])
 
-See `ws4py documentation <https://ws4py.readthedocs.org>`_
+See `ws4py documentation <https://ws4py.readthedocs.io>`_
 for more info.
 
 

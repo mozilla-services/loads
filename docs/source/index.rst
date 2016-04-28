@@ -26,8 +26,8 @@ exercise.
 
 Loads is not asking you to use an ad-hoc API. The tool offers an
 integration with 3 existing libraries: `Requests <http://docs.python-requests.org>`_,
-`WebTest <http://webtest.readthedocs.org>`_ and
-`ws4py <https://ws4py.readthedocs.org>`_.
+`WebTest <http://webtest.readthedocs.io>`_ and
+`ws4py <https://ws4py.readthedocs.io>`_.
 You just need to write your tests using them, and **Loads**
 will do the rest.
 
