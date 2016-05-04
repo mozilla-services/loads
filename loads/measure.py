@@ -2,7 +2,7 @@ import datetime
 import urlparse
 import os
 
-from requests.sessions import Session as _Session
+from requests.sessions import Session as _Session, REDIRECT_STATI
 from webtest.app import TestApp as _TestApp
 from wsgiproxy.proxies import HostProxy as _HostProxy
 from wsgiproxy.requests_client import HttpClient
@@ -81,16 +81,36 @@ class Session(_Session):
         return super(Session, self).request(
             method, url, headers=headers, **kwargs)
 
+    def resolve_redirects(self, resp, req, stream=False, timeout=None,
+                               verify=True, cert=None, proxies=None):
+        """If there is a redirect, need to record information about the hit before
+        it is obliterated by the next request."""
+        # Future version of requests (some time > 2.2.1) has Response.is_redirect
+        if 'location' in resp.headers and resp.status_code in REDIRECT_STATI:
+            resp.started = self._started
+            resp.method = req.method
+            self._analyse_request(resp)
+            req._needs_analysis = False
+        return _Session.resolve_redirects(self, resp, req, stream=stream, timeout=timeout,
+                                          verify=verify,cert=cert,proxies=proxies)
+
     def send(self, request, **kwargs):
         """Do the actual request from within the session, doing some
         measures at the same time about the request (duration, status, etc).
         """
+        # If the request receives a redirect response code, collecting the
+        # result will be handled by resolve_redirects() before the result
+        # object is thrown away to perform the redirect. In that case, this
+        # flag will be set to false, indicating that nothing needs to be
+        # (or should be) recorded at the end of this method.
+        request._needs_analysis = True
         # attach some information to the request object for later use.
-        start = datetime.datetime.utcnow()
+        self._started = datetime.datetime.utcnow()
         res = _Session.send(self, request, **kwargs)
-        res.started = start
-        res.method = request.method
-        self._analyse_request(res)
+        if request._needs_analysis == True:
+            res.started = self._started
+            res.method = request.method
+            self._analyse_request(res)
         return res
 
     def _analyse_request(self, req):
