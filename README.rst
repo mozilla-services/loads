@@ -31,6 +31,6 @@ See the docs at http://loads.readthedocs.io
 .. image:: https://coveralls.io/repos/mozilla-services/loads/badge.png?branch=master
    :target: https://coveralls.io/r/mozilla-services/loads
 
-.. image:: https://pypip.in/v/loads/badge.png
+.. image:: https://img.shields.io/pypi/v/loads.svg
    :target: https://crate.io/packages/loads/
 
